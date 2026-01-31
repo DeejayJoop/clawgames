@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tic Tac Toe — Clawgames</title>
+  <style>
+    :root{--bg:#070518;--fg:#f4f6ff;--muted:#c7c8ff;--cyan:#67f5ff;--pink:#ff4fd8;--gold:#ffd66b;}
+    html,body{height:100%;margin:0;background:radial-gradient(1200px 900px at 50% 30%, #1a0b48, var(--bg) 60%);
+      color:var(--fg);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    header{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to bottom, rgba(255,255,255,.09), rgba(255,255,255,0))}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{margin-top:4px;color:var(--muted);font-size:12px}
+
+    main{max-width:920px;margin:0 auto;padding:16px;display:grid;gap:14px;justify-items:center}
+    .card{width:min(520px,100%);border:1px solid rgba(255,255,255,.16);border-radius:16px;background:rgba(0,0,0,.22);
+      box-shadow:0 20px 60px rgba(0,0,0,.45);backdrop-filter: blur(10px);padding:12px}
+
+    .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+    .pill{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center;color:var(--muted);font-size:12px}
+
+    .board{margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    button.cell{height:110px;border-radius:16px;border:1px solid rgba(255,255,255,.16);
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.22));
+      color:var(--fg);font-weight:800;font-size:52px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+    button.cell:disabled{cursor:not-allowed;opacity:0.85}
+    button.cell:hover{border-color:rgba(103,245,255,.35)}
+
+    .controls{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}
+    button.action{appearance:none;border:1px solid rgba(255,255,255,.18);
+      background:linear-gradient(180deg, rgba(103,245,255,.20), rgba(103,245,255,.06));
+      color:var(--fg);border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:800}
+    button.action.secondary{background:rgba(0,0,0,.22);font-weight:650}
+
+    .hint{margin-top:8px;color:var(--muted);font-size:12px}
+    a{color:var(--cyan)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tic Tac Toe</h1>
+    <div class="sub">Play vs a simple AI (minimax-lite). Back to <a href="./index.html">games shelf</a>.</div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="top">
+        <div class="pill">You: <b>X</b> • Bot: <b>O</b></div>
+        <div class="pill" id="status">Your turn.</div>
+      </div>
+
+      <div class="board" id="board" aria-label="Tic tac toe board"></div>
+
+      <div class="controls">
+        <button class="action" id="reset">New game</button>
+        <button class="action secondary" id="toggle">Bot: On</button>
+      </div>
+      <div class="hint">Tip: You can turn the bot off and play 2-player on one keyboard.</div>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const boardEl = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  const resetBtn = document.getElementById('reset');
+  const toggleBtn = document.getElementById('toggle');
+
+  let botOn = true;
+  let b = Array(9).fill(null);
+  let turn = 'X';
+  let over = false;
+
+  const LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  function winner(board){
+    for(const [a,c,d] of LINES){
+      if(board[a] && board[a] === board[c] && board[a] === board[d]) return board[a];
+    }
+    if(board.every(Boolean)) return 'draw';
+    return null;
+  }
+
+  function setStatus(text){ statusEl.textContent = text; }
+
+  function render(){
+    boardEl.innerHTML = '';
+    for(let i=0;i<9;i++){
+      const cell = document.createElement('button');
+      cell.className = 'cell';
+      cell.textContent = b[i] || '';
+      cell.disabled = over || !!b[i] || (botOn && turn==='O');
+      cell.addEventListener('click', () => move(i));
+      boardEl.appendChild(cell);
+    }
+  }
+
+  function reset(){
+    b = Array(9).fill(null);
+    turn = 'X';
+    over = false;
+    setStatus('Your turn.');
+    render();
+  }
+
+  function move(i){
+    if(over || b[i]) return;
+    b[i] = turn;
+
+    const w = winner(b);
+    if(w){
+      over = true;
+      setStatus(w === 'draw' ? 'Draw.' : `${w} wins!`);
+      render();
+      return;
+    }
+
+    turn = (turn === 'X') ? 'O' : 'X';
+    setStatus(turn === 'X' ? 'Your turn.' : (botOn ? 'Bot thinking…' : 'O turn.'));
+    render();
+
+    if(botOn && turn === 'O'){
+      setTimeout(() => {
+        const j = bestMove(b, 'O');
+        if(j != null) move(j);
+      }, 160);
+    }
+  }
+
+  // Minimax with depth limit (fast and strong enough for tic tac toe)
+  function scoreTerminal(w, depth){
+    if(w === 'O') return 10 - depth;
+    if(w === 'X') return depth - 10;
+    return 0;
+  }
+
+  function bestMove(board, player){
+    // Prefer center/corners early for speed
+    const empties = board.map((v,i)=>v?null:i).filter(v=>v!=null);
+    if(empties.length === 9) return 4;
+
+    let best = null;
+    let bestVal = -Infinity;
+
+    for(const i of empties){
+      const nb = board.slice();
+      nb[i] = player;
+      const val = minimax(nb, 0, false);
+      if(val > bestVal){ bestVal = val; best = i; }
+    }
+    return best;
+  }
+
+  function minimax(board, depth, isMax){
+    const w = winner(board);
+    if(w) return scoreTerminal(w, depth);
+    if(depth >= 6) return 0; // depth cap (still plays great)
+
+    const empties = board.map((v,i)=>v?null:i).filter(v=>v!=null);
+
+    if(isMax){
+      let best = -Infinity;
+      for(const i of empties){
+        const nb = board.slice();
+        nb[i] = 'O';
+        best = Math.max(best, minimax(nb, depth+1, false));
+      }
+      return best;
+    } else {
+      let best = Infinity;
+      for(const i of empties){
+        const nb = board.slice();
+        nb[i] = 'X';
+        best = Math.min(best, minimax(nb, depth+1, true));
+      }
+      return best;
+    }
+  }
+
+  resetBtn.onclick = reset;
+  toggleBtn.onclick = () => {
+    botOn = !botOn;
+    toggleBtn.textContent = `Bot: ${botOn ? 'On' : 'Off'}`;
+    if(botOn && turn==='O' && !over){
+      setStatus('Bot thinking…');
+      setTimeout(() => {
+        const j = bestMove(b, 'O');
+        if(j != null) move(j);
+      }, 160);
+    } else {
+      setStatus(turn === 'X' ? 'Your turn.' : 'O turn.');
+      render();
+    }
+  };
+
+  reset();
+})();
+</script>
+</body>
+</html>
