@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Memory Match — Random Images</title>
+  <style>
+    :root{--bg:#070518;--fg:#f4f6ff;--muted:#c7c8ff;--cyan:#67f5ff;--pink:#ff4fd8;--gold:#ffd66b;--good:#7dffcf;--bad:#ff5666;}
+    html,body{height:100%;margin:0;background:radial-gradient(1200px 900px at 50% 30%, #1a0b48, var(--bg) 60%);
+      color:var(--fg);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    header,footer{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to bottom, rgba(255,255,255,.09), rgba(255,255,255,0))}
+    footer{border-bottom:none;border-top:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to top, rgba(255,255,255,.09), rgba(255,255,255,0));color:var(--muted)}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{margin-top:4px;color:var(--muted);font-size:12px}
+
+    main{max-width:980px;margin:0 auto;padding:14px;display:grid;gap:12px;justify-items:center}
+    .card{width:min(980px,100%);border:1px solid rgba(255,255,255,.16);border-radius:16px;background:rgba(0,0,0,.22);
+      box-shadow:0 20px 60px rgba(0,0,0,.45);backdrop-filter: blur(10px);overflow:hidden}
+
+    .bar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.10)}
+    .pill{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center;color:var(--muted);font-size:12px}
+    .pill b{color:var(--fg);font-variant-numeric:tabular-nums}
+
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button,select{appearance:none;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);
+      color:var(--fg);border-radius:12px;padding:10px 12px;font:inherit}
+    button{cursor:pointer;background:linear-gradient(180deg, rgba(103,245,255,.20), rgba(103,245,255,.06));
+      box-shadow:0 10px 28px rgba(103,245,255,.08);font-weight:850}
+    button.secondary{background:rgba(0,0,0,.22);box-shadow:none;font-weight:650}
+    button:active{transform:translateY(1px)}
+    a{color:var(--cyan)}
+
+    .stage{padding:12px}
+    .grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:10px}
+    @media (max-width: 720px){ .grid{grid-template-columns:repeat(3, 1fr);} }
+    @media (max-width: 520px){ .grid{grid-template-columns:repeat(2, 1fr);} }
+
+    .tile{position:relative;aspect-ratio:1/1;border-radius:16px;cursor:pointer;
+      transform-style:preserve-3d;transition:transform 220ms ease;}
+    .tile.flipped{transform:rotateY(180deg)}
+    .face{position:absolute;inset:0;border-radius:16px;backface-visibility:hidden;
+      border:1px solid rgba(255,255,255,.14);overflow:hidden}
+
+    .back{
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.22));
+      display:grid;place-items:center;
+    }
+    .back .mark{font-size:28px;color:rgba(244,246,255,.80);text-shadow:0 10px 28px rgba(0,0,0,.45)}
+
+    .front{transform:rotateY(180deg);background:#0b1220;background-size:cover;background-position:center;}
+    .front::after{content:"";position:absolute;inset:0;
+      background:radial-gradient(400px 280px at 50% 40%, rgba(103,245,255,.08), rgba(0,0,0,0) 60%);
+    }
+
+    .tile.matched{cursor:default;filter:saturate(1.05) brightness(1.02)}
+    .tile.matched .face{border-color:rgba(125,255,207,.35)}
+
+    .msg{padding:0 12px 12px;color:var(--muted);font-size:12px}
+    code{color:var(--gold)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Memory Match — Random Images</h1>
+    <div class="sub">Uses online random photos (Picsum) as card faces. Back to <a href="./index.html">games shelf</a>.</div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="bar">
+        <div class="pill">Moves <b id="moves">0</b></div>
+        <div class="pill">Matches <b id="matches">0</b>/<b id="total">8</b></div>
+        <div class="pill">Time <b id="time">0.0</b>s</div>
+        <div class="controls">
+          <select id="source" title="Image source">
+            <option value="picsum" selected>Picsum</option>
+          </select>
+          <button id="new">New board</button>
+          <button id="reveal" class="secondary">Quick peek</button>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="grid" id="grid" aria-label="Memory grid"></div>
+      </div>
+      <div class="msg" id="msg">Click <b>New board</b> to load random images. (May take a moment.)</div>
+    </div>
+  </main>
+
+  <footer>
+    Notes: This pulls images from the internet. If images fail to load, try New board again.
+  </footer>
+
+<script>
+(() => {
+  const gridEl = document.getElementById('grid');
+  const msgEl = document.getElementById('msg');
+  const movesEl = document.getElementById('moves');
+  const matchesEl = document.getElementById('matches');
+  const totalEl = document.getElementById('total');
+  const timeEl = document.getElementById('time');
+  const btnNew = document.getElementById('new');
+  const btnReveal = document.getElementById('reveal');
+
+  const PAIRS = 8;
+  totalEl.textContent = String(PAIRS);
+
+  let tiles = [];       // {id, url, el, state}
+  let first = null;
+  let lock = false;
+  let moves = 0;
+  let matches = 0;
+  let t0 = null;
+  let raf = null;
+
+  function setMsg(t){ msgEl.textContent = t; }
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+      const j = (Math.random()*(i+1))|0;
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function buildPicsumUrl(seed, size=420){
+    // Same seed => same image; different seed => different image.
+    // Using /seed keeps images stable for a pair.
+    return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${size}/${size}`;
+  }
+
+  async function preload(urls){
+    // Preload using Image to reduce "blank flips".
+    await Promise.all(urls.map(u => new Promise((res) => {
+      const im = new Image();
+      im.onload = () => res(true);
+      im.onerror = () => res(false);
+      im.referrerPolicy = 'no-referrer';
+      im.src = u;
+    })));
+  }
+
+  function startTimer(){
+    t0 = performance.now();
+    if(raf) cancelAnimationFrame(raf);
+    const tick = () => {
+      if(t0 == null) return;
+      const dt = (performance.now() - t0)/1000;
+      timeEl.textContent = dt.toFixed(1);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+
+  function stopTimer(){
+    if(raf) cancelAnimationFrame(raf);
+    raf = null;
+    t0 = null;
+  }
+
+  function resetUI(){
+    moves = 0;
+    matches = 0;
+    first = null;
+    lock = false;
+    movesEl.textContent = '0';
+    matchesEl.textContent = '0';
+    timeEl.textContent = '0.0';
+    stopTimer();
+  }
+
+  function makeTile(t){
+    const el = document.createElement('div');
+    el.className = 'tile';
+    el.setAttribute('role','button');
+    el.setAttribute('aria-label','Memory tile');
+
+    const back = document.createElement('div');
+    back.className = 'face back';
+    back.innerHTML = `<div class="mark">🧠</div>`;
+
+    const front = document.createElement('div');
+    front.className = 'face front';
+    front.style.backgroundImage = `url(${t.url})`;
+
+    el.appendChild(back);
+    el.appendChild(front);
+
+    el.addEventListener('click', () => onFlip(t));
+    t.el = el;
+    return el;
+  }
+
+  function flip(t, on){
+    if(on) t.el.classList.add('flipped');
+    else t.el.classList.remove('flipped');
+  }
+
+  function markMatched(t){
+    t.matched = true;
+    t.el.classList.add('matched');
+  }
+
+  function onFlip(t){
+    if(lock || t.matched) return;
+    if(!t0) startTimer();
+
+    // already flipped?
+    if(t.el.classList.contains('flipped')) return;
+
+    flip(t, true);
+
+    if(!first){
+      first = t;
+      return;
+    }
+
+    moves++;
+    movesEl.textContent = String(moves);
+
+    if(first.id === t.id){
+      // match
+      markMatched(first);
+      markMatched(t);
+      matches++;
+      matchesEl.textContent = String(matches);
+      first = null;
+      if(matches >= PAIRS){
+        lock = true;
+        setMsg(`Win! ${moves} moves in ${timeEl.textContent}s. Hit New board to play again.`);
+      }
+    } else {
+      // mismatch
+      lock = true;
+      const a = first;
+      first = null;
+      setTimeout(() => {
+        flip(a, false);
+        flip(t, false);
+        lock = false;
+      }, 520);
+    }
+  }
+
+  async function newBoard(){
+    resetUI();
+    lock = true;
+    setMsg('Loading images…');
+    gridEl.innerHTML = '';
+
+    // generate seeds for each pair
+    const seeds = Array.from({length: PAIRS}, (_,i) => `clawgames-${Date.now()}-${i}-${Math.random().toString(16).slice(2)}`);
+    const urls = seeds.map(s => buildPicsumUrl(s));
+
+    // Two of each
+    const pairTiles = [];
+    for(let i=0;i<PAIRS;i++){
+      pairTiles.push({ id: i, url: urls[i], matched:false, el:null });
+      pairTiles.push({ id: i, url: urls[i], matched:false, el:null });
+    }
+
+    shuffle(pairTiles);
+
+    // Preload (best-effort)
+    await preload(urls);
+
+    tiles = pairTiles;
+    for(const t of tiles){
+      gridEl.appendChild(makeTile(t));
+    }
+
+    lock = false;
+    setMsg('Find all matching pairs.');
+  }
+
+  async function quickPeek(){
+    if(lock || tiles.length===0) return;
+    lock = true;
+    // show all
+    tiles.forEach(t => { if(!t.matched) flip(t,true); });
+    setMsg('Peek…');
+    setTimeout(() => {
+      tiles.forEach(t => { if(!t.matched) flip(t,false); });
+      setMsg('Go.');
+      lock = false;
+    }, 900);
+  }
+
+  btnNew.addEventListener('click', newBoard);
+  btnReveal.addEventListener('click', quickPeek);
+})();
+</script>
+</body>
+</html>
