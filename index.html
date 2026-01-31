@@ -3,190 +3,295 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Claw Games Arcade</title>
+  <title>Claw Games</title>
+  <meta name="description" content="A tiny arcade of HTML games." />
   <style>
-    :root{--bg:#0b0c0f;--panel:#12141b;--muted:#9aa3b2;--text:#eef2ff;--accent:#22c55e;--accent2:#60a5fa;}
+    :root{
+      --bg:#07080c;
+      --panel:rgba(255,255,255,0.04);
+      --panel2:rgba(255,255,255,0.06);
+      --border:rgba(255,255,255,0.10);
+      --text:#e8ecff;
+      --muted:#9aa3b2;
+      --green:#22c55e;
+      --blue:#60a5fa;
+      --pink:#f472b6;
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1000px 600px at 20% -10%,rgba(96,165,250,.25),transparent),radial-gradient(900px 500px at 80% 0%,rgba(34,197,94,.18),transparent),var(--bg);color:var(--text)}
-    header{padding:40px 20px 18px;max-width:1100px;margin:0 auto}
-    h1{margin:0 0 10px;font-size:32px;letter-spacing:.2px}
-    p{margin:0;color:var(--muted);line-height:1.5}
-    .meta{margin-top:10px;font-size:13px;color:var(--muted)}
-    .wrap{max-width:1100px;margin:0 auto;padding:16px 20px 60px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:250px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
-    .thumb{width:100%;aspect-ratio:16/9;background:#111;display:block;object-fit:cover}
-    .card-body{padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px;flex:1}
-    .title{font-weight:700;font-size:15px;line-height:1.25}
-    .file{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:
+        radial-gradient(900px 520px at 15% -10%, rgba(96,165,250,.22), transparent 65%),
+        radial-gradient(900px 520px at 85% -5%, rgba(244,114,182,.16), transparent 60%),
+        radial-gradient(800px 520px at 45% 0%, rgba(34,197,94,.14), transparent 60%),
+        linear-gradient(180deg, #07080c 0%, #050610 60%, #07080c 100%);
+    }
+    a{color:inherit}
+    .wrap{max-width:1150px;margin:0 auto;padding:28px 18px 70px}
+
+    header{
+      display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;
+      padding:18px 18px 16px;
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border-radius:18px;
+      box-shadow: var(--shadow);
+    }
+    .brand{display:flex;gap:14px;align-items:center}
+    .logo{
+      width:46px;height:46px;border-radius:14px;
+      background:conic-gradient(from 210deg, var(--green), var(--blue), var(--pink), var(--green));
+      box-shadow:0 0 0 1px rgba(255,255,255,.14), 0 20px 60px rgba(34,197,94,.12);
+      position:relative;
+    }
+    .logo:after{content:"";position:absolute;inset:2px;border-radius:12px;background:rgba(0,0,0,.45)}
+    h1{margin:0;font-size:22px;letter-spacing:.6px;text-transform:uppercase}
+    .tag{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.4}
+
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    input[type="search"]{
+      width:min(420px, 78vw);
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.35);
+      color:var(--text);
+      outline:none;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+    input[type="search"]:focus{border-color:rgba(96,165,250,.55); box-shadow:0 0 0 4px rgba(96,165,250,.18)}
+    .pill{
+      font-size:12px;color:var(--muted);
+      padding:10px 12px;border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+    }
+
+    .grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));
+      gap:14px;
+    }
+    .card{
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      display:flex;
+      flex-direction:column;
+      transform: translateZ(0);
+    }
+    .card:hover{border-color:rgba(34,197,94,.35)}
+    .thumb{width:100%;aspect-ratio:16/9;display:block;object-fit:cover;filter:saturate(1.05) contrast(1.05)}
+    .body{padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px;flex:1}
+    .title{font-weight:800;font-size:15px;line-height:1.25}
+    .file{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
     .actions{margin-top:auto;display:flex;gap:10px}
-    a.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;padding:10px 10px;border-radius:10px;text-decoration:none;font-weight:700;font-size:13px;border:1px solid rgba(255,255,255,.10)}
-    a.play{background:linear-gradient(135deg,rgba(34,197,94,.25),rgba(96,165,250,.20));color:var(--text)}
-    a.play:hover{border-color:rgba(34,197,94,.45)}
-    a.raw{background:rgba(255,255,255,.03);color:var(--muted)}
-    a.raw:hover{border-color:rgba(96,165,250,.45);color:var(--text)}
-    footer{max-width:1100px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:12px}
-    code{color:#c7d2fe}
+    .btn{
+      flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      padding:10px 10px;border-radius:12px;text-decoration:none;font-weight:800;font-size:13px;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .play{background:linear-gradient(135deg, rgba(34,197,94,.26), rgba(96,165,250,.18));}
+    .play:hover{border-color:rgba(34,197,94,.45)}
+    .source{background:rgba(255,255,255,.03);color:var(--muted)}
+    .source:hover{border-color:rgba(96,165,250,.45);color:var(--text)}
+
+    footer{margin-top:18px;color:var(--muted);font-size:12px}
+    .hint{opacity:.9}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Claw Games Arcade</h1>
-    <p>A front page that links all games hosted as static HTML. Click <strong>Play</strong> to open a game.</p>
-    <div class="meta">Owner: <code>DeejayJoop</code> • Hosting: GitHub Pages (recommended)</div>
-  </header>
-
   <div class="wrap">
-    <div class="grid">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Claw Games</h1>
+          <div class="tag">A small arcade of single-file HTML games. Hosted on GitHub Pages.</div>
+        </div>
+      </div>
+      <div class="controls">
+        <input id="q" type="search" placeholder="Search games…" autocomplete="off" />
+        <div class="pill"><span id="count"></span> games</div>
+      </div>
+    </header>
+
+    <section class="grid" id="grid">
       
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23ff6b6b'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b7285'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3EBlue%20Koala%20Platformer%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Eblue-koala-platformer%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Blue Koala Platformer" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="blue koala platformer" data-file="blue_koala_platformer.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23fbbf24'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23111827'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3EBlue%20Koala%20Platformer%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Eblue-koala-platformer%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Blue Koala Platformer" loading="lazy" />
+        <div class="body">
           <div class="title">Blue Koala Platformer</div>
           <div class="file">blue_koala_platformer.html</div>
           <div class="actions">
-            <a class="btn play" href="./blue_koala_platformer.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/blue_koala_platformer.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./blue_koala_platformer.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/blue_koala_platformer.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23845ef7'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b7285'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3EBounce%20Game%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Ebounce-game%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Bounce Game" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="bounce game" data-file="bounce_game.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23fbbf24'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23111827'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3EBounce%20Game%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Ebounce-game%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Bounce Game" loading="lazy" />
+        <div class="body">
           <div class="title">Bounce Game</div>
           <div class="file">bounce_game.html</div>
           <div class="actions">
-            <a class="btn play" href="./bounce_game.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/bounce_game.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./bounce_game.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/bounce_game.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23ff6b6b'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b7285'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3EHamster%20Maze%20Platformer%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Ehamster-maze-platformer%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Hamster Maze Platformer" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="hamster maze platformer" data-file="hamster_maze_platformer.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%2360a5fa'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b0c0f'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3EHamster%20Maze%20Platformer%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Ehamster-maze-platformer%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Hamster Maze Platformer" loading="lazy" />
+        <div class="body">
           <div class="title">Hamster Maze Platformer</div>
           <div class="file">hamster_maze_platformer.html</div>
           <div class="actions">
-            <a class="btn play" href="./hamster_maze_platformer.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/hamster_maze_platformer.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./hamster_maze_platformer.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/hamster_maze_platformer.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23845ef7'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b7285'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3EHyperreal%20Racer%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Ehyperreal-racer%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Hyperreal Racer" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="hyperreal racer" data-file="hyperreal_racer.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23fbbf24'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23111827'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3EHyperreal%20Racer%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Ehyperreal-racer%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Hyperreal Racer" loading="lazy" />
+        <div class="body">
           <div class="title">Hyperreal Racer</div>
           <div class="file">hyperreal_racer.html</div>
           <div class="actions">
-            <a class="btn play" href="./hyperreal_racer.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/hyperreal_racer.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./hyperreal_racer.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/hyperreal_racer.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%234dabf7'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b7285'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3EHyperreal%20Racer%20Model%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Ehyperreal-racer-model%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Hyperreal Racer Model" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="hyperreal racer model" data-file="hyperreal_racer_model.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23a78bfa'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b1220'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3EHyperreal%20Racer%20Model%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Ehyperreal-racer-model%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Hyperreal Racer Model" loading="lazy" />
+        <div class="body">
           <div class="title">Hyperreal Racer Model</div>
           <div class="file">hyperreal_racer_model.html</div>
           <div class="actions">
-            <a class="btn play" href="./hyperreal_racer_model.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/hyperreal_racer_model.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./hyperreal_racer_model.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/hyperreal_racer_model.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23fcc419'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23343a40'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3EOutrun%20Style%20Racer%203d%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Eoutrun-style-racer-3d%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Outrun Style Racer 3d" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="outrun style racer 3d" data-file="outrun_style_racer_3d.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23fb7185'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b0c0f'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3EOutrun%20Style%20Racer%203d%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Eoutrun-style-racer-3d%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Outrun Style Racer 3d" loading="lazy" />
+        <div class="body">
           <div class="title">Outrun Style Racer 3d</div>
           <div class="file">outrun_style_racer_3d.html</div>
           <div class="actions">
-            <a class="btn play" href="./outrun_style_racer_3d.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/outrun_style_racer_3d.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./outrun_style_racer_3d.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/outrun_style_racer_3d.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23ff922b'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%231a1a1b'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3EPaddle%20Game%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Epaddle-game%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Paddle Game" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="paddle game" data-file="paddle_game.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23f472b6'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23111827'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3EPaddle%20Game%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Epaddle-game%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Paddle Game" loading="lazy" />
+        <div class="body">
           <div class="title">Paddle Game</div>
           <div class="file">paddle_game.html</div>
           <div class="actions">
-            <a class="btn play" href="./paddle_game.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/paddle_game.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./paddle_game.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/paddle_game.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23845ef7'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23343a40'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3ERandom%20Image%20Viewer%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Erandom-image-viewer%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Random Image Viewer" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="random image viewer" data-file="random_image_viewer.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23fbbf24'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23111827'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3ERandom%20Image%20Viewer%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Erandom-image-viewer%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Random Image Viewer" loading="lazy" />
+        <div class="body">
           <div class="title">Random Image Viewer</div>
           <div class="file">random_image_viewer.html</div>
           <div class="actions">
-            <a class="btn play" href="./random_image_viewer.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/random_image_viewer.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./random_image_viewer.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/random_image_viewer.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23fcc419'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23c92a2a'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3ESlot%20Machine%20Simulator%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Eslot-machine-simulator%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Slot Machine Simulator" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="slot machine simulator" data-file="slot_machine_simulator.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%2360a5fa'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b0c0f'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3ESlot%20Machine%20Simulator%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Eslot-machine-simulator%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Slot Machine Simulator" loading="lazy" />
+        <div class="body">
           <div class="title">Slot Machine Simulator</div>
           <div class="file">slot_machine_simulator.html</div>
           <div class="actions">
-            <a class="btn play" href="./slot_machine_simulator.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/slot_machine_simulator.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./slot_machine_simulator.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/slot_machine_simulator.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23ff922b'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%232b8a3e'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3ESpecial%20Surprise%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Especial-surprise%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Special Surprise" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="special surprise" data-file="special_surprise.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%2360a5fa'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b0c0f'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3ESpecial%20Surprise%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Especial-surprise%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Special Surprise" loading="lazy" />
+        <div class="body">
           <div class="title">Special Surprise</div>
           <div class="file">special_surprise.html</div>
           <div class="actions">
-            <a class="btn play" href="./special_surprise.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/special_surprise.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./special_surprise.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/special_surprise.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23ff922b'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%235f3dc4'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3ESurprise%20Game%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Esurprise-game%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Surprise Game" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="surprise game" data-file="surprise_game.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%2322c55e'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b1220'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3ESurprise%20Game%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Esurprise-game%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Surprise Game" loading="lazy" />
+        <div class="body">
           <div class="title">Surprise Game</div>
           <div class="file">surprise_game.html</div>
           <div class="actions">
-            <a class="btn play" href="./surprise_game.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/surprise_game.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./surprise_game.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/surprise_game.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%234dabf7'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23c92a2a'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3ESurprise%20Game%203d%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Esurprise-game-3d%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Surprise Game 3d" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="surprise game 3d" data-file="surprise_game_3d.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%2360a5fa'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%230b0c0f'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3ESurprise%20Game%203d%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Esurprise-game-3d%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Surprise Game 3d" loading="lazy" />
+        <div class="body">
           <div class="title">Surprise Game 3d</div>
           <div class="file">surprise_game_3d.html</div>
           <div class="actions">
-            <a class="btn play" href="./surprise_game_3d.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/surprise_game_3d.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./surprise_game_3d.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/surprise_game_3d.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-      <article class="card">
-        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23845ef7'%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%231a1a1b'%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'44'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.95)'%3EClaw%20Games%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'28'%20fill%3D'rgba(255%2C255%2C255%2C0.9)'%3EWelcome%20Wolfy%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D'32'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'18'%20fill%3D'rgba(255%2C255%2C255%2C0.8)'%3Ewelcome-wolfy%3C%2Ftext%3E%0A%3C%2Fsvg%3E" alt="Welcome Wolfy" loading="lazy" />
-        <div class="card-body">
+      <article class="card" data-title="welcome wolfy" data-file="welcome_wolfy.html">
+        <img class="thumb" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'640'%20height%3D'360'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0'%20stop-color%3D'%23fbbf24'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'1'%20stop-color%3D'%23111827'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%20%20%3Cfilter%20id%3D'glow'%20x%3D'-50%25'%20y%3D'-50%25'%20width%3D'200%25'%20height%3D'200%25'%3E%0A%20%20%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D'8'%20result%3D'blur'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeColorMatrix%20type%3D'matrix'%20values%3D'1%200%200%200%200%20%200%201%200%200%200%20%200%200%201%200%200%20%200%200%200%200.8%200'%20result%3D'glow'%2F%3E%0A%20%20%20%20%20%20%20%20%3CfeMerge%3E%3CfeMergeNode%20in%3D'glow'%2F%3E%3CfeMergeNode%20in%3D'SourceGraphic'%2F%3E%3C%2FfeMerge%3E%0A%20%20%20%20%20%20%3C%2Ffilter%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Crect%20x%3D'18'%20y%3D'18'%20width%3D'604'%20height%3D'324'%20rx%3D'22'%20fill%3D'rgba(0%2C0%2C0%2C0.30)'%20stroke%3D'rgba(255%2C255%2C255%2C0.20)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'86'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'22'%20font-weight%3D'700'%20fill%3D'rgba(255%2C255%2C255%2C0.85)'%3ECLAW%20GAMES%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'140'%20font-family%3D'system-ui%2C%20-apple-system%2C%20Segoe%20UI%2C%20Roboto%2C%20Arial'%20font-size%3D'38'%20font-weight%3D'800'%20fill%3D'white'%20filter%3D'url(%23glow)'%3EWelcome%20Wolfy%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D'44'%20y%3D'320'%20font-family%3D'ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace'%20font-size%3D'16'%20fill%3D'rgba(255%2C255%2C255%2C0.70)'%3Ewelcome-wolfy%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E" alt="Welcome Wolfy" loading="lazy" />
+        <div class="body">
           <div class="title">Welcome Wolfy</div>
           <div class="file">welcome_wolfy.html</div>
           <div class="actions">
-            <a class="btn play" href="./welcome_wolfy.html">Play</a>
-            <a class="btn raw" href="https://github.com/DeejayJoop/clawgames/blob/main/welcome_wolfy.html" target="_blank" rel="noreferrer">Source</a>
+            <a class="btn play" href="./welcome_wolfy.html">▶ Play</a>
+            <a class="btn source" href="https://github.com/DeejayJoop/clawgames/blob/main/welcome_wolfy.html" target="_blank" rel="noreferrer">⎘ Source</a>
           </div>
         </div>
       </article>
-    </div>
+    </section>
+
+    <footer>
+      <div class="hint">Tip: share this URL as your arcade front page. Add new games as new <code>.html</code> files and we’ll update the hub.</div>
+    </footer>
   </div>
 
-  <footer>
-    Tip: if a 3D game needs shared assets (like <code>three.module.js</code> or <code>ToyCar.glb</code>), keep them in this repo so relative paths work.
-  </footer>
+  <script>
+    const q = document.getElementById('q');
+    const cards = [...document.querySelectorAll('.card')];
+    const count = document.getElementById('count');
+    function apply(){
+      const term = (q.value||'').trim().toLowerCase();
+      let visible=0;
+      for(const c of cards){
+        const hay = (c.dataset.title + ' ' + c.dataset.file);
+        const ok = !term || hay.includes(term);
+        c.style.display = ok ? '' : 'none';
+        if(ok) visible++;
+      }
+      count.textContent = visible;
+    }
+    q.addEventListener('input', apply);
+    count.textContent = cards.length;
+  </script>
 </body>
 </html>
