@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Puppy Care — Clawgames</title>
+  <style>
+    :root{--bg:#070518;--fg:#f4f6ff;--muted:#c7c8ff;--cyan:#67f5ff;--pink:#ff4fd8;--gold:#ffd66b;--good:#7dffcf;--bad:#ff5666;}
+    html,body{height:100%;margin:0;overflow:hidden;
+      background:radial-gradient(1200px 900px at 50% 30%, #2a1a55, #0a1020 55%, var(--bg) 100%);
+      color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+
+    header,footer{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to bottom, rgba(255,255,255,.09), rgba(255,255,255,0))}
+    footer{border-bottom:none;border-top:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to top, rgba(255,255,255,.09), rgba(255,255,255,0));color:var(--muted)}
+
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{margin-top:4px;color:var(--muted);font-size:12px}
+    a{color:var(--cyan)}
+
+    main{max-width:1120px;margin:0 auto;padding:14px;display:grid;grid-template-columns:380px 1fr;gap:12px}
+    @media (max-width: 980px){ main{grid-template-columns:1fr} }
+
+    .panel,.stage{border:1px solid rgba(255,255,255,.16);border-radius:16px;background:rgba(0,0,0,.22);
+      box-shadow:0 20px 60px rgba(0,0,0,.45);backdrop-filter: blur(10px);overflow:hidden}
+    .panel{padding:12px}
+
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .pill{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center;color:var(--muted);font-size:12px}
+    .pill b{color:var(--fg);font-variant-numeric:tabular-nums}
+
+    button,select,input{appearance:none;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);
+      color:var(--fg);border-radius:12px;padding:10px 12px;font:inherit}
+    button{cursor:pointer;background:linear-gradient(180deg, rgba(103,245,255,.20), rgba(103,245,255,.06));
+      box-shadow:0 10px 28px rgba(103,245,255,.08);font-weight:850}
+    button.secondary{background:rgba(0,0,0,.22);box-shadow:none;font-weight:650}
+    button:active{transform:translateY(1px)}
+
+    .stats{margin-top:10px;display:grid;gap:10px}
+    .stat{display:grid;gap:6px}
+    .stat label{color:var(--muted);font-size:12px;display:flex;justify-content:space-between}
+    .bar{height:10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.22);overflow:hidden}
+    .fill{height:100%;width:50%;border-radius:999px;background:linear-gradient(90deg, rgba(125,255,207,.85), rgba(103,245,255,.75))}
+    .fill.bad{background:linear-gradient(90deg, rgba(255,86,102,.85), rgba(255,79,216,.65))}
+
+    .actions{margin-top:12px;display:grid;gap:10px}
+    .actions .row{justify-content:flex-start}
+
+    .stage{display:grid;place-items:center;padding:12px}
+    canvas{width:min(720px, 96vw);height:auto;aspect-ratio:4/3;display:block;border-radius:14px;border:1px solid rgba(255,255,255,.10)}
+
+    .hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
+    kbd{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:var(--fg);
+      border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.30);border-radius:6px;padding:2px 6px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Puppy Care</h1>
+    <div class="sub">Feed, play, groom, and let your puppy nap. Back to <a href="./index.html">games shelf</a>.</div>
+  </header>
+
+  <main>
+    <div class="panel">
+      <div class="row">
+        <div class="pill">Day <b id="day">1</b></div>
+        <div class="pill">Mood <b id="mood">🙂</b></div>
+        <div class="pill">Hearts <b id="hearts">0</b></div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <label><span>Hunger</span><span id="hungerVal">50</span></label>
+          <div class="bar"><div class="fill" id="hungerFill"></div></div>
+        </div>
+        <div class="stat">
+          <label><span>Energy</span><span id="energyVal">50</span></label>
+          <div class="bar"><div class="fill" id="energyFill"></div></div>
+        </div>
+        <div class="stat">
+          <label><span>Cleanliness</span><span id="cleanVal">50</span></label>
+          <div class="bar"><div class="fill" id="cleanFill"></div></div>
+        </div>
+        <div class="stat">
+          <label><span>Fun</span><span id="funVal">50</span></label>
+          <div class="bar"><div class="fill" id="funFill"></div></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="row">
+          <button id="feed">Feed</button>
+          <button id="play">Play</button>
+          <button id="groom">Groom</button>
+          <button id="nap" class="secondary">Nap</button>
+        </div>
+        <div class="row">
+          <button id="treat" class="secondary">Give Treat</button>
+          <button id="ball" class="secondary">Throw Ball</button>
+          <button id="reset" class="secondary">Reset</button>
+        </div>
+        <div class="hint">
+          Tips:
+          <ul>
+            <li>Keep all stats above ~30 for a happy pup.</li>
+            <li>Grooming improves mood a lot when cleanliness is low.</li>
+            <li>Ball costs energy but gives big fun.</li>
+          </ul>
+          Controls: click buttons • pet the puppy by clicking on it.
+        </div>
+      </div>
+
+      <div class="pill" id="status">Ready.</div>
+    </div>
+
+    <div class="stage">
+      <canvas id="c" width="800" height="600"></canvas>
+    </div>
+  </main>
+
+  <footer>
+    This is a cozy mini sim. Want upgrades? (name your puppy, outfits, more rooms, mini-games)
+  </footer>
+
+<script>
+(() => {
+  const c = document.getElementById('c');
+  const ctx = c.getContext('2d');
+
+  const ui = {
+    day: document.getElementById('day'),
+    mood: document.getElementById('mood'),
+    hearts: document.getElementById('hearts'),
+    status: document.getElementById('status'),
+
+    hungerVal: document.getElementById('hungerVal'),
+    energyVal: document.getElementById('energyVal'),
+    cleanVal: document.getElementById('cleanVal'),
+    funVal: document.getElementById('funVal'),
+
+    hungerFill: document.getElementById('hungerFill'),
+    energyFill: document.getElementById('energyFill'),
+    cleanFill: document.getElementById('cleanFill'),
+    funFill: document.getElementById('funFill'),
+
+    feed: document.getElementById('feed'),
+    play: document.getElementById('play'),
+    groom: document.getElementById('groom'),
+    nap: document.getElementById('nap'),
+    treat: document.getElementById('treat'),
+    ball: document.getElementById('ball'),
+    reset: document.getElementById('reset')
+  };
+
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+
+  const S = {
+    day: 1,
+    hearts: 0,
+    hunger: 55,
+    energy: 60,
+    clean: 55,
+    fun: 55,
+    t: 0,
+    last: performance.now(),
+    particles: [],
+    pup: {
+      x: 400, y: 360,
+      blink: 0,
+      wag: 0,
+      pose: 'idle', // idle|eat|play|groom|sleep
+      poseT: 0,
+      ballX: 0,
+      ballY: 0,
+      ballVY: 0,
+      dirt: 0,
+    }
+  };
+
+  function setStatus(t){ ui.status.textContent = t; }
+
+  function moodEmoji(){
+    const avg = (S.hunger+S.energy+S.clean+S.fun)/4;
+    if(S.pup.pose==='sleep') return '😴';
+    if(avg >= 75) return '🥰';
+    if(avg >= 60) return '😊';
+    if(avg >= 45) return '🙂';
+    if(avg >= 30) return '😕';
+    return '🥺';
+  }
+
+  function barFill(el, val){
+    el.style.width = `${clamp(val,0,100)}%`;
+    el.classList.toggle('bad', val < 30);
+  }
+
+  function renderUI(){
+    ui.day.textContent = String(S.day);
+    ui.hearts.textContent = String(S.hearts);
+    ui.mood.textContent = moodEmoji();
+
+    ui.hungerVal.textContent = String(Math.round(S.hunger));
+    ui.energyVal.textContent = String(Math.round(S.energy));
+    ui.cleanVal.textContent = String(Math.round(S.clean));
+    ui.funVal.textContent = String(Math.round(S.fun));
+
+    barFill(ui.hungerFill, S.hunger);
+    barFill(ui.energyFill, S.energy);
+    barFill(ui.cleanFill, S.clean);
+    barFill(ui.funFill, S.fun);
+  }
+
+  function addHearts(x,y,n=10){
+    for(let i=0;i<n;i++){
+      S.particles.push({
+        x, y,
+        vx: (Math.random()*2-1)*0.6,
+        vy: -1.2 - Math.random()*1.2,
+        t: 0,
+        life: 60 + Math.random()*50,
+        kind: 'heart'
+      });
+    }
+  }
+
+  function addSpark(x,y,n=14){
+    for(let i=0;i<n;i++){
+      S.particles.push({
+        x, y,
+        vx: (Math.random()*2-1)*1.2,
+        vy: (Math.random()*2-1)*1.2,
+        t: 0,
+        life: 35 + Math.random()*30,
+        kind: 'spark'
+      });
+    }
+  }
+
+  function action(kind){
+    S.pup.pose = kind;
+    S.pup.poseT = 0;
+  }
+
+  function tickDay(){
+    // called occasionally: stats drift
+    S.day += 1;
+    // gentle decay
+    S.hunger = clamp(S.hunger - 10, 0, 100);
+    S.fun = clamp(S.fun - 9, 0, 100);
+    S.clean = clamp(S.clean - 8, 0, 100);
+    S.energy = clamp(S.energy - 7, 0, 100);
+
+    // dirty overlay amount
+    S.pup.dirt = clamp(1 - (S.clean/100), 0, 1);
+  }
+
+  function feed(){
+    action('eat');
+    const gain = 22;
+    S.hunger = clamp(S.hunger + gain, 0, 100);
+    S.energy = clamp(S.energy + 4, 0, 100);
+    S.clean = clamp(S.clean - 4, 0, 100);
+    S.fun = clamp(S.fun + 2, 0, 100);
+    setStatus('Nom nom.');
+    addSpark(S.pup.x, S.pup.y-40, 10);
+  }
+
+  function play(){
+    action('play');
+    S.fun = clamp(S.fun + 18, 0, 100);
+    S.energy = clamp(S.energy - 8, 0, 100);
+    S.hunger = clamp(S.hunger - 4, 0, 100);
+    setStatus('Play time!');
+    addSpark(S.pup.x+30, S.pup.y-30, 14);
+  }
+
+  function groom(){
+    action('groom');
+    const gain = 22;
+    S.clean = clamp(S.clean + gain, 0, 100);
+    S.fun = clamp(S.fun + 6, 0, 100);
+    setStatus('So fresh.');
+    addSpark(S.pup.x-20, S.pup.y-30, 12);
+  }
+
+  function nap(){
+    action('sleep');
+    setStatus('Zzz…');
+  }
+
+  function treat(){
+    action('eat');
+    S.hunger = clamp(S.hunger + 10, 0, 100);
+    S.fun = clamp(S.fun + 8, 0, 100);
+    S.clean = clamp(S.clean - 2, 0, 100);
+    S.hearts += 1;
+    addHearts(S.pup.x, S.pup.y-60, 10);
+    setStatus('Treat!');
+  }
+
+  function throwBall(){
+    action('play');
+    // spawn a bouncing ball
+    S.pup.ballX = 160 + Math.random()*480;
+    S.pup.ballY = 120;
+    S.pup.ballVY = 0;
+    S.fun = clamp(S.fun + 24, 0, 100);
+    S.energy = clamp(S.energy - 12, 0, 100);
+    S.hunger = clamp(S.hunger - 6, 0, 100);
+    S.hearts += 1;
+    addHearts(S.pup.ballX, S.pup.ballY, 8);
+    setStatus('Fetch!');
+  }
+
+  function reset(){
+    S.day = 1;
+    S.hearts = 0;
+    S.hunger = 55;
+    S.energy = 60;
+    S.clean = 55;
+    S.fun = 55;
+    S.particles = [];
+    S.pup.pose = 'idle';
+    S.pup.poseT = 0;
+    S.pup.ballY = 1000;
+    S.pup.dirt = 0;
+    setStatus('Ready.');
+    renderUI();
+  }
+
+  // Click pet
+  c.addEventListener('pointerdown', (e) => {
+    const r = c.getBoundingClientRect();
+    const x = (e.clientX - r.left) * (c.width / r.width);
+    const y = (e.clientY - r.top) * (c.height / r.height);
+
+    const dx = x - S.pup.x;
+    const dy = y - (S.pup.y-20);
+    if(dx*dx + dy*dy < 110*110){
+      S.hearts += 1;
+      S.fun = clamp(S.fun + 4, 0, 100);
+      addHearts(x, y-10, 8);
+      S.pup.wag = 1.0;
+      setStatus('Petted!');
+      renderUI();
+    }
+  });
+
+  ui.feed.onclick = () => { feed(); renderUI(); };
+  ui.play.onclick = () => { play(); renderUI(); };
+  ui.groom.onclick = () => { groom(); renderUI(); };
+  ui.nap.onclick = () => { nap(); renderUI(); };
+  ui.treat.onclick = () => { treat(); renderUI(); };
+  ui.ball.onclick = () => { throwBall(); renderUI(); };
+  ui.reset.onclick = () => reset();
+
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+
+    // background
+    const g = ctx.createRadialGradient(c.width*0.5, c.height*0.25, 20, c.width*0.5, c.height*0.6, Math.max(c.width,c.height)*0.85);
+    g.addColorStop(0,'rgba(103,245,255,0.10)');
+    g.addColorStop(0.45,'rgba(255,79,216,0.08)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,c.width,c.height);
+
+    // room floor
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(c.width*0.5, c.height*0.85, 360, 110, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // toy rug
+    ctx.globalAlpha=0.55;
+    ctx.fillStyle = 'rgba(255,214,107,0.10)';
+    ctx.beginPath();
+    ctx.ellipse(c.width*0.5, c.height*0.86, 240, 70, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+
+    // ball
+    if(S.pup.ballY < 900){
+      ctx.save();
+      ctx.translate(S.pup.ballX, S.pup.ballY);
+      ctx.fillStyle='rgba(255,79,216,0.9)';
+      ctx.beginPath(); ctx.arc(0,0,14,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha=0.25;
+      ctx.fillStyle='white';
+      ctx.beginPath(); ctx.arc(-4,-5,5,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha=1;
+    }
+
+    // puppy
+    drawPuppy(S.pup.x, S.pup.y, S.pup.pose, S.pup.poseT, S.pup.wag, S.pup.dirt);
+
+    // particles
+    for(let i=S.particles.length-1;i>=0;i--){
+      const p = S.particles[i];
+      p.t++;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.02;
+      const a = Math.max(0, 1 - p.t/p.life);
+      ctx.globalAlpha = a;
+      if(p.kind==='heart'){
+        drawHeart(p.x,p.y, 7);
+      } else {
+        ctx.fillStyle = 'rgba(255,214,107,1)';
+        ctx.beginPath(); ctx.arc(p.x,p.y,2.2,0,Math.PI*2); ctx.fill();
+      }
+      if(p.t >= p.life) S.particles.splice(i,1);
+    }
+    ctx.globalAlpha=1;
+
+    // vignette
+    const vg = ctx.createRadialGradient(c.width*0.5,c.height*0.55, c.width*0.2, c.width*0.5,c.height*0.55, c.width*0.9);
+    vg.addColorStop(0,'rgba(0,0,0,0)');
+    vg.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle=vg;
+    ctx.fillRect(0,0,c.width,c.height);
+  }
+
+  function drawPuppy(x,y,pose,poseT,wag,dirt){
+    ctx.save();
+    ctx.translate(x,y);
+
+    // pose offsets
+    const bob = Math.sin(S.t*3.2) * 2;
+    ctx.translate(0, bob);
+
+    // shadow
+    ctx.globalAlpha=0.2;
+    ctx.fillStyle='black';
+    ctx.beginPath();
+    ctx.ellipse(0, 42, 120, 34, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+
+    // base colors
+    const fur = 'rgba(210,170,120,0.95)';
+    const fur2 = 'rgba(170,120,80,0.95)';
+
+    // body
+    ctx.fillStyle = fur;
+    roundRect(-120, -10, 240, 90, 40);
+    ctx.fill();
+
+    // belly
+    ctx.globalAlpha=0.18;
+    ctx.fillStyle='white';
+    roundRect(-70, 10, 140, 55, 30);
+    ctx.fill();
+    ctx.globalAlpha=1;
+
+    // head
+    ctx.fillStyle = fur;
+    roundRect(-120, -110, 190, 140, 50);
+    ctx.fill();
+
+    // ears
+    ctx.save();
+    const earT = (pose==='play') ? Math.sin(poseT*10)*0.08 : 0;
+    ctx.rotate(-0.05 + earT);
+    ctx.fillStyle = fur2;
+    roundRect(-140, -130, 70, 90, 30);
+    ctx.fill();
+    ctx.rotate(0.10 - earT*2);
+    roundRect(30, -135, 70, 95, 30);
+    ctx.fill();
+    ctx.restore();
+
+    // nose
+    ctx.fillStyle='rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(-10, -30, 18, 12, 0, 0, Math.PI*2); ctx.fill();
+
+    // eyes blink
+    S.pup.blink -= 1/60;
+    if(S.pup.blink <= 0){
+      if(Math.random() < 0.02) S.pup.blink = 0.12;
+    }
+    const blink = (S.pup.blink>0) ? 0.2 : 1.0;
+    ctx.fillStyle='rgba(0,0,0,0.65)';
+    ctx.save();
+    ctx.scale(1, blink);
+    ctx.beginPath(); ctx.arc(-70, -50/blink, 8, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -50/blink, 8, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // smile
+    ctx.strokeStyle='rgba(0,0,0,0.35)';
+    ctx.lineWidth=4;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(-50, -15);
+    ctx.quadraticCurveTo(-25, 0, 0, -15);
+    ctx.stroke();
+
+    // paws
+    ctx.fillStyle = fur2;
+    roundRect(-92, 40, 60, 35, 18); ctx.fill();
+    roundRect(32, 40, 60, 35, 18); ctx.fill();
+    roundRect(-102, 62, 70, 34, 18); ctx.fill();
+    roundRect(22, 62, 70, 34, 18); ctx.fill();
+
+    // tail
+    S.pup.wag = Math.max(0, S.pup.wag - 1/60);
+    const wagA = (pose==='play'?0.8:0.4) * (0.3 + 0.7*Math.min(1, S.pup.wag+0.25));
+    const wagT = Math.sin(S.t*10) * wagA;
+    ctx.save();
+    ctx.translate(120, 25);
+    ctx.rotate(-0.6 + wagT);
+    ctx.fillStyle = fur2;
+    roundRect(0, -10, 70, 26, 16);
+    ctx.fill();
+    ctx.restore();
+
+    // dirt overlay
+    if(dirt > 0.05){
+      ctx.globalAlpha = clamp(dirt*0.45, 0, 0.45);
+      ctx.fillStyle = 'rgba(60,40,20,1)';
+      for(let i=0;i<18;i++){
+        const px = -110 + Math.random()*220;
+        const py = -20 + Math.random()*110;
+        ctx.beginPath(); ctx.arc(px, py, 6+Math.random()*8, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // sleep Z
+    if(pose==='sleep'){
+      ctx.fillStyle='rgba(244,246,255,0.8)';
+      ctx.font='26px ui-monospace, Menlo, Consolas, monospace';
+      ctx.fillText('Z', 120, -120);
+      ctx.globalAlpha=0.7;
+      ctx.fillText('z', 146, -90);
+      ctx.globalAlpha=1;
+    }
+
+    ctx.restore();
+  }
+
+  function drawHeart(x,y,s){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle='rgba(255,79,216,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(0, s*0.6);
+    ctx.bezierCurveTo(-s*1.2, -s*0.2, -s*0.6, -s*1.5, 0, -s*0.8);
+    ctx.bezierCurveTo(s*0.6, -s*1.5, s*1.2, -s*0.2, 0, s*0.6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function roundRect(x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y, x+w,y+h, r);
+    ctx.arcTo(x+w,y+h, x,y+h, r);
+    ctx.arcTo(x,y+h, x,y, r);
+    ctx.arcTo(x,y, x+w,y, r);
+    ctx.closePath();
+  }
+
+  // main loop
+  function loop(now){
+    const dt = Math.min(0.033, (now - S.last)/1000);
+    S.last = now;
+    S.t += dt;
+
+    // pose timer
+    S.pup.poseT += dt;
+
+    // ball physics
+    if(S.pup.ballY < 900){
+      S.pup.ballVY += 800*dt;
+      S.pup.ballY += S.pup.ballVY*dt;
+      if(S.pup.ballY > 440){
+        S.pup.ballY = 440;
+        S.pup.ballVY *= -0.65;
+        if(Math.abs(S.pup.ballVY) < 120){
+          S.pup.ballY = 1000;
+        }
+      }
+    }
+
+    // sleeping restores energy
+    if(S.pup.pose==='sleep'){
+      S.energy = clamp(S.energy + 10*dt, 0, 100);
+      S.hunger = clamp(S.hunger - 4*dt, 0, 100);
+      if(S.energy >= 95){
+        S.pup.pose = 'idle';
+        setStatus('Woke up!');
+      }
+    }
+
+    // drift time -> day every ~25s
+    if(Math.floor(S.t/25)+1 > S.day){
+      tickDay();
+      setStatus('A new day!');
+    }
+
+    // update dirt based on clean
+    S.pup.dirt = clamp(1 - (S.clean/100), 0, 1);
+
+    // auto idle
+    if(S.pup.pose !== 'sleep'){
+      if(S.pup.poseT > 1.3) S.pup.pose = 'idle';
+    }
+
+    // wag decays handled in draw
+
+    renderUI();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  reset();
+  renderUI();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
