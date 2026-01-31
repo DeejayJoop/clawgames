@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Apple Hex Maze — Clawgames</title>
+  <style>
+    :root{--bg:#070518;--fg:#f4f6ff;--muted:#c7c8ff;--cyan:#67f5ff;--pink:#ff4fd8;--gold:#ffd66b;--good:#7dffcf;--bad:#ff5666;}
+    html,body{height:100%;margin:0;overflow:hidden;background:radial-gradient(1200px 900px at 50% 30%, #2b0b3a, #0a1020 55%, var(--bg) 100%);
+      color:var(--fg);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    header,footer{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to bottom, rgba(255,255,255,.09), rgba(255,255,255,0))}
+    footer{border-bottom:none;border-top:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to top, rgba(255,255,255,.09), rgba(255,255,255,0));color:var(--muted)}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{margin-top:4px;color:var(--muted);font-size:12px}
+    a{color:var(--cyan)}
+
+    main{max-width:1100px;margin:0 auto;padding:14px;display:grid;gap:12px;justify-items:center}
+    .card{width:min(1100px,100%);border:1px solid rgba(255,255,255,.16);border-radius:16px;background:rgba(0,0,0,.22);
+      box-shadow:0 20px 60px rgba(0,0,0,.45);backdrop-filter: blur(10px);overflow:hidden}
+
+    .bar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.10)}
+    .pill{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center;color:var(--muted);font-size:12px}
+    .pill b{color:var(--fg);font-variant-numeric:tabular-nums}
+
+    .stage{display:grid;place-items:center;background:rgba(0,0,0,.18)}
+    canvas{display:block;width:min(980px,96vw);height:auto;aspect-ratio:16/9}
+
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-top:1px solid rgba(255,255,255,.10)}
+    button{appearance:none;border:1px solid rgba(255,255,255,.18);background:linear-gradient(180deg, rgba(255,79,216,.20), rgba(255,79,216,.06));
+      color:var(--fg);border-radius:12px;padding:10px 12px;cursor:pointer;font:inherit;font-weight:850;box-shadow:0 10px 28px rgba(255,79,216,.08)}
+    button.secondary{background:rgba(0,0,0,.22);box-shadow:none;font-weight:650}
+    button:active{transform:translateY(1px)}
+
+    kbd{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:var(--fg);
+      border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.30);border-radius:6px;padding:2px 6px}
+    .hint{color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Apple Hex Maze</h1>
+    <div class="sub">Top-down maze: play an original “evil witch” and collect red apples. Back to <a href="./index.html">games shelf</a>.</div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="bar">
+        <div class="pill">Apples <b id="apples">0</b>/<b id="total">0</b></div>
+        <div class="pill">Time <b id="time">0.0</b>s</div>
+        <div class="pill">Maze <b id="maze">1</b></div>
+        <div class="pill" id="status">Ready.</div>
+      </div>
+
+      <div class="stage">
+        <canvas id="c" width="1280" height="720"></canvas>
+      </div>
+
+      <div class="controls">
+        <button id="new">New Maze</button>
+        <button id="hard" class="secondary">Mode: Cozy</button>
+        <span class="pill">Move <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows • Dash <kbd>Shift</kbd></span>
+        <span class="pill">Touch: drag to move</span>
+      </div>
+      <div class="controls" style="padding-top:0;border-top:none">
+        <span class="hint">Collect all apples. Avoid the patrolling lantern spirits (they reset you).</span>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Original character + art. If you want it cuter/scarier, say the vibe.
+  </footer>
+
+<script>
+(() => {
+  const c = document.getElementById('c');
+  const ctx = c.getContext('2d');
+
+  const ui = {
+    apples: document.getElementById('apples'),
+    total: document.getElementById('total'),
+    time: document.getElementById('time'),
+    maze: document.getElementById('maze'),
+    status: document.getElementById('status'),
+    new: document.getElementById('new'),
+    hard: document.getElementById('hard'),
+  };
+
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const rand=(a,b)=>a+Math.random()*(b-a);
+
+  // Grid settings
+  const W = 23; // odd
+  const H = 13; // odd
+  const tile = 44;
+  const offX = Math.floor((c.width - W*tile)/2);
+  const offY = Math.floor((c.height - H*tile)/2);
+
+  // Maze: 0 floor, 1 wall
+  let grid = [];
+  let apples = []; // {x,y}
+  let spirits = []; // {x,y,vx,vy,t}
+
+  const S = {
+    running:false,
+    hard:false,
+    t:0,
+    last:performance.now(),
+    collected:0,
+    total:0,
+    mazeNo:1,
+    dash:0,
+    dashCd:0,
+    resetFlash:0,
+  };
+
+  const player = {
+    x: 1,
+    y: 1,
+    px: 0,
+    py: 0,
+    vx: 0,
+    vy: 0,
+    r: 14,
+  };
+
+  const input = {up:false,down:false,left:false,right:false, dash:false};
+
+  function setStatus(t){ ui.status.textContent=t; }
+
+  function inBounds(x,y){ return x>=0&&y>=0&&x<W&&y<H; }
+
+  function carveMaze(){
+    // Recursive backtracker on odd cells
+    grid = Array.from({length:H}, ()=>Array.from({length:W}, ()=>1));
+
+    const stack=[];
+    const start={x:1,y:1};
+    grid[start.y][start.x]=0;
+    stack.push(start);
+
+    const dirs=[
+      {x:2,y:0},{x:-2,y:0},{x:0,y:2},{x:0,y:-2}
+    ];
+
+    while(stack.length){
+      const cur = stack[stack.length-1];
+      const shuffled = dirs.slice().sort(()=>Math.random()-0.5);
+      let moved=false;
+      for(const d of shuffled){
+        const nx=cur.x+d.x, ny=cur.y+d.y;
+        if(inBounds(nx,ny) && grid[ny][nx]===1){
+          grid[ny][nx]=0;
+          grid[cur.y+d.y/2][cur.x+d.x/2]=0;
+          stack.push({x:nx,y:ny});
+          moved=true;
+          break;
+        }
+      }
+      if(!moved) stack.pop();
+    }
+
+    // open some extra loops
+    const holes = S.hard ? 10 : 18;
+    for(let i=0;i<holes;i++){
+      const x = 1 + Math.floor(Math.random()*(W-2));
+      const y = 1 + Math.floor(Math.random()*(H-2));
+      if(grid[y][x]===1) grid[y][x]=0;
+    }
+
+    // border walls stay
+  }
+
+  function placeApples(){
+    apples=[];
+    const count = S.hard ? 10 : 12;
+    let tries=0;
+    while(apples.length < count && tries++<5000){
+      const x = 1 + Math.floor(Math.random()*(W-2));
+      const y = 1 + Math.floor(Math.random()*(H-2));
+      if(grid[y][x]!==0) continue;
+      if((x===1 && y===1)) continue;
+      if(apples.some(a=>a.x===x&&a.y===y)) continue;
+      apples.push({x,y});
+    }
+    S.total = apples.length;
+    ui.total.textContent = String(S.total);
+  }
+
+  function placeSpirits(){
+    spirits=[];
+    const n = S.hard ? 4 : 3;
+    let tries=0;
+    while(spirits.length < n && tries++<5000){
+      const x = W-2 - Math.floor(Math.random()*6);
+      const y = 1 + Math.floor(Math.random()*(H-2));
+      if(grid[y][x]!==0) continue;
+      if(Math.abs(x-1)+Math.abs(y-1) < 10) continue;
+      spirits.push({x,y, vx: (Math.random()<0.5?-1:1), vy:0, t:Math.random()*10});
+    }
+  }
+
+  function resetPlayer(){
+    player.x=1; player.y=1;
+    player.px = offX + player.x*tile + tile/2;
+    player.py = offY + player.y*tile + tile/2;
+    player.vx=player.vy=0;
+    S.dash=0; S.dashCd=0;
+  }
+
+  function newMaze(){
+    S.running=true;
+    S.t=0;
+    S.collected=0;
+    ui.apples.textContent='0';
+    ui.time.textContent='0.0';
+    S.resetFlash=0;
+
+    carveMaze();
+    placeApples();
+    placeSpirits();
+    resetPlayer();
+
+    setStatus('Collect apples.');
+  }
+
+  function toggleHard(){
+    S.hard = !S.hard;
+    ui.hard.textContent = `Mode: ${S.hard ? 'Spooky' : 'Cozy'}`;
+    setStatus(S.hard ? 'Spooky mode.' : 'Cozy mode.');
+    S.mazeNo += 1;
+    ui.maze.textContent = String(S.mazeNo);
+    newMaze();
+  }
+
+  function canMoveTo(x,y){
+    return inBounds(x,y) && grid[y][x]===0;
+  }
+
+  function update(dt){
+    if(!S.running) return;
+    S.t += dt;
+    ui.time.textContent = S.t.toFixed(1);
+
+    S.dashCd = Math.max(0, S.dashCd - dt);
+    S.dash = Math.max(0, S.dash - dt);
+    S.resetFlash = Math.max(0, S.resetFlash - dt*2.0);
+
+    // movement intent
+    let mx = (input.right?1:0) - (input.left?1:0);
+    let my = (input.down?1:0) - (input.up?1:0);
+    if(mx!==0 && my!==0){
+      // prefer last axis? just normalize
+      const k = Math.SQRT1_2;
+      mx*=k; my*=k;
+    }
+
+    const base = 6.0;
+    const speed = base * (S.dash>0 ? 2.2 : 1.0);
+
+    // move in continuous space (pixel positions), collide with walls
+    // convert player pixel positions and step
+    let px = player.px;
+    let py = player.py;
+
+    px += mx * speed * tile * dt;
+    py += my * speed * tile * dt;
+
+    // collide by checking nearby tiles (circle vs grid)
+    const r = player.r;
+    function isWallAtPixel(x,y){
+      const tx = Math.floor((x - offX)/tile);
+      const ty = Math.floor((y - offY)/tile);
+      if(!inBounds(tx,ty)) return true;
+      return grid[ty][tx]===1;
+    }
+
+    // separate axis collision
+    let nx = px;
+    // x
+    if(isWallAtPixel(nx+r, py) || isWallAtPixel(nx-r, py) || isWallAtPixel(nx, py+r) || isWallAtPixel(nx, py-r)){
+      // revert x step only
+      nx = player.px;
+    }
+    let ny = py;
+    if(isWallAtPixel(nx, ny+r) || isWallAtPixel(nx, ny-r) || isWallAtPixel(nx+r, ny) || isWallAtPixel(nx-r, ny)){
+      ny = player.py;
+    }
+
+    player.px = nx;
+    player.py = ny;
+
+    // dash
+    if(input.dash && S.dashCd<=0){
+      S.dash = 0.18;
+      S.dashCd = 0.85;
+      setStatus('Dash!');
+    }
+
+    // collect apples
+    for(let i=apples.length-1;i>=0;i--){
+      const a = apples[i];
+      const ax = offX + a.x*tile + tile/2;
+      const ay = offY + a.y*tile + tile/2;
+      const dx = ax - player.px;
+      const dy = ay - player.py;
+      if(dx*dx + dy*dy < (r+10)*(r+10)){
+        apples.splice(i,1);
+        S.collected++;
+        ui.apples.textContent = String(S.collected);
+        setStatus('Apple!');
+        if(S.collected>=S.total){
+          setStatus(`All apples collected in ${S.t.toFixed(1)}s! New maze?`);
+        }
+      }
+    }
+
+    // spirits AI: simple patrol with random turns
+    for(const sp of spirits){
+      sp.t += dt;
+      // occasionally try turning
+      if(Math.sin(sp.t*1.3) > 0.98){
+        const opts = [
+          {x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}
+        ].sort(()=>Math.random()-0.5);
+        for(const d of opts){
+          const tx = sp.x + d.x;
+          const ty = sp.y + d.y;
+          if(canMoveTo(tx,ty)){
+            sp.vx=d.x; sp.vy=d.y;
+            break;
+          }
+        }
+      }
+
+      // step in grid space slowly
+      const spd = S.hard ? 1.3 : 1.05;
+      sp._acc = (sp._acc || 0) + dt*spd;
+      if(sp._acc >= 0.35){
+        sp._acc = 0;
+        const tx = sp.x + sp.vx;
+        const ty = sp.y + sp.vy;
+        if(canMoveTo(tx,ty)){
+          sp.x=tx; sp.y=ty;
+        } else {
+          sp.vx*=-1; sp.vy*=-1;
+        }
+      }
+
+      // collision with player
+      const sx = offX + sp.x*tile + tile/2;
+      const sy = offY + sp.y*tile + tile/2;
+      const dx = sx - player.px;
+      const dy = sy - player.py;
+      if(dx*dx + dy*dy < (r+12)*(r+12)){
+        S.resetFlash = 1.0;
+        setStatus('Caught! Back to start.');
+        resetPlayer();
+      }
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+
+    // background
+    const bg = ctx.createRadialGradient(c.width*0.55, c.height*0.35, 10, c.width*0.5, c.height*0.6, Math.max(c.width,c.height)*0.85);
+    bg.addColorStop(0,'rgba(103,245,255,0.10)');
+    bg.addColorStop(0.45,'rgba(255,79,216,0.08)');
+    bg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,c.width,c.height);
+
+    // maze tiles
+    for(let y=0;y<H;y++){
+      for(let x=0;x<W;x++){
+        const px = offX + x*tile;
+        const py = offY + y*tile;
+        if(grid[y]?.[x]===1){
+          // wall
+          const g = ctx.createLinearGradient(px,py,px,py+tile);
+          g.addColorStop(0,'rgba(40,10,60,0.95)');
+          g.addColorStop(1,'rgba(10,10,30,0.95)');
+          ctx.fillStyle=g;
+          roundRectPath(px+2,py+2,tile-4,tile-4,12);
+          ctx.fill();
+          ctx.fill();
+          ctx.globalAlpha=0.35;
+          ctx.strokeStyle='rgba(103,245,255,0.15)';
+          ctx.lineWidth=2;
+          ctx.stroke();
+          ctx.globalAlpha=1;
+        } else {
+          // floor
+          ctx.globalAlpha=0.10;
+          ctx.fillStyle='rgba(255,255,255,1)';
+          ctx.fillRect(px,py,1,1);
+          ctx.globalAlpha=1;
+        }
+      }
+    }
+
+    // apples
+    for(const a of apples){
+      const x = offX + a.x*tile + tile/2;
+      const y = offY + a.y*tile + tile/2;
+      drawApple(x,y);
+    }
+
+    // spirits
+    for(const sp of spirits){
+      const x = offX + sp.x*tile + tile/2;
+      const y = offY + sp.y*tile + tile/2;
+      drawSpirit(x,y);
+    }
+
+    // player (witch)
+    drawWitch(player.px, player.py);
+
+    // reset flash
+    if(S.resetFlash>0){
+      ctx.globalAlpha = 0.25*S.resetFlash;
+      ctx.fillStyle='rgba(255,86,102,1)';
+      ctx.fillRect(0,0,c.width,c.height);
+      ctx.globalAlpha=1;
+    }
+
+    // vignette
+    const vg = ctx.createRadialGradient(c.width*0.5,c.height*0.55, c.width*0.2, c.width*0.5,c.height*0.55, c.width*0.9);
+    vg.addColorStop(0,'rgba(0,0,0,0)');
+    vg.addColorStop(1,'rgba(0,0,0,0.62)');
+    ctx.fillStyle=vg;
+    ctx.fillRect(0,0,c.width,c.height);
+  }
+
+  function drawWitch(x,y){
+    ctx.save();
+    ctx.translate(x,y);
+
+    // glow
+    ctx.globalAlpha=0.25;
+    const g = ctx.createRadialGradient(0,0,2,0,0,60);
+    g.addColorStop(0,'rgba(255,79,216,0.45)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(0,0,60,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+
+    // cloak
+    ctx.fillStyle='rgba(20,10,35,0.95)';
+    ctx.beginPath();
+    ctx.moveTo(0,-28);
+    ctx.lineTo(-20,26);
+    ctx.quadraticCurveTo(0,34,20,26);
+    ctx.closePath();
+    ctx.fill();
+
+    // face
+    ctx.fillStyle='rgba(232,241,255,0.85)';
+    ctx.beginPath(); ctx.ellipse(0,-10, 10, 12, 0, 0, Math.PI*2); ctx.fill();
+
+    // hat
+    ctx.fillStyle='rgba(10,10,25,0.95)';
+    ctx.beginPath();
+    ctx.moveTo(-22,-16);
+    ctx.lineTo(22,-16);
+    ctx.lineTo(0,-54);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha=0.5;
+    ctx.fillStyle='rgba(103,245,255,1)';
+    ctx.fillRect(-18,-16,36,4);
+    ctx.globalAlpha=1;
+
+    // eyes
+    ctx.fillStyle='rgba(0,0,0,0.6)';
+    ctx.beginPath(); ctx.arc(-4,-12,1.8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(4,-12,1.8,0,Math.PI*2); ctx.fill();
+
+    // staff
+    ctx.strokeStyle='rgba(255,214,107,0.65)';
+    ctx.lineWidth=4;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(16, 24);
+    ctx.lineTo(26, -10);
+    ctx.stroke();
+    ctx.fillStyle='rgba(125,255,207,0.85)';
+    ctx.beginPath(); ctx.arc(26,-14,5,0,Math.PI*2); ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawApple(x,y){
+    ctx.save();
+    ctx.translate(x,y);
+    const bob = Math.sin(S.t*4 + x*0.01)*2.2;
+    ctx.translate(0,bob);
+
+    // glow
+    ctx.globalAlpha=0.25;
+    const g = ctx.createRadialGradient(0,0,2,0,0,30);
+    g.addColorStop(0,'rgba(255,86,102,0.9)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+
+    // apple body
+    ctx.fillStyle='rgba(255,86,102,0.95)';
+    ctx.beginPath(); ctx.ellipse(0,2, 10, 12, 0, 0, Math.PI*2); ctx.fill();
+
+    // highlight
+    ctx.globalAlpha=0.25;
+    ctx.fillStyle='white';
+    ctx.beginPath(); ctx.ellipse(-3,-3, 3.5, 5.5, -0.2, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+
+    // stem + leaf
+    ctx.strokeStyle='rgba(255,214,107,0.65)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(0,-10);
+    ctx.lineTo(0,-16);
+    ctx.stroke();
+    ctx.fillStyle='rgba(125,255,207,0.75)';
+    ctx.beginPath();
+    ctx.ellipse(6,-14, 6, 3, 0.4, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawSpirit(x,y){
+    ctx.save();
+    ctx.translate(x,y);
+    const pulse = 0.6 + 0.4*Math.sin(S.t*3 + x*0.01);
+
+    // lantern glow
+    ctx.globalAlpha=0.25;
+    const g = ctx.createRadialGradient(0,0,2,0,0,42);
+    g.addColorStop(0,`rgba(255,214,107,${0.8*pulse})`);
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(0,0,42,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+
+    // body
+    ctx.fillStyle='rgba(255,214,107,0.8)';
+    roundRectPath(-10,-12,20,28,10);
+    ctx.fill();
+    ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,0.25)';
+    roundRectPath(-6, -6, 12, 16, 6);
+    ctx.fill();
+    ctx.fill();
+
+    // cap
+    ctx.fillStyle='rgba(20,10,35,0.95)';
+    roundRectPath(-12,-18,24,8,6);
+    ctx.fill();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function roundRectPath(x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y, x+w,y+h, r);
+    ctx.arcTo(x+w,y+h, x,y+h, r);
+    ctx.arcTo(x,y+h, x,y, r);
+    ctx.arcTo(x,y, x+w,y, r);
+    ctx.closePath();
+  }
+
+  // input
+  addEventListener('keydown', (e)=>{
+    const k=e.key.toLowerCase();
+    if(['w','arrowup'].includes(k)) input.up=true;
+    if(['s','arrowdown'].includes(k)) input.down=true;
+    if(['a','arrowleft'].includes(k)) input.left=true;
+    if(['d','arrowright'].includes(k)) input.right=true;
+    if(k==='shift') input.dash=true;
+  });
+  addEventListener('keyup', (e)=>{
+    const k=e.key.toLowerCase();
+    if(['w','arrowup'].includes(k)) input.up=false;
+    if(['s','arrowdown'].includes(k)) input.down=false;
+    if(['a','arrowleft'].includes(k)) input.left=false;
+    if(['d','arrowright'].includes(k)) input.right=false;
+    if(k==='shift') input.dash=false;
+  });
+
+  // touch drag movement
+  let dragging=false;
+  let lastP=null;
+  c.addEventListener('pointerdown', (e)=>{ dragging=true; c.setPointerCapture(e.pointerId); lastP={x:e.clientX,y:e.clientY}; });
+  c.addEventListener('pointerup', ()=>{ dragging=false; lastP=null; });
+  c.addEventListener('pointermove', (e)=>{
+    if(!dragging || !lastP) return;
+    const dx = e.clientX - lastP.x;
+    const dy = e.clientY - lastP.y;
+    lastP = {x:e.clientX,y:e.clientY};
+    // convert to input impulses
+    player.px = clamp(player.px + dx*1.4, offX+tile/2, offX+(W-0.5)*tile);
+    player.py = clamp(player.py + dy*1.4, offY+tile/2, offY+(H-0.5)*tile);
+  });
+
+  ui.new.onclick = () => { S.mazeNo += 1; ui.maze.textContent=String(S.mazeNo); newMaze(); };
+  ui.hard.onclick = toggleHard;
+
+  resetPlayer();
+  carveMaze();
+  placeApples();
+  placeSpirits();
+  ui.total.textContent=String(S.total);
+  setStatus('Ready.');
+
+  function frame(now){
+    const dt = Math.min(0.033, (now - S.last)/1000);
+    S.last = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
