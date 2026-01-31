@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hamster Candy Maze</title>
+  <style>
+    :root{--bg:#090816;--fg:#f3f6ff;--muted:#c6ccff;--mint:#7dffcf;--pink:#ff4fd8;--gold:#ffd66b;--brown:#caa57a;--bad:#ff5666;}
+    html,body{height:100%;margin:0;overflow:hidden;background:radial-gradient(1200px 900px at 50% 35%, #26114d, var(--bg) 62%);
+      color:var(--fg);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    header,footer{position:fixed;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+      background:linear-gradient(to bottom, rgba(255,255,255,.09), rgba(255,255,255,0));border-bottom:1px solid rgba(255,255,255,.10)}
+    footer{top:auto;bottom:0;border-bottom:none;border-top:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to top, rgba(255,255,255,.09), rgba(255,255,255,0));color:var(--muted)}
+    .left{display:flex;gap:10px;align-items:baseline}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{color:var(--muted);font-size:12px}
+    .right{display:flex;gap:10px;align-items:center}
+    .pill{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);backdrop-filter: blur(6px);
+      border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center}
+    .pill b{font-variant-numeric:tabular-nums}
+
+    #c{position:fixed;inset:48px 0 46px 0;width:100%;height:calc(100% - 94px);display:block}
+
+    #panelWrap{position:fixed;inset:48px 0 46px 0;display:grid;place-items:center;pointer-events:none}
+    .panel{pointer-events:auto;width:min(640px, calc(100% - 28px));border-radius:16px;border:1px solid rgba(255,255,255,.16);
+      background:linear-gradient(180deg, rgba(0,0,0,.48), rgba(0,0,0,.22));box-shadow:0 30px 90px rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);padding:16px 16px 14px}
+    .panel h2{margin:0 0 6px;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .panel p{margin:0 0 12px;color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    button{appearance:none;border:1px solid rgba(255,255,255,.18);
+      background:linear-gradient(180deg, rgba(125,255,207,.18), rgba(125,255,207,.06));color:var(--fg);
+      border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:650;box-shadow:0 10px 28px rgba(125,255,207,.08)}
+    button.secondary{background:rgba(0,0,0,.22)}
+    button:active{transform:translateY(1px)}
+    .hint{font-size:12px;color:rgba(232,236,255,.72)}
+    kbd{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:var(--fg);
+      border:1px solid rgba(255,255,255,.22);border-bottom-color: rgba(255,255,255,.08);
+      background:rgba(0,0,0,.30);border-radius:6px;padding:2px 6px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="left">
+      <h1>Hamster Candy Maze</h1>
+      <div class="sub">cute big hamster • maze platforms • candy + hamster wheel • cats + moving platforms</div>
+    </div>
+    <div class="right">
+      <div class="pill"><span>Candy</span><b id="candy">0</b></div>
+      <div class="pill"><span>Wheel</span><b id="wheel">0%</b></div>
+      <div class="pill"><span>Lives</span><b id="lives">3</b></div>
+      <div class="pill"><span>Time</span><b id="time">0.0</b></div>
+    </div>
+  </header>
+
+  <canvas id="c"></canvas>
+
+  <div id="panelWrap">
+    <div class="panel" id="menu">
+      <h2>Start</h2>
+      <p>Collect all <b style="color:var(--gold)">hamster candies</b>, run in the <b style="color:var(--mint)">hamster wheel</b> to 100% to open the gate, then reach the exit.
+      Avoid <b style="color:var(--bad)">cats</b> (they steal a life). Bounce on a cat from above to boop it.</p>
+      <div class="row">
+        <button id="btnPlay">Play</button>
+        <button id="btnChill" class="secondary">Mode: Chill</button>
+      </div>
+      <p class="hint">Controls: move <kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> • jump <kbd>Space</kbd>/<kbd>W</kbd>/<kbd>↑</kbd> • run wheel <kbd>E</kbd> • restart <kbd>R</kbd></p>
+    </div>
+
+    <div class="panel" id="win" style="display:none">
+      <h2>You Win!</h2>
+      <p id="winLine">You escaped the hamster maze.</p>
+      <div class="row">
+        <button id="btnAgain">Play again</button>
+        <button id="btnCopy" class="secondary">Copy result</button>
+      </div>
+    </div>
+
+    <div class="panel" id="gameover" style="display:none">
+      <h2>Game Over</h2>
+      <p id="overLine">The cats won this round.</p>
+      <div class="row">
+        <button id="btnAgain2">Try again</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div>Move <kbd>A</kbd>/<kbd>D</kbd> • Jump <kbd>Space</kbd> • Wheel <kbd>E</kbd> • Restart <kbd>R</kbd></div>
+    <div id="status">Ready.</div>
+  </footer>
+
+<script>
+(() => {
+  const c = document.getElementById('c');
+  const ctx = c.getContext('2d');
+
+  const ui = {
+    candy: document.getElementById('candy'),
+    wheel: document.getElementById('wheel'),
+    lives: document.getElementById('lives'),
+    time: document.getElementById('time'),
+    status: document.getElementById('status'),
+    menu: document.getElementById('menu'),
+    win: document.getElementById('win'),
+    winLine: document.getElementById('winLine'),
+    gameover: document.getElementById('gameover'),
+    overLine: document.getElementById('overLine'),
+    btnPlay: document.getElementById('btnPlay'),
+    btnChill: document.getElementById('btnChill'),
+    btnAgain: document.getElementById('btnAgain'),
+    btnAgain2: document.getElementById('btnAgain2'),
+    btnCopy: document.getElementById('btnCopy'),
+  };
+
+  const DPR = () => Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  function resize(){
+    const top = 48, bottom = 46;
+    const w = window.innerWidth;
+    const h = window.innerHeight - top - bottom;
+    c.width = Math.floor(w * DPR());
+    c.height = Math.floor(h * DPR());
+  }
+  addEventListener('resize', resize);
+
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+
+  const world = {
+    g: 28,
+    easy: true,
+    tile: 48,
+    friction: 18,
+    airDrag: 1.6,
+  };
+
+  // Maze map (tiles)
+  // # = wall/platform, . = empty, * = candy, G = gate, E = exit, O = wheel
+  const baseMap = [
+    '....................................................................................',
+    '....................................................................................',
+    '....................................................................................',
+    '......................*..............#######.....................*..................',
+    '..............###########...........................###########.....................',
+    '............................*..................*.........................####.......',
+    '.............#######..................###########...................*...............',
+    '....................#...........................................########............',
+    '....*...............#............#######...............*............................',
+    '###########....######....#########.....#########....###########..............O......',
+    '............#....................................#.................................',
+    '............#.............*......................#..............*..................',
+    '............######....###########....###########..###########..................G..E',
+    '#####################..############################################..###############',
+  ];
+  let map = baseMap.slice();
+
+  function tileAt(tx,ty){
+    if(ty<0||ty>=map.length) return '#';
+    if(tx<0||tx>=map[0].length) return '.';
+    return map[ty][tx];
+  }
+  function setTile(tx,ty,ch){
+    const row = map[ty];
+    map[ty] = row.substring(0,tx) + ch + row.substring(tx+1);
+  }
+
+  const cam = { x:0, y:0 };
+
+  const pl = {
+    x: 120, y: 120,
+    vx: 0, vy: 0,
+    w: 40, h: 34,
+    onGround:false,
+    jumpsLeft: 1,
+    facing: 1,
+    inv: 0,
+    candy: 0,
+    totalCandy: 0,
+    wheelPower: 0, // 0..1
+    lives: 3,
+    t: 0
+  };
+
+  // Moving platforms (world coordinates)
+  const plats = [];
+  function initPlatforms(){
+    plats.length = 0;
+    const t = world.tile;
+    // x,y are CENTER coords
+    plats.push({ x: 26.5*t, y: 6.2*t, w: 3.0*t, h: 0.45*t, axis:'x', base:26.5*t, amp:2.8*t, speed:0.65, phase:0 });
+    plats.push({ x: 55.0*t, y: 7.0*t, w: 2.5*t, h: 0.45*t, axis:'y', base:7.0*t,  amp:1.8*t, speed:0.85, phase:1.3 });
+    plats.push({ x: 70.0*t, y: 5.5*t, w: 2.5*t, h: 0.45*t, axis:'x', base:70.0*t, amp:2.2*t, speed:0.9,  phase:2.2 });
+  }
+
+  // Enemies (cats)
+  const cats = [];
+  function initCats(){
+    cats.length = 0;
+    const t = world.tile;
+    cats.push({ x: 22*t, y: 8.6*t, w: 40, h: 26, vx: 2.2, homeMin: 15*t, homeMax: 30*t, alive:true, stunned:0 });
+    cats.push({ x: 52*t, y: 10.6*t, w: 42, h: 26, vx: -2.4, homeMin: 45*t, homeMax: 62*t, alive:true, stunned:0 });
+    cats.push({ x: 75*t, y: 11.2*t, w: 42, h: 26, vx: 2.8, homeMin: 70*t, homeMax: 82*t, alive:true, stunned:0 });
+  }
+
+  const input = { left:false,right:false,jump:false,interact:false };
+  let jumpWas=false, interactWas=false;
+
+  function hidePanels(){ ui.menu.style.display='none'; ui.win.style.display='none'; ui.gameover.style.display='none'; }
+  function show(panel){ hidePanels(); panel.style.display='block'; }
+
+  function countCandy(){
+    let n=0;
+    for(let y=0;y<map.length;y++) for(let x=0;x<map[0].length;x++) if(map[y][x]==='*') n++;
+    return n;
+  }
+
+  function reset(){
+    map = baseMap.slice();
+    initPlatforms();
+    initCats();
+
+    pl.x=120; pl.y=90; pl.vx=0; pl.vy=0;
+    pl.onGround=false; pl.jumpsLeft = world.easy ? 1 : 0;
+    pl.inv=0; pl.candy=0; pl.t=0;
+    pl.wheelPower=0;
+    pl.lives=3;
+
+    pl.totalCandy = countCandy();
+
+    ui.candy.textContent = `0/${pl.totalCandy}`;
+    ui.wheel.textContent = '0%';
+    ui.lives.textContent = String(pl.lives);
+    ui.time.textContent = '0.0';
+    ui.status.textContent = world.easy ? 'Chill mode.' : 'Spicy mode.';
+
+    hidePanels();
+  }
+
+  function win(){
+    ui.status.textContent='You escaped!';
+    ui.winLine.innerHTML = `You collected <b>${pl.candy}</b> candies and powered the wheel to <b>${Math.round(pl.wheelPower*100)}%</b> in <b>${pl.t.toFixed(1)}s</b>.`;
+    show(ui.win);
+  }
+
+  function gameOver(){
+    ui.status.textContent='Game over.';
+    ui.overLine.textContent = `The cats stole all your courage. Time: ${pl.t.toFixed(1)}s`;
+    show(ui.gameover);
+  }
+
+  function key(e,down){
+    const k = e.key.toLowerCase();
+    if(['arrowleft','a'].includes(k)) input.left = down;
+    if(['arrowright','d'].includes(k)) input.right = down;
+    if(['arrowup','w'].includes(k) || k===' ') { input.jump = down; if(down) e.preventDefault(); }
+    if(k==='e') input.interact = down;
+    if(down && k==='r') reset();
+  }
+  addEventListener('keydown', e=>key(e,true));
+  addEventListener('keyup', e=>key(e,false));
+
+  // Dynamic platform collision
+  function rectVsPlatform(nx,ny,w,h){
+    for(const p of plats){
+      if(rectAabb(nx-w/2, ny-h/2, w, h, p.x-p.w/2, p.y-p.h/2, p.w, p.h)) return p;
+    }
+    return null;
+  }
+
+  function rectVsSolid(nx,ny,w,h){
+    const t = world.tile;
+    const minX = Math.floor((nx - w/2)/t);
+    const maxX = Math.floor((nx + w/2)/t);
+    const minY = Math.floor((ny - h/2)/t);
+    const maxY = Math.floor((ny + h/2)/t);
+    for(let ty=minY; ty<=maxY; ty++){
+      for(let tx=minX; tx<=maxX; tx++){
+        const ch = tileAt(tx,ty);
+        if(ch === '#') return true;
+        if(ch === 'G') return true; // gate blocks until opened
+      }
+    }
+    // dynamic platforms
+    return !!rectVsPlatform(nx,ny,w,h);
+  }
+
+  function nearTile(ch, radius=1){
+    const t = world.tile;
+    const cx = Math.floor(pl.x / t);
+    const cy = Math.floor(pl.y / t);
+    for(let oy=-radius; oy<=radius; oy++){
+      for(let ox=-radius; ox<=radius; ox++){
+        if(tileAt(cx+ox, cy+oy) === ch) return {x:cx+ox, y:cy+oy};
+      }
+    }
+    return null;
+  }
+
+  function hitCat(){
+    if(pl.inv>0) return;
+    pl.lives -= 1;
+    ui.lives.textContent = String(pl.lives);
+    pl.inv = 1.0;
+    pl.vy = -10.5;
+    pl.vx += (pl.facing*-1)*6.5;
+    ui.status.textContent = 'Cat bonk! Lost a life.';
+    if(pl.lives <= 0) gameOver();
+  }
+
+  function update(dt){
+    pl.t += dt;
+    ui.time.textContent = pl.t.toFixed(1);
+
+    // edge-press
+    const jumpPressed = input.jump && !jumpWas; jumpWas = input.jump;
+    const interactPressed = input.interact && !interactWas; interactWas = input.interact;
+
+    // update moving platforms
+    for(const p of plats){
+      const s = Math.sin(pl.t*p.speed + p.phase);
+      if(p.axis==='x') p.x = p.base + s*p.amp;
+      else p.y = p.base + s*p.amp;
+    }
+
+    // update cats
+    for(const cat of cats){
+      if(!cat.alive) continue;
+      if(cat.stunned>0){
+        cat.stunned -= dt;
+        continue;
+      }
+      cat.x += cat.vx * dt * 60;
+      if(cat.x < cat.homeMin){ cat.x = cat.homeMin; cat.vx = Math.abs(cat.vx); }
+      if(cat.x > cat.homeMax){ cat.x = cat.homeMax; cat.vx = -Math.abs(cat.vx); }
+    }
+
+    // movement
+    const accel = world.easy ? 64 : 70;
+    const maxV = world.easy ? 11.2 : 13.2;
+    const dir = (input.right?1:0) - (input.left?1:0);
+    if(dir!==0) pl.facing = dir;
+
+    pl.vx += dir*accel*dt;
+    if(pl.onGround) pl.vx = lerp(pl.vx, 0, world.friction*dt);
+    else pl.vx = lerp(pl.vx, 0, world.airDrag*dt);
+    pl.vx = clamp(pl.vx, -maxV, maxV);
+
+    // jump
+    if(jumpPressed){
+      if(pl.onGround){
+        pl.vy = -13.2;
+        pl.onGround = false;
+        pl.jumpsLeft = world.easy ? 1 : 0;
+        ui.status.textContent='Boing!';
+      } else if(pl.jumpsLeft>0){
+        pl.vy = -12.6;
+        pl.jumpsLeft--;
+        ui.status.textContent='Double boing!';
+      }
+    }
+
+    // gravity
+    pl.vy += world.g*dt;
+    pl.vy = clamp(pl.vy, -30, 30);
+
+    // move X collision
+    let nx = pl.x + pl.vx;
+    if(rectVsSolid(nx, pl.y, pl.w, pl.h)){
+      pl.vx = 0;
+    } else {
+      pl.x = nx;
+    }
+
+    // move Y collision
+    let ny = pl.y + pl.vy;
+    if(rectVsSolid(pl.x, ny, pl.w, pl.h)){
+      // attempt to land on platforms precisely
+      if(pl.vy > 0){
+        pl.onGround = true;
+        pl.jumpsLeft = world.easy ? 1 : 0;
+
+        // if landed on moving platform, ride it
+        const p = rectVsPlatform(pl.x, ny, pl.w, pl.h);
+        if(p){
+          // nudge player to top of platform
+          pl.y = (p.y - p.h/2) - pl.h/2 - 0.5;
+          // ride along platform motion (approx)
+          // (platform motion already applied this frame; keep player on it slightly)
+        }
+      }
+      pl.vy = 0;
+    } else {
+      pl.y = ny;
+      pl.onGround = false;
+    }
+
+    // ride moving platform horizontally when standing on it
+    if(pl.onGround){
+      const pUnder = rectVsPlatform(pl.x, pl.y + 2, pl.w, pl.h);
+      if(pUnder){
+        // estimate platform x velocity via derivative of sine
+        if(pUnder.axis==='x'){
+          const cos = Math.cos(pl.t*pUnder.speed + pUnder.phase);
+          const vxPlat = cos * pUnder.amp * pUnder.speed;
+          pl.x += vxPlat * dt;
+        }
+      }
+    }
+
+    // collect candy
+    const t = world.tile;
+    const tx = Math.floor(pl.x/t);
+    const ty = Math.floor(pl.y/t);
+    for(let oy=-1; oy<=1; oy++){
+      for(let ox=-1; ox<=1; ox++){
+        if(tileAt(tx+ox, ty+oy) === '*'){
+          const cx = (tx+ox+0.5)*t, cy=(ty+oy+0.5)*t;
+          const dx = pl.x-cx, dy=pl.y-cy;
+          if(dx*dx+dy*dy < (t*0.45)*(t*0.45)){
+            setTile(tx+ox, ty+oy, '.');
+            pl.candy++;
+            ui.candy.textContent = `${pl.candy}/${pl.totalCandy}`;
+            ui.status.textContent='Candy!';
+          }
+        }
+      }
+    }
+
+    // hamster wheel interaction
+    const wheelTile = nearTile('O', 1);
+    const inWheel = wheelTile && Math.abs(pl.x - (wheelTile.x+0.5)*t) < t*0.85 && Math.abs(pl.y - (wheelTile.y+0.5)*t) < t*1.05;
+
+    if(inWheel){
+      ui.status.textContent = 'Hamster wheel: hold E to run!';
+      if(input.interact){
+        const effort = 0.42 + 0.25*Math.abs(dir);
+        pl.wheelPower = clamp(pl.wheelPower + dt*effort, 0, 1);
+        ui.wheel.textContent = `${Math.round(pl.wheelPower*100)}%`;
+      }
+    }
+
+    // gate opens only when candies all collected AND wheelPower max
+    if(pl.candy >= pl.totalCandy && pl.wheelPower >= 0.999){
+      for(let y=0;y<map.length;y++){
+        if(map[y].includes('G')) map[y] = map[y].replaceAll('G','.');
+      }
+    }
+
+    // exit check
+    const exitTile = nearTile('E', 0);
+    if(exitTile){
+      const ex = (exitTile.x+0.5)*t;
+      const ey = (exitTile.y+0.5)*t;
+      const dx = pl.x-ex, dy=pl.y-ey;
+      if(dx*dx+dy*dy < (t*0.55)*(t*0.55)){
+        if(pl.candy >= pl.totalCandy && pl.wheelPower >= 0.999){
+          win();
+        } else {
+          ui.status.textContent = 'Exit locked: collect all candy + wheel 100%.';
+        }
+      }
+    }
+
+    // cat collisions
+    for(const cat of cats){
+      if(!cat.alive) continue;
+      if(cat.stunned>0) continue;
+
+      const overlap = rectAabb(pl.x-pl.w/2, pl.y-pl.h/2, pl.w, pl.h, cat.x-cat.w/2, cat.y-cat.h/2, cat.w, cat.h);
+      if(overlap){
+        // stomp if falling and above
+        const playerBottom = pl.y + pl.h/2;
+        const catTop = cat.y - cat.h/2;
+        const falling = pl.vy > 3;
+        if(falling && playerBottom - catTop < 14){
+          cat.stunned = 1.8;
+          pl.vy = -12.0;
+          ui.status.textContent = 'Boop! Cat stunned.';
+        } else {
+          hitCat();
+        }
+      }
+    }
+
+    pl.inv = Math.max(0, pl.inv - dt);
+
+    // camera
+    const vw = (c.width/DPR()), vh=(c.height/DPR());
+    cam.x = lerp(cam.x, pl.x - vw*0.35, 4.2*dt);
+    cam.y = lerp(cam.y, pl.y - vh*0.55, 4.2*dt);
+    cam.y = clamp(cam.y, -200, map.length*world.tile);
+
+    // fall
+    if(pl.y > map.length*world.tile + 300){
+      pl.x=120; pl.y=90; pl.vx=0; pl.vy=0; ui.status.textContent='Oops! Fell in the bedding.';
+    }
+  }
+
+  // Drawing
+  function bg(w,h,t){
+    ctx.save();
+    const g = ctx.createRadialGradient(w*0.45 + Math.sin(t*0.2)*w*0.08, h*0.35, 10, w*0.5, h*0.55, Math.max(w,h)*0.8);
+    g.addColorStop(0,'rgba(125,255,207,0.10)');
+    g.addColorStop(0.45,'rgba(255,79,216,0.08)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,w,h);
+
+    for(let i=0;i<90;i++){
+      const x = (i*97)%w;
+      const y = ((i*193)%(h+240)) - 120;
+      const a = 0.08 + 0.14*Math.sin(t*0.8 + i);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = 'rgba(243,246,255,1)';
+      ctx.fillRect(x, y + (t*12)%240, 1.2, 1.2);
+    }
+    ctx.restore();
+    ctx.globalAlpha=1;
+  }
+
+  function drawTile(tx,ty,ch){
+    const t = world.tile;
+    const x = tx*t - cam.x;
+    const y = ty*t - cam.y;
+    const w = c.width/DPR(), h = c.height/DPR();
+    if(x<-t||y<-t||x>w+t||y>h+t) return;
+
+    if(ch==='#'){
+      ctx.save();
+      ctx.translate(x,y);
+      const grad = ctx.createLinearGradient(0,0,0,t);
+      grad.addColorStop(0,'rgba(40,30,70,0.95)');
+      grad.addColorStop(1,'rgba(18,10,38,0.95)');
+      ctx.fillStyle = grad;
+      roundRect(4,6,t-8,t-10,12);
+      ctx.fill();
+      ctx.strokeStyle='rgba(125,255,207,0.35)';
+      ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(12,10); ctx.lineTo(t-12,10); ctx.stroke();
+      ctx.restore();
+    } else if(ch==='*'){
+      const cx=x+t/2, cy=y+t/2;
+      ctx.save();
+      const bob = Math.sin(pl.t*5 + tx*0.4 + ty)*4;
+      ctx.translate(cx, cy + bob);
+      ctx.rotate(pl.t*0.9 + tx);
+      ctx.globalAlpha=0.95;
+      ctx.fillStyle='rgba(255,79,216,0.90)';
+      roundRect(-12,-8,24,16,8); ctx.fill();
+      ctx.fillStyle='rgba(255,214,107,0.90)';
+      roundRect(-9,-5,18,10,6); ctx.fill();
+      ctx.fillStyle='rgba(255,79,216,0.75)';
+      tri(-17,0, -12,-6, -12,6); ctx.fill();
+      tri( 17,0,  12,-6,  12,6); ctx.fill();
+      ctx.globalAlpha=0.22;
+      ctx.fillStyle='rgba(255,214,107,1)';
+      ctx.beginPath(); ctx.arc(0,0,26,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha=1;
+    } else if(ch==='O'){
+      const cx=x+t/2, cy=y+t/2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      const r = t*0.42;
+      ctx.globalAlpha=0.15;
+      ctx.fillStyle='rgba(0,0,0,1)';
+      ctx.beginPath(); ctx.ellipse(0, r*0.95, r*0.85, r*0.28, 0, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha=1;
+
+      ctx.lineWidth=6;
+      ctx.strokeStyle='rgba(125,255,207,0.55)';
+      ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+      ctx.lineWidth=3;
+      ctx.strokeStyle='rgba(255,79,216,0.35)';
+      ctx.beginPath(); ctx.arc(0,0,r*0.78,0,Math.PI*2); ctx.stroke();
+
+      const spin = pl.t* (0.8 + 4.0*pl.wheelPower);
+      ctx.strokeStyle='rgba(243,246,255,0.45)';
+      ctx.lineWidth=2;
+      for(let i=0;i<10;i++){
+        const a = spin + i*(Math.PI*2/10);
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*r*0.15, Math.sin(a)*r*0.15);
+        ctx.lineTo(Math.cos(a)*r*0.95, Math.sin(a)*r*0.95);
+        ctx.stroke();
+      }
+
+      ctx.lineWidth=7;
+      ctx.strokeStyle='rgba(255,214,107,0.70)';
+      ctx.beginPath();
+      ctx.arc(0,0,r*1.08, -Math.PI/2, -Math.PI/2 + Math.PI*2*pl.wheelPower);
+      ctx.stroke();
+
+      ctx.fillStyle='rgba(243,246,255,0.75)';
+      ctx.font='12px ui-monospace, Menlo, Consolas, monospace';
+      ctx.textAlign='center';
+      ctx.fillText('WHEEL', 0, r*1.45);
+
+      ctx.restore();
+    } else if(ch==='G'){
+      ctx.save();
+      ctx.translate(x,y);
+      const grad = ctx.createLinearGradient(0,0,0,t);
+      grad.addColorStop(0,'rgba(255,79,216,0.40)');
+      grad.addColorStop(1,'rgba(125,255,207,0.18)');
+      ctx.fillStyle=grad;
+      roundRect(10,6,t-20,t-12,10);
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,214,107,0.55)';
+      ctx.lineWidth=2;
+      for(let i=0;i<5;i++){
+        const xx = 16 + i*((t-32)/4);
+        ctx.beginPath();
+        ctx.moveTo(xx, 10);
+        ctx.lineTo(xx, t-10);
+        ctx.stroke();
+      }
+      ctx.restore();
+    } else if(ch==='E'){
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.fillStyle='rgba(125,255,207,0.22)';
+      roundRect(8,8,t-16,t-16,12);
+      ctx.fill();
+      ctx.strokeStyle='rgba(125,255,207,0.55)';
+      ctx.lineWidth=2;
+      roundRect(8,8,t-16,t-16,12);
+      ctx.stroke();
+      ctx.fillStyle='rgba(243,246,255,0.75)';
+      ctx.font='12px ui-monospace, Menlo, Consolas, monospace';
+      ctx.textAlign='center';
+      ctx.fillText('EXIT', t/2, t/2+4);
+      ctx.restore();
+    }
+  }
+
+  function drawPlatforms(){
+    for(const p of plats){
+      const x = (p.x - p.w/2) - cam.x;
+      const y = (p.y - p.h/2) - cam.y;
+      ctx.save();
+      const grad = ctx.createLinearGradient(0,y,0,y+p.h);
+      grad.addColorStop(0,'rgba(125,255,207,0.26)');
+      grad.addColorStop(1,'rgba(255,79,216,0.12)');
+      ctx.fillStyle=grad;
+      roundRect(x, y, p.w, p.h, 12);
+      ctx.fill();
+      ctx.globalAlpha=0.55;
+      ctx.strokeStyle='rgba(125,255,207,0.55)';
+      ctx.lineWidth=2;
+      ctx.stroke();
+      ctx.restore();
+      ctx.globalAlpha=1;
+    }
+  }
+
+  function drawCats(){
+    for(const cat of cats){
+      if(!cat.alive) continue;
+      const x = cat.x - cam.x;
+      const y = cat.y - cam.y;
+      const stunned = cat.stunned>0;
+
+      ctx.save();
+      ctx.translate(x,y);
+
+      // shadow
+      ctx.globalAlpha=0.18;
+      ctx.fillStyle='rgba(0,0,0,1)';
+      ctx.beginPath(); ctx.ellipse(0, cat.h*0.7, cat.w*0.45, cat.w*0.18, 0, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha=1;
+
+      // body
+      ctx.fillStyle = stunned ? 'rgba(255,214,107,0.85)' : 'rgba(255,86,102,0.80)';
+      roundRect(-cat.w/2, -cat.h/2, cat.w, cat.h, 12);
+      ctx.fill();
+
+      // ears
+      ctx.fillStyle = 'rgba(255,86,102,0.85)';
+      tri(-cat.w*0.35, -cat.h*0.35, -cat.w*0.18, -cat.h*0.62, -cat.w*0.05, -cat.h*0.35); ctx.fill();
+      tri( cat.w*0.35, -cat.h*0.35,  cat.w*0.18, -cat.h*0.62,  cat.w*0.05, -cat.h*0.35); ctx.fill();
+
+      // eyes
+      ctx.fillStyle='rgba(0,0,0,0.75)';
+      ctx.beginPath(); ctx.arc(-8, -3, 3.3, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc( 8, -3, 3.3, 0, Math.PI*2); ctx.fill();
+
+      // mouth
+      ctx.strokeStyle='rgba(0,0,0,0.55)';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(-6, 6);
+      ctx.quadraticCurveTo(0, 10, 6, 6);
+      ctx.stroke();
+
+      // stun swirls
+      if(stunned){
+        ctx.globalAlpha=0.7;
+        ctx.strokeStyle='rgba(243,246,255,0.7)';
+        ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(0, -cat.h*0.62, 10, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, -cat.h*0.62, 5, 0, Math.PI*2); ctx.stroke();
+        ctx.globalAlpha=1;
+      }
+
+      ctx.restore();
+    }
+  }
+
+  function drawHamster(){
+    const x = pl.x - cam.x;
+    const y = pl.y - cam.y;
+
+    ctx.save();
+    ctx.translate(x,y);
+
+    // shadow
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle='rgba(0,0,0,1)';
+    ctx.beginPath(); ctx.ellipse(0, pl.h*0.70, pl.w*0.55, pl.w*0.22, 0, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    const inv = pl.inv>0 && Math.floor(pl.inv*20)%2===0;
+
+    // body
+    ctx.fillStyle = inv ? 'rgba(255,255,255,0.92)' : 'rgba(202,165,122,0.95)';
+    roundRect(-pl.w/2, -pl.h/2, pl.w, pl.h, 16);
+    ctx.fill();
+
+    // belly
+    ctx.globalAlpha=0.18;
+    ctx.fillStyle='rgba(255,255,255,1)';
+    roundRect(-pl.w*0.22, -pl.h*0.02, pl.w*0.44, pl.h*0.55, 14);
+    ctx.fill();
+    ctx.globalAlpha=1;
+
+    // ears
+    ctx.fillStyle = inv ? 'rgba(255,255,255,0.92)' : 'rgba(202,165,122,0.95)';
+    ctx.beginPath(); ctx.arc(-pl.w*0.28, -pl.h*0.42, 9, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( pl.w*0.28, -pl.h*0.42, 9, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha=0.22;
+    ctx.fillStyle='rgba(255,79,216,1)';
+    ctx.beginPath(); ctx.arc(-pl.w*0.28, -pl.h*0.42, 5.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( pl.w*0.28, -pl.h*0.42, 5.5, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+
+    // eyes
+    const ex = pl.facing*2;
+    ctx.fillStyle='rgba(0,0,0,0.70)';
+    ctx.beginPath(); ctx.ellipse(-8+ex, -6, 3.2, 4.6, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse( 8+ex, -6, 3.2, 4.6, 0, 0, Math.PI*2); ctx.fill();
+
+    // nose
+    ctx.fillStyle='rgba(0,0,0,0.30)';
+    ctx.beginPath(); ctx.ellipse(0+ex, 0, 5.2, 3.2, 0, 0, Math.PI*2); ctx.fill();
+
+    // whiskers
+    ctx.strokeStyle='rgba(243,246,255,0.55)';
+    ctx.lineWidth=1.5;
+    for(const s of [-1,1]){
+      ctx.beginPath();
+      ctx.moveTo(s*8+ex, 2);
+      ctx.lineTo(s*18+ex, 0);
+      ctx.moveTo(s*8+ex, 5);
+      ctx.lineTo(s*18+ex, 6);
+      ctx.stroke();
+    }
+
+    // tail
+    ctx.globalAlpha=0.6;
+    ctx.fillStyle='rgba(255,255,255,0.35)';
+    ctx.beginPath(); ctx.arc(-pl.facing*pl.w*0.55, 6, 6, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+
+    ctx.restore();
+  }
+
+  function roundRect(x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y, x+w,y+h, r);
+    ctx.arcTo(x+w,y+h, x,y+h, r);
+    ctx.arcTo(x,y+h, x,y, r);
+    ctx.arcTo(x,y, x+w,y, r);
+    ctx.closePath();
+  }
+  function tri(x1,y1,x2,y2,x3,y3){
+    ctx.beginPath();
+    ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.closePath();
+  }
+  function rectAabb(ax,ay,aw,ah, bx,by,bw,bh){
+    return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+  }
+
+  let last = performance.now();
+  function frame(now){
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.033, (now-last)/1000);
+    last = now;
+
+    const w = c.width/DPR(), h=c.height/DPR();
+    ctx.setTransform(DPR(),0,0,DPR(),0,0);
+
+    bg(w,h,pl.t);
+
+    const playing = ui.menu.style.display==='none' && ui.win.style.display==='none' && ui.gameover.style.display==='none';
+    if(playing) update(dt);
+
+    // draw tiles
+    const t = world.tile;
+    const minTx = Math.floor(cam.x/t)-2;
+    const maxTx = Math.floor((cam.x+w)/t)+2;
+    const minTy = Math.floor(cam.y/t)-2;
+    const maxTy = Math.floor((cam.y+h)/t)+2;
+
+    for(let ty=minTy; ty<=maxTy; ty++){
+      for(let tx=minTx; tx<=maxTx; tx++){
+        const ch = tileAt(tx,ty);
+        if(ch!=='.') drawTile(tx,ty,ch);
+      }
+    }
+
+    drawPlatforms();
+    drawCats();
+    drawHamster();
+
+    // vignette
+    ctx.save();
+    const vg = ctx.createRadialGradient(w*0.5,h*0.55, Math.min(w,h)*0.18, w*0.5,h*0.55, Math.max(w,h)*0.78);
+    vg.addColorStop(0,'rgba(0,0,0,0)');
+    vg.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle=vg;
+    ctx.fillRect(0,0,w,h);
+    ctx.restore();
+  }
+
+  // UI
+  ui.btnPlay.onclick = () => reset();
+  ui.btnAgain.onclick = () => reset();
+  ui.btnAgain2.onclick = () => reset();
+  ui.btnCopy.onclick = async () => {
+    const txt = `Hamster Candy Maze: ${pl.candy}/${pl.totalCandy} candy, wheel ${Math.round(pl.wheelPower*100)}%, lives ${pl.lives}, time ${pl.t.toFixed(1)}s`;
+    try{ await navigator.clipboard.writeText(txt); ui.status.textContent='Copied.'; }
+    catch{ ui.status.textContent=txt; }
+  };
+  ui.btnChill.onclick = () => {
+    world.easy = !world.easy;
+    ui.btnChill.textContent = `Mode: ${world.easy ? 'Chill' : 'Spicy'}`;
+    ui.status.textContent = world.easy ? 'Chill mode.' : 'Spicy mode.';
+  };
+
+  resize();
+  show(ui.menu);
+  ui.candy.textContent='0/0';
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

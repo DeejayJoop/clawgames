@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Slot Machine Simulator (No-Dependency)</title>
+  <style>
+    :root{--bg:#070518;--fg:#f4f6ff;--muted:#c7c8ff;--cyan:#67f5ff;--pink:#ff4fd8;--gold:#ffd66b;--bad:#ff5666;--good:#7dffcf;}
+    html,body{height:100%;margin:0;overflow:hidden;background:radial-gradient(1200px 900px at 50% 30%, #1a0b48, var(--bg) 60%);
+      color:var(--fg);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+    header,footer{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to bottom, rgba(255,255,255,.09), rgba(255,255,255,0));}
+    footer{border-bottom:none;border-top:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to top, rgba(255,255,255,.09), rgba(255,255,255,0));color:var(--muted)}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{color:var(--muted);font-size:12px;margin-top:2px}
+
+    main{display:grid;place-items:center;padding:14px}
+    .cabinet{width:min(980px,100%);border-radius:18px;border:1px solid rgba(255,255,255,.16);
+      background:linear-gradient(180deg, rgba(0,0,0,.48), rgba(0,0,0,.22));
+      box-shadow:0 30px 90px rgba(0,0,0,.55);backdrop-filter: blur(10px);
+      overflow:hidden}
+
+    .topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.10)}
+    .pill{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center}
+    .pill b{font-variant-numeric:tabular-nums}
+
+    .screen{padding:14px;display:grid;gap:12px}
+    .reels{display:grid;grid-template-columns:repeat(3, 1fr);gap:10px}
+    .reel{border-radius:14px;border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.22);overflow:hidden;position:relative;min-height:180px}
+    .window{position:absolute;inset:0;display:grid;grid-template-rows:repeat(3, 1fr)}
+    .cell{display:grid;place-items:center;font-size:44px;
+      border-bottom:1px solid rgba(255,255,255,.08)}
+    .cell:last-child{border-bottom:none}
+
+    .payline{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+      height:0;border-top:2px dashed rgba(255,214,107,.65);pointer-events:none}
+
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .controls .left{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+    button,select,input{appearance:none;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);
+      color:var(--fg);border-radius:12px;padding:10px 12px;font:inherit}
+    button{cursor:pointer;background:linear-gradient(180deg, rgba(103,245,255,.20), rgba(103,245,255,.06));
+      box-shadow:0 10px 28px rgba(103,245,255,.08);font-weight:800;letter-spacing:.02em}
+    button.secondary{background:rgba(0,0,0,.22);box-shadow:none;font-weight:650}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    button:active{transform:translateY(1px)}
+
+    .msg{color:var(--muted)}
+    .msg.good{color:rgba(125,255,207,.95)}
+    .msg.bad{color:rgba(255,86,102,.95)}
+
+    .table{display:grid;gap:6px;border-top:1px solid rgba(255,255,255,.10);padding-top:10px;color:var(--muted);font-size:12px}
+    .row{display:flex;justify-content:space-between;gap:10px}
+    .row code{color:var(--fg)}
+
+    canvas{display:block}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Slot Machine Simulator</h1>
+      <div class="sub">for fun only • no money • no external dependencies</div>
+    </header>
+
+    <main>
+      <div class="cabinet">
+        <div class="topbar">
+          <div class="pill"><span>Credits</span><b id="credits">100</b></div>
+          <div class="pill"><span>Bet</span><b id="betShow">5</b></div>
+          <div class="pill"><span>Last Win</span><b id="lastWin">0</b></div>
+        </div>
+
+        <div class="screen">
+          <div class="reels" id="reels"></div>
+
+          <div class="controls">
+            <div class="left">
+              <button id="spin">SPIN</button>
+              <button id="auto" class="secondary">Auto: Off</button>
+              <button id="reset" class="secondary">Reset</button>
+            </div>
+            <div class="left">
+              <label>Bet</label>
+              <input id="bet" type="range" min="1" max="20" value="5" />
+              <button id="max" class="secondary">Max Bet</button>
+            </div>
+          </div>
+
+          <div class="msg" id="msg">Ready. Press SPIN.</div>
+
+          <div class="table" aria-label="Payout table">
+            <div class="row"><span><code>🍒 🍒 🍒</code></span><span>× 6</span></div>
+            <div class="row"><span><code>🍋 🍋 🍋</code></span><span>× 8</span></div>
+            <div class="row"><span><code>🍇 🍇 🍇</code></span><span>× 10</span></div>
+            <div class="row"><span><code>🔔 🔔 🔔</code></span><span>× 14</span></div>
+            <div class="row"><span><code>⭐ ⭐ ⭐</code></span><span>× 20</span></div>
+            <div class="row"><span><code>7️⃣ 7️⃣ 7️⃣</code></span><span>× 50</span></div>
+            <div class="row"><span><code>Any two matching on payline</code></span><span>× 2</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      Tip: This is a simulator only. If you want, I can add RTP settings, streak stats, or different paylines.
+    </footer>
+  </div>
+
+<script>
+(() => {
+  // Symbols and weights
+  const SYMBOLS = [
+    { s:'🍒', w: 28, mult: 6 },
+    { s:'🍋', w: 24, mult: 8 },
+    { s:'🍇', w: 18, mult: 10 },
+    { s:'🔔', w: 12, mult: 14 },
+    { s:'⭐', w: 7,  mult: 20 },
+    { s:'7️⃣', w: 2,  mult: 50 },
+  ];
+
+  const ui = {
+    reels: document.getElementById('reels'),
+    credits: document.getElementById('credits'),
+    betShow: document.getElementById('betShow'),
+    lastWin: document.getElementById('lastWin'),
+    bet: document.getElementById('bet'),
+    spin: document.getElementById('spin'),
+    auto: document.getElementById('auto'),
+    reset: document.getElementById('reset'),
+    max: document.getElementById('max'),
+    msg: document.getElementById('msg')
+  };
+
+  const state = {
+    credits: 100,
+    bet: 5,
+    lastWin: 0,
+    spinning: false,
+    auto: false,
+    // 3 reels, 3 visible rows each
+    grid: [
+      ['🍒','🍋','🍇'],
+      ['🍋','🍇','🔔'],
+      ['🍇','🔔','⭐'],
+    ]
+  };
+
+  // Weighted random pick
+  const totalW = SYMBOLS.reduce((a,x)=>a+x.w,0);
+  function pick(){
+    let r = Math.random()*totalW;
+    for(const x of SYMBOLS){
+      r -= x.w;
+      if(r <= 0) return x.s;
+    }
+    return SYMBOLS[0].s;
+  }
+
+  // tiny audio (click-to-play friendly, still requires user gesture for first sound)
+  let actx=null;
+  function ensureAudio(){
+    if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+  }
+  function beep(freq=440, dur=0.06, gain=0.03, type='sine'){
+    try{
+      ensureAudio();
+      if(actx.state==='suspended') actx.resume();
+      const o = actx.createOscillator();
+      const g = actx.createGain();
+      const t0=actx.currentTime;
+      o.type=type; o.frequency.setValueAtTime(freq,t0);
+      g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(gain,t0+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+      o.connect(g).connect(actx.destination);
+      o.start(t0); o.stop(t0+dur+0.02);
+    } catch {}
+  }
+
+  function setMsg(text, cls=''){
+    ui.msg.className = 'msg' + (cls ? ' ' + cls : '');
+    ui.msg.textContent = text;
+  }
+
+  function render(){
+    ui.credits.textContent = String(state.credits);
+    ui.betShow.textContent = String(state.bet);
+    ui.lastWin.textContent = String(state.lastWin);
+    ui.bet.value = String(state.bet);
+
+    ui.reels.innerHTML = '';
+    for(let r=0;r<3;r++){
+      const reel = document.createElement('div');
+      reel.className = 'reel';
+      const win = document.createElement('div');
+      win.className = 'window';
+      const pay = document.createElement('div');
+      pay.className = 'payline';
+      reel.appendChild(pay);
+
+      for(let y=0;y<3;y++){
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = state.grid[r][y];
+        win.appendChild(cell);
+      }
+      reel.appendChild(win);
+      ui.reels.appendChild(reel);
+    }
+
+    ui.spin.disabled = state.spinning;
+    ui.reset.disabled = state.spinning;
+    ui.max.disabled = state.spinning;
+    ui.auto.disabled = false;
+  }
+
+  function payoutForTriple(sym){
+    const obj = SYMBOLS.find(x=>x.s===sym);
+    return obj ? obj.mult : 0;
+  }
+
+  function evaluate(){
+    // payline is the middle row (index 1)
+    const a = state.grid[0][1];
+    const b = state.grid[1][1];
+    const c = state.grid[2][1];
+
+    if(a===b && b===c){
+      const mult = payoutForTriple(a);
+      return { win: state.bet * mult, kind: 'triple', sym: a, mult };
+    }
+    if(a===b || b===c || a===c){
+      return { win: state.bet * 2, kind: 'double', sym: (a===b? a : (b===c? b : a)), mult: 2 };
+    }
+    return { win: 0, kind: 'none', sym: null, mult: 0 };
+  }
+
+  async function spinOnce(){
+    if(state.spinning) return;
+    if(state.credits < state.bet){
+      setMsg('Not enough credits. Hit Reset.', 'bad');
+      beep(160,0.08,0.04,'square');
+      return;
+    }
+
+    state.spinning = true;
+    state.credits -= state.bet;
+    state.lastWin = 0;
+    render();
+
+    setMsg('Spinning…', '');
+
+    // animate: each reel stops at different times
+    const stops = [420, 650, 900];
+    const start = performance.now();
+
+    // precompute final grid
+    const final = [
+      [pick(), pick(), pick()],
+      [pick(), pick(), pick()],
+      [pick(), pick(), pick()],
+    ];
+
+    const tick = () => {
+      const t = performance.now() - start;
+      for(let r=0;r<3;r++){
+        if(t < stops[r]){
+          // roll random symbols in visible window
+          state.grid[r][0] = pick();
+          state.grid[r][1] = pick();
+          state.grid[r][2] = pick();
+        } else {
+          state.grid[r][0] = final[r][0];
+          state.grid[r][1] = final[r][1];
+          state.grid[r][2] = final[r][2];
+        }
+      }
+      // sound while spinning
+      if(t < Math.max(...stops)) beep(420 + (t%120), 0.03, 0.012, 'triangle');
+      render();
+
+      if(t < Math.max(...stops)){
+        requestAnimationFrame(tick);
+      } else {
+        // settle
+        const res = evaluate();
+        state.lastWin = res.win;
+        state.credits += res.win;
+        render();
+
+        if(res.win > 0){
+          if(res.kind === 'triple'){
+            setMsg(`JACKPOT! ${res.sym} ${res.sym} ${res.sym} — Win ${res.win} (×${res.mult})`, 'good');
+            beep(880,0.08,0.03,'sine');
+            beep(1175,0.10,0.025,'sine');
+            beep(660,0.10,0.03,'triangle');
+          } else {
+            setMsg(`Nice! Two matching — Win ${res.win} (×2)`, 'good');
+            beep(740,0.07,0.025,'sine');
+            beep(520,0.08,0.02,'triangle');
+          }
+        } else {
+          setMsg('No win. Spin again.', '');
+          beep(180,0.08,0.03,'square');
+        }
+
+        state.spinning = false;
+        render();
+
+        if(state.auto){
+          setTimeout(() => {
+            if(state.auto) spinOnce();
+          }, 450);
+        }
+      }
+    };
+
+    requestAnimationFrame(tick);
+  }
+
+  // UI wiring
+  ui.bet.addEventListener('input', () => {
+    state.bet = Number(ui.bet.value);
+    render();
+  });
+
+  ui.spin.addEventListener('click', () => {
+    ensureAudio();
+    spinOnce();
+  });
+
+  ui.auto.addEventListener('click', () => {
+    state.auto = !state.auto;
+    ui.auto.textContent = `Auto: ${state.auto ? 'On' : 'Off'}`;
+    setMsg(state.auto ? 'Auto-spin enabled.' : 'Auto-spin disabled.');
+    if(state.auto && !state.spinning) spinOnce();
+  });
+
+  ui.max.addEventListener('click', () => {
+    state.bet = 20;
+    render();
+  });
+
+  ui.reset.addEventListener('click', () => {
+    state.credits = 100;
+    state.lastWin = 0;
+    setMsg('Reset credits to 100.');
+    render();
+  });
+
+  // Init
+  render();
+})();
+</script>
+</body>
+</html>

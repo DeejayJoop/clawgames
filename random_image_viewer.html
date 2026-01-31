@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Random Image Viewer</title>
+  <style>
+    :root{--bg:#0b1020;--fg:#eef2ff;--muted:#b8c0ff;--accent:#7cf7ff;}
+    html,body{height:100%;margin:0;background:radial-gradient(1100px 800px at 50% 35%, #16214a, var(--bg) 62%);
+      color:var(--fg);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+    .wrap{min-height:100%;display:grid;grid-template-rows:auto 1fr auto}
+    header,footer{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to bottom, rgba(255,255,255,.08), rgba(255,255,255,0));}
+    footer{border-bottom:none;border-top:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to top, rgba(255,255,255,.08), rgba(255,255,255,0));color:var(--muted)}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{color:var(--muted);font-size:12px;margin-top:2px}
+    main{display:grid;place-items:center;padding:14px}
+    .card{width:min(980px, 100%);border:1px solid rgba(255,255,255,.14);border-radius:16px;
+      background:rgba(0,0,0,.22);backdrop-filter: blur(10px);box-shadow:0 30px 90px rgba(0,0,0,.55);
+      overflow:hidden}
+    .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.10)}
+    .left{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    select,button,input{appearance:none;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);
+      color:var(--fg);border-radius:12px;padding:8px 10px;font:inherit}
+    button{cursor:pointer;background:linear-gradient(180deg, rgba(124,247,255,.18), rgba(124,247,255,.06));
+      box-shadow:0 10px 28px rgba(124,247,255,.08);font-weight:650}
+    button:active{transform:translateY(1px)}
+    .hint{color:var(--muted);font-size:12px}
+    .imgWrap{display:grid;place-items:center;background:rgba(0,0,0,.18)}
+    img{max-width:100%;max-height:70vh;display:block;object-fit:contain}
+    .meta{padding:10px 12px;color:var(--muted);font-size:12px;border-top:1px solid rgba(255,255,255,.10)}
+    a{color:var(--accent)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Random Image Viewer</h1>
+      <div class="sub">Fetches a random image online and displays it (no external JS dependencies)</div>
+    </header>
+
+    <main>
+      <div class="card">
+        <div class="bar">
+          <div class="left">
+            <label class="hint">Source</label>
+            <select id="source">
+              <option value="picsum">Picsum (random photos)</option>
+              <option value="unsplash">Unsplash (random photos)</option>
+            </select>
+            <label class="hint">Query (Unsplash only)</label>
+            <input id="query" placeholder="e.g. wolf, neon, space" size="18" />
+            <label class="hint">Size</label>
+            <select id="size">
+              <option value="1200x800">1200×800</option>
+              <option value="1600x900">1600×900</option>
+              <option value="1920x1080">1920×1080</option>
+            </select>
+          </div>
+          <div class="left">
+            <button id="btn">Get random image</button>
+          </div>
+        </div>
+
+        <div class="imgWrap">
+          <img id="img" alt="Random" />
+        </div>
+
+        <div class="meta" id="meta">Ready. Click “Get random image”.</div>
+      </div>
+    </main>
+
+    <footer>
+      Tip: If an image doesn’t load, try again — some sources may rate-limit or block hotlinking.
+    </footer>
+  </div>
+
+  <script>
+    const img = document.getElementById('img');
+    const meta = document.getElementById('meta');
+    const btn = document.getElementById('btn');
+    const source = document.getElementById('source');
+    const size = document.getElementById('size');
+    const query = document.getElementById('query');
+
+    function buildUrl(){
+      const [w,h] = size.value.split('x').map(Number);
+      const cacheBust = Date.now();
+
+      if (source.value === 'picsum') {
+        // Simple random image endpoint
+        return `https://picsum.photos/${w}/${h}?random=${cacheBust}`;
+      }
+
+      // Unsplash random image endpoint; query is optional
+      const q = encodeURIComponent((query.value || '').trim());
+      // If q is empty, Unsplash will still return a random photo
+      return q
+        ? `https://source.unsplash.com/${w}x${h}/?${q}&sig=${cacheBust}`
+        : `https://source.unsplash.com/${w}x${h}/?sig=${cacheBust}`;
+    }
+
+    function load(){
+      const url = buildUrl();
+      meta.textContent = 'Loading…';
+
+      // Use an intermediate load to detect errors
+      const probe = new Image();
+      probe.onload = () => {
+        img.src = url;
+        meta.innerHTML = `Loaded from <a href="${url}" target="_blank" rel="noreferrer">${url}</a>`;
+      };
+      probe.onerror = () => {
+        meta.textContent = 'Failed to load. Try again or switch source.';
+      };
+      probe.src = url;
+    }
+
+    btn.addEventListener('click', load);
+    // Load one immediately
+    load();
+  </script>
+</body>
+</html>

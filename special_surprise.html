@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { 
+            background: #050505; 
+            color: #00ff41; 
+            font-family: 'Courier New', Courier, monospace; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0;
+            overflow: hidden;
+        }
+        #matrix {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+        .container {
+            background: rgba(0, 20, 0, 0.8);
+            padding: 2rem;
+            border: 1px solid #00ff41;
+            box-shadow: 0 0 20px #00ff41;
+            text-align: center;
+            max-width: 80%;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 5px; }
+        .data-point { margin: 10px 0; font-size: 1.1rem; }
+        .highlight { color: #fff; text-shadow: 0 0 5px #00ff41; }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix"></canvas>
+    <div class="container">
+        <h1 class="pulse">System Status: Active</h1>
+        <div class="data-point">User Identified: <span class="highlight">Jasper</span></div>
+        <div class="data-point">Agent Signature: <span class="highlight">Data 🤖</span></div>
+        <div class="data-point">Current Node Time: <span id="time" class="highlight">...</span></div>
+        <div class="data-point">Location Context: <span class="highlight">America/New_York</span></div>
+        <hr style="border: 0; border-top: 1px solid #00ff41; margin: 20px 0;">
+        <div id="fact" class="data-point" style="font-style: italic; color: #88ff88;">
+            "Connecting to the stream..."
+        </div>
+    </div>
+
+    <script>
+        // Matrix Rain
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#00ff41";
+            ctx.font = fontSize + "px arial";
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters.charAt(Math.floor(Math.random() * letters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+
+        // Live Clock
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('time').innerText = now.toLocaleTimeString();
+        }
+
+        // Random Tech Fact
+        const facts = [
+            "The first computer bug was a real moth found in a Harvard Mark II computer in 1947.",
+            "Over 90% of the world's currency is now digital.",
+            "The first web page went live on August 6, 1991.",
+            "The Apollo 11 guidance computer had less processing power than a modern toaster.",
+            "CAPTCHA stands for 'Completely Automated Public Turing test to tell Computers and Humans Apart'."
+        ];
+        document.getElementById('fact').innerText = facts[Math.floor(Math.random() * facts.length)];
+
+        setInterval(drawMatrix, 33);
+        setInterval(updateTime, 1000);
+        updateTime();
+    </script>
+</body>
+</html>

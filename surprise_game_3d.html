@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Neon Drift 3D — WebGL</title>
+  <style>
+    :root{--bg:#060714;--fg:#eaf0ff;--muted:#aab3ff;--neon:#7cf7ff;--bad:#ff5666;--gold:#ffd66b;}
+    html,body{height:100%;margin:0;background:radial-gradient(1200px 900px at 50% 40%, #0b1030, var(--bg) 60%);color:var(--fg);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
+    #hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column}
+    header,footer{pointer-events:none;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:linear-gradient(to bottom, rgba(255,255,255,.08), rgba(255,255,255,0));border-bottom:1px solid rgba(255,255,255,.10)}
+    footer{border-bottom:none;border-top:1px solid rgba(255,255,255,.10);background:linear-gradient(to top, rgba(255,255,255,.08), rgba(255,255,255,0))}
+    #mid{flex:1;display:grid;place-items:center}
+    .pill{pointer-events:none;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);backdrop-filter: blur(6px);
+      border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center}
+    .pill b{font-variant-numeric:tabular-nums}
+    .left{display:flex;gap:10px;align-items:baseline}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{color:var(--muted);font-size:12px}
+    .right{display:flex;gap:10px;align-items:center}
+
+    #panelWrap{pointer-events:none;position:absolute;inset:0;display:grid;place-items:center}
+    .panel{pointer-events:auto;width:min(560px, calc(100% - 28px));border-radius:16px;border:1px solid rgba(255,255,255,.16);
+      background:linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.20));box-shadow:0 30px 90px rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);padding:16px 16px 14px}
+    .panel h2{margin:0 0 6px;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .panel p{margin:0 0 12px;color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    button{appearance:none;border:1px solid rgba(255,255,255,.18);
+      background:linear-gradient(180deg, rgba(124,247,255,.18), rgba(124,247,255,.06));color:var(--fg);
+      border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:650;box-shadow:0 10px 28px rgba(124,247,255,.08)}
+    button.secondary{background:rgba(0,0,0,.22)}
+    button:active{transform:translateY(1px)}
+    .hint{font-size:12px;color:rgba(232,236,255,.72)}
+    kbd{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:var(--fg);
+      border:1px solid rgba(255,255,255,.22);border-bottom-color: rgba(255,255,255,.08);
+      background:rgba(0,0,0,.30);border-radius:6px;padding:2px 6px}
+
+    canvas{display:block}
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <header>
+      <div class="left">
+        <h1>Neon Drift 3D</h1>
+        <div class="sub">real WebGL • Three.js • single scene runner</div>
+      </div>
+      <div class="right">
+        <div class="pill"><span>Score</span><b id="score">0</b></div>
+        <div class="pill"><span>Combo</span><b id="combo">x1</b></div>
+        <div class="pill"><span>Level</span><b id="level">1</b></div>
+      </div>
+    </header>
+    <div id="mid"></div>
+    <footer>
+      <div style="color:var(--muted)">Move <kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> • Dash <kbd>Space</kbd> • Pause <kbd>P</kbd> • Restart <kbd>R</kbd></div>
+      <div id="status" style="color:var(--muted)">Ready.</div>
+    </footer>
+  </div>
+
+  <div id="panelWrap">
+    <div class="panel" id="menu">
+      <h2>Start</h2>
+      <p>Collect <b style="color:var(--gold)">orbs</b>, avoid <b style="color:var(--bad)">shards</b>. Dash for a brief invulnerability window.</p>
+      <div class="row">
+        <button id="btnPlay">Play</button>
+        <button id="btnPractice" class="secondary">Practice</button>
+        <button id="btnQuality" class="secondary">Quality: High</button>
+      </div>
+      <p class="hint">Tip (VMware): if it’s slow, switch to Low quality. Also: ensure 3D acceleration is enabled in the VM settings.</p>
+    </div>
+    <div class="panel" id="paused" style="display:none">
+      <h2>Paused</h2>
+      <p>Press <kbd>P</kbd> to resume.</p>
+      <div class="row">
+        <button id="btnResume">Resume</button>
+        <button id="btnRestart" class="secondary">Restart</button>
+      </div>
+    </div>
+    <div class="panel" id="gameover" style="display:none">
+      <h2>Run Complete</h2>
+      <p id="finalLine">Score: 0</p>
+      <div class="row">
+        <button id="btnAgain">Play again</button>
+        <button id="btnCopy" class="secondary">Copy score</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- downloaded locally into the work dir: /home/ubuntu/clawd/three.min.js -->
+  <script src="./three.min.js"></script>
+  <script>
+  (() => {
+    // If this errors, your browser couldn't load three.min.js (file path / permissions).
+    const THREE = window.THREE;
+    if (!THREE) {
+      alert('three.min.js failed to load. Make sure three.min.js is next to this HTML file.');
+      return;
+    }
+
+    const ui = {
+      score: document.getElementById('score'),
+      combo: document.getElementById('combo'),
+      level: document.getElementById('level'),
+      status: document.getElementById('status'),
+      menu: document.getElementById('menu'),
+      paused: document.getElementById('paused'),
+      gameover: document.getElementById('gameover'),
+      finalLine: document.getElementById('finalLine'),
+      btnPlay: document.getElementById('btnPlay'),
+      btnPractice: document.getElementById('btnPractice'),
+      btnResume: document.getElementById('btnResume'),
+      btnRestart: document.getElementById('btnRestart'),
+      btnAgain: document.getElementById('btnAgain'),
+      btnCopy: document.getElementById('btnCopy'),
+      btnQuality: document.getElementById('btnQuality'),
+    };
+
+    const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+    const lerp = (a,b,t)=>a+(b-a)*t;
+    const rand = (a,b)=>a+Math.random()*(b-a);
+
+    function hidePanels(){ ui.menu.style.display='none'; ui.paused.style.display='none'; ui.gameover.style.display='none'; }
+    function show(panel){ hidePanels(); panel.style.display='block'; }
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setClearColor(0x000000, 0);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    // Scene
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x060714, 0.035);
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 200);
+
+    // Lights
+    const hemi = new THREE.HemisphereLight(0x7cf7ff, 0x120821, 0.55);
+    scene.add(hemi);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    keyLight.position.set(6, 10, 8);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(1024, 1024);
+    keyLight.shadow.camera.near = 1;
+    keyLight.shadow.camera.far = 40;
+    keyLight.shadow.camera.left = -12;
+    keyLight.shadow.camera.right = 12;
+    keyLight.shadow.camera.top = 12;
+    keyLight.shadow.camera.bottom = -12;
+    scene.add(keyLight);
+
+    // Lane / world constants
+    const laneHalf = 3.3;
+    const laneZSpan = 65;
+    const world = new THREE.Group();
+    scene.add(world);
+
+    // Track (two long planes + neon rails)
+    const trackMat = new THREE.MeshStandardMaterial({ color: 0x0b1030, roughness: 0.8, metalness: 0.05, emissive: 0x000000 });
+    const track = new THREE.Mesh(new THREE.PlaneGeometry(laneHalf*2.2, laneZSpan, 1, 1), trackMat);
+    track.rotation.x = -Math.PI/2;
+    track.position.y = 0;
+    track.receiveShadow = true;
+    world.add(track);
+
+    const railGeom = new THREE.BoxGeometry(0.08, 0.08, laneZSpan);
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x7cf7ff, emissive: 0x1b7f86, emissiveIntensity: 1.4, roughness: 0.3, metalness: 0.2 });
+    const railL = new THREE.Mesh(railGeom, railMat);
+    const railR = new THREE.Mesh(railGeom, railMat);
+    railL.position.set(-laneHalf, 0.05, 0);
+    railR.position.set( laneHalf, 0.05, 0);
+    railL.castShadow = railR.castShadow = false;
+    world.add(railL, railR);
+
+    // Center dashes (instanced)
+    const dashGeom = new THREE.BoxGeometry(0.06, 0.03, 0.8);
+    const dashMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.2, transparent: true, opacity: 0.35, roughness: 0.6 });
+    const dashCount = 36;
+    const dashes = new THREE.InstancedMesh(dashGeom, dashMat, dashCount);
+    dashes.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    world.add(dashes);
+
+    // Player
+    const player = {
+      x: 0,
+      vx: 0,
+      y: 0.35,
+      z: 10,
+      r: 0.32,
+      dash: { ready: true, cd: 0, inv: 0 },
+    };
+
+    const ship = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.55, 6, 12), new THREE.MeshStandardMaterial({
+      color: 0x7cf7ff, emissive: 0x12656b, emissiveIntensity: 0.9, roughness: 0.35, metalness: 0.25
+    }));
+    body.castShadow = true;
+    body.rotation.z = Math.PI/2;
+    ship.add(body);
+
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16), new THREE.MeshStandardMaterial({
+      color: 0xffffff, emissive: 0xff4fd8, emissiveIntensity: 1.7, roughness: 0.2
+    }));
+    core.position.set(0.18, 0, 0);
+    ship.add(core);
+
+    const shield = new THREE.Mesh(new THREE.SphereGeometry(0.52, 24, 24), new THREE.MeshStandardMaterial({
+      color: 0x31f2a3, emissive: 0x31f2a3, emissiveIntensity: 1.2, transparent: true, opacity: 0.0
+    }));
+    ship.add(shield);
+
+    world.add(ship);
+
+    // Entities
+    const shards = [];
+    const orbs = [];
+
+    const shardGeom = new THREE.BoxGeometry(0.7, 0.7, 0.7);
+    const shardMat = new THREE.MeshStandardMaterial({ color: 0xff5666, emissive: 0x5a0b13, emissiveIntensity: 1.2, roughness: 0.35, metalness: 0.2 });
+
+    const orbGeom = new THREE.SphereGeometry(0.22, 18, 18);
+    const orbMat = new THREE.MeshStandardMaterial({ color: 0xffd66b, emissive: 0x6a4b00, emissiveIntensity: 1.2, roughness: 0.35, metalness: 0.1 });
+
+    // Particles (cheap) as points
+    const particleMax = 700;
+    const particleGeo = new THREE.BufferGeometry();
+    const pPos = new Float32Array(particleMax*3);
+    const pCol = new Float32Array(particleMax*3);
+    const pLife = new Float32Array(particleMax);
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    particleGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+    const particleMat = new THREE.PointsMaterial({ size: 0.08, vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false });
+    const particlePts = new THREE.Points(particleGeo, particleMat);
+    world.add(particlePts);
+    let pHead = 0;
+
+    function burst(x,y,z, hex, n=40){
+      const c = new THREE.Color(hex);
+      for(let i=0;i<n;i++){
+        const idx = pHead % particleMax;
+        pPos[idx*3+0] = x;
+        pPos[idx*3+1] = y;
+        pPos[idx*3+2] = z;
+        pCol[idx*3+0] = c.r;
+        pCol[idx*3+1] = c.g;
+        pCol[idx*3+2] = c.b;
+        pLife[idx] = rand(0.25, 0.95);
+        pHead++;
+      }
+      particleGeo.attributes.position.needsUpdate = true;
+      particleGeo.attributes.color.needsUpdate = true;
+    }
+
+    // Input
+    const input = { left:false, right:false, dash:false };
+    window.addEventListener('keydown', (e)=>{
+      const k = e.key.toLowerCase();
+      if(['arrowleft','a'].includes(k)) input.left = true;
+      if(['arrowright','d'].includes(k)) input.right = true;
+      if(k===' ') { input.dash = true; e.preventDefault(); }
+      if(k==='p') togglePause();
+      if(k==='r') restart();
+    });
+    window.addEventListener('keyup', (e)=>{
+      const k = e.key.toLowerCase();
+      if(['arrowleft','a'].includes(k)) input.left = false;
+      if(['arrowright','d'].includes(k)) input.right = false;
+      if(k===' ') input.dash = false;
+    });
+
+    // Game state
+    const state = {
+      running:false,
+      paused:false,
+      practice:false,
+      t:0,
+      last:performance.now(),
+      score:0,
+      combo:1,
+      streak:0,
+      level:1,
+      alive:0,
+      quality:'high'
+    };
+
+    function levelParams(){
+      const l = state.level;
+      return {
+        speed: 10 + l*1.1, // world scroll speed
+        shardRate: Math.max(0.35, 0.95 - l*0.05),
+        orbRate: Math.max(0.45, 1.10 - l*0.04)
+      };
+    }
+
+    let nextShard = 0;
+    let nextOrb = 0;
+
+    function spawnShard(){
+      const m = new THREE.Mesh(shardGeom, shardMat);
+      m.castShadow = true;
+      m.position.set(rand(-laneHalf*0.92, laneHalf*0.92), 0.35, -laneZSpan*0.45);
+      m.rotation.set(rand(0,Math.PI), rand(0,Math.PI), rand(0,Math.PI));
+      world.add(m);
+      shards.push({ mesh:m, spin: new THREE.Vector3(rand(-2,2), rand(-2,2), rand(-2,2)) });
+    }
+
+    function spawnOrb(){
+      const m = new THREE.Mesh(orbGeom, orbMat);
+      m.castShadow = true;
+      m.position.set(rand(-laneHalf*0.92, laneHalf*0.92), 0.6, -laneZSpan*0.45);
+      world.add(m);
+      orbs.push({ mesh:m, bob:rand(0,Math.PI*2) });
+    }
+
+    function restart(practice=state.practice){
+      state.running = true;
+      state.paused = false;
+      state.practice = practice;
+      state.t = 0;
+      state.last = performance.now();
+      state.score = 0;
+      state.combo = 1;
+      state.streak = 0;
+      state.level = 1;
+      state.alive = 0;
+
+      player.x = 0; player.vx = 0; player.dash.ready = true; player.dash.cd = 0; player.dash.inv = 0;
+      ship.position.set(0, player.y, player.z);
+
+      // clear entities
+      for(const s of shards) world.remove(s.mesh);
+      for(const o of orbs) world.remove(o.mesh);
+      shards.length = 0; orbs.length = 0;
+
+      nextShard = 0.4;
+      nextOrb = 0.6;
+
+      ui.score.textContent = '0';
+      ui.combo.textContent = 'x1';
+      ui.level.textContent = '1';
+      ui.status.textContent = practice ? 'Practice: shards do no damage.' : 'Go!';
+      showPanelsOff();
+    }
+
+    function showPanelsOff(){ hidePanels(); }
+
+    function gameOver(){
+      state.running = false;
+      ui.status.textContent = 'Run complete.';
+      ui.finalLine.innerHTML = `You lasted <b>${state.alive.toFixed(1)}</b>s • score <b>${state.score}</b> • combo <b>x${state.combo}</b>.`;
+      show(ui.gameover);
+      burst(ship.position.x, ship.position.y, ship.position.z-1.2, 0xff4fd8, 120);
+    }
+
+    function togglePause(){
+      if(!state.running) return;
+      state.paused = !state.paused;
+      if(state.paused){ ui.status.textContent='Paused.'; show(ui.paused); }
+      else { ui.status.textContent='Back in the lane.'; hidePanels(); state.last = performance.now(); }
+    }
+
+    function tryDash(){
+      if(!state.running || state.paused) return;
+      if(!player.dash.ready) return;
+      player.dash.ready = false;
+      player.dash.cd = 0.85;
+      player.dash.inv = 0.18;
+      const dir = (input.right?1:0) - (input.left?1:0);
+      player.vx += (dir===0 ? (Math.random()<0.5?-1:1) : dir) * 9.5;
+      ui.status.textContent = 'Dash!';
+      burst(ship.position.x, ship.position.y, ship.position.z, 0x7cf7ff, 40);
+    }
+
+    function updateDashes(){
+      // move dashed center line by offsetting instances along Z
+      const base = (state.t * levelParams().speed) % 2.2;
+      const m = new THREE.Matrix4();
+      for(let i=0;i<dashCount;i++){
+        const z = -laneZSpan*0.45 + i*2.0 + base;
+        m.makeTranslation(0, 0.015, z);
+        dashes.setMatrixAt(i, m);
+      }
+      dashes.instanceMatrix.needsUpdate = true;
+    }
+
+    function resize(){
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+
+      const dpr = window.devicePixelRatio || 1;
+      const targetDpr = state.quality === 'high' ? Math.min(2, dpr) : 1;
+      renderer.setPixelRatio(targetDpr);
+      renderer.setSize(w, h, false);
+    }
+    window.addEventListener('resize', resize);
+
+    // UI
+    ui.btnPlay.onclick = () => restart(false);
+    ui.btnPractice.onclick = () => restart(true);
+    ui.btnResume.onclick = () => togglePause();
+    ui.btnRestart.onclick = () => restart(state.practice);
+    ui.btnAgain.onclick = () => restart(false);
+    ui.btnCopy.onclick = async () => {
+      const txt = `Neon Drift 3D score: ${state.score} (lvl ${state.level}) — combo x${state.combo}`;
+      try{ await navigator.clipboard.writeText(txt); ui.status.textContent = 'Copied to clipboard.'; }
+      catch{ ui.status.textContent = txt; }
+    };
+    ui.btnQuality.onclick = () => {
+      state.quality = state.quality === 'high' ? 'low' : 'high';
+      ui.btnQuality.textContent = `Quality: ${state.quality === 'high' ? 'High' : 'Low'}`;
+      ui.status.textContent = state.quality === 'high' ? 'High quality.' : 'Low quality (VM-friendly).';
+      resize();
+    };
+
+    // Start menu visible
+    show(ui.menu);
+
+    // Camera placement
+    camera.position.set(0, 3.3, 13.5);
+    camera.lookAt(0, 0.6, 0);
+
+    // Animate
+    function tick(now){
+      requestAnimationFrame(tick);
+      if(!renderer.domElement.width) resize();
+
+      if(!state.running || state.paused){
+        // idle bob
+        ship.rotation.y = Math.sin(performance.now()*0.001)*0.06;
+        renderer.render(scene, camera);
+        return;
+      }
+
+      const dt = Math.min(0.033, (now - state.last) / 1000);
+      state.last = now;
+      state.t += dt;
+      state.alive += dt;
+
+      // level up
+      const targetLevel = 1 + Math.floor(state.alive / 18);
+      if(targetLevel !== state.level){
+        state.level = targetLevel;
+        ui.level.textContent = String(state.level);
+        ui.status.textContent = `Level ${state.level}. Speed up.`;
+      }
+
+      // dash
+      if(input.dash) tryDash();
+      if(!player.dash.ready){
+        player.dash.cd -= dt;
+        if(player.dash.cd <= 0){ player.dash.ready = true; ui.status.textContent = 'Dash ready.'; }
+      }
+      player.dash.inv = Math.max(0, player.dash.inv - dt);
+
+      // shield visualization (invulnerability)
+      shield.material.opacity = player.dash.inv > 0 ? (0.15 + 0.10*Math.sin(state.t*22)) : 0.0;
+
+      // movement
+      const dir = (input.right?1:0) - (input.left?1:0);
+      player.vx += dir * 22 * dt;
+      player.vx = lerp(player.vx, 0, 8.5*dt);
+      player.x = clamp(player.x + player.vx*dt, -laneHalf*0.92, laneHalf*0.92);
+
+      ship.position.set(player.x, player.y, player.z);
+      ship.rotation.z = -player.vx * 0.02;
+      ship.rotation.y = Math.sin(state.t*1.2) * 0.03;
+
+      // spawn
+      const p = levelParams();
+      nextShard -= dt;
+      nextOrb -= dt;
+      if(nextShard <= 0){ spawnShard(); nextShard = p.shardRate * rand(0.7, 1.15); }
+      if(nextOrb <= 0){ spawnOrb(); nextOrb = p.orbRate * rand(0.8, 1.35); }
+
+      // scroll entities toward player
+      for(let i=shards.length-1;i>=0;i--){
+        const s = shards[i];
+        s.mesh.position.z += p.speed * dt;
+        s.mesh.rotation.x += s.spin.x * dt;
+        s.mesh.rotation.y += s.spin.y * dt;
+        s.mesh.rotation.z += s.spin.z * dt;
+
+        // collision (sphere vs box approx)
+        const dx = s.mesh.position.x - ship.position.x;
+        const dz = (s.mesh.position.z - ship.position.z);
+        const dist2 = dx*dx + dz*dz;
+        if(dist2 < (player.r + 0.42)*(player.r + 0.42)){
+          if(state.practice){
+            world.remove(s.mesh);
+            shards.splice(i,1);
+            ui.status.textContent = 'Practice hit (no damage).';
+            burst(s.mesh.position.x, s.mesh.position.y, s.mesh.position.z, 0xff5666, 24);
+          } else if(player.dash.inv > 0){
+            world.remove(s.mesh);
+            shards.splice(i,1);
+            ui.status.textContent = 'Perfect dash!';
+            burst(s.mesh.position.x, s.mesh.position.y, s.mesh.position.z, 0x31f2a3, 40);
+          } else {
+            gameOver();
+            return;
+          }
+        }
+
+        if(s.mesh.position.z > ship.position.z + 12){
+          world.remove(s.mesh);
+          shards.splice(i,1);
+        }
+      }
+
+      for(let i=orbs.length-1;i>=0;i--){
+        const o = orbs[i];
+        o.mesh.position.z += p.speed * dt;
+        o.mesh.position.y = 0.6 + Math.sin(o.bob + state.t*6)*0.15;
+        o.mesh.rotation.y += dt*2.2;
+
+        const dx = o.mesh.position.x - ship.position.x;
+        const dz = o.mesh.position.z - ship.position.z;
+        const dy = o.mesh.position.y - ship.position.y;
+        const d2 = dx*dx + dy*dy + dz*dz;
+        if(d2 < (0.30 + player.r)*(0.30 + player.r)){
+          world.remove(o.mesh);
+          orbs.splice(i,1);
+          state.score += 10 * state.combo;
+          state.streak += 1;
+          if(state.streak % 3 === 0) state.combo += 1;
+          ui.score.textContent = String(state.score);
+          ui.combo.textContent = `x${state.combo}`;
+          ui.status.textContent = `Orb! +${10*state.combo}`;
+          burst(ship.position.x, ship.position.y+0.2, ship.position.z-1.2, 0xffd66b, 40);
+        }
+
+        if(o.mesh.position.z > ship.position.z + 12){
+          world.remove(o.mesh);
+          orbs.splice(i,1);
+          state.streak = 0; state.combo = 1;
+          ui.combo.textContent = 'x1';
+        }
+      }
+
+      // particles drift back a bit (cheap illusion)
+      for(let i=0;i<particleMax;i++){
+        if(pLife[i] <= 0) continue;
+        pLife[i] -= dt;
+        const j=i*3;
+        pPos[j+2] += p.speed * dt; // move toward camera
+        pPos[j+1] += dt*0.15;
+        if(pLife[i] <= 0) {
+          pCol[j+0]=pCol[j+1]=pCol[j+2]=0;
+        }
+      }
+      particleGeo.attributes.position.needsUpdate = true;
+      particleGeo.attributes.color.needsUpdate = true;
+
+      // update lane dashes
+      updateDashes();
+
+      // camera follow with a little lag
+      camera.position.x = lerp(camera.position.x, ship.position.x*0.35, 4.5*dt);
+      camera.position.y = lerp(camera.position.y, 3.3, 2.5*dt);
+      camera.lookAt(ship.position.x*0.25, 0.65, ship.position.z - 6);
+
+      renderer.render(scene, camera);
+    }
+
+    resize();
+    requestAnimationFrame(tick);
+  })();
+  </script>
+</body>
+</html>

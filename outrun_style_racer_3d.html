@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sunset Racer 3D (OutRun‑inspired)</title>
+  <style>
+    :root{--fg:#f4f6ff;--muted:#c7c8ff;--pink:#ff4fd8;--cyan:#67f5ff;--gold:#ffd66b;--bg:#070518;}
+    html,body{height:100%;margin:0;overflow:hidden;background:radial-gradient(1200px 900px at 50% 30%, #1a0b48, var(--bg) 60%);color:var(--fg);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    header,footer{position:fixed;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+      background:linear-gradient(to bottom, rgba(255,255,255,.09), rgba(255,255,255,0));border-bottom:1px solid rgba(255,255,255,.10)}
+    footer{top:auto;bottom:0;border-bottom:none;border-top:1px solid rgba(255,255,255,.10);background:linear-gradient(to top, rgba(255,255,255,.09), rgba(255,255,255,0))}
+    .left{display:flex;gap:10px;align-items:baseline}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{color:var(--muted);font-size:12px}
+    .right{display:flex;gap:10px;align-items:center}
+    .pill{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);backdrop-filter: blur(6px);
+      border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center}
+    .pill b{font-variant-numeric:tabular-nums}
+
+    #panelWrap{position:fixed;inset:48px 0 46px 0;display:grid;place-items:center;pointer-events:none}
+    .panel{pointer-events:auto;width:min(620px, calc(100% - 28px));border-radius:16px;border:1px solid rgba(255,255,255,.16);
+      background:linear-gradient(180deg, rgba(0,0,0,.48), rgba(0,0,0,.22));box-shadow:0 30px 90px rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);padding:16px 16px 14px}
+    .panel h2{margin:0 0 6px;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .panel p{margin:0 0 12px;color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    button{appearance:none;border:1px solid rgba(255,255,255,.18);
+      background:linear-gradient(180deg, rgba(103,245,255,.20), rgba(103,245,255,.06));color:var(--fg);
+      border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:650;box-shadow:0 10px 28px rgba(103,245,255,.08)}
+    button.secondary{background:rgba(0,0,0,.22)}
+    button:active{transform:translateY(1px)}
+    .hint{font-size:12px;color:rgba(232,236,255,.72)}
+    kbd{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:var(--fg);
+      border:1px solid rgba(255,255,255,.22);border-bottom-color: rgba(255,255,255,.08);
+      background:rgba(0,0,0,.30);border-radius:6px;padding:2px 6px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="left">
+      <h1>Sunset Racer 3D</h1>
+      <div class="sub">OutRun‑inspired synthwave • WebGL • Three.js</div>
+    </div>
+    <div class="right">
+      <div class="pill"><span>Speed</span><b id="spd">0</b></div>
+      <div class="pill"><span>Distance</span><b id="dist">0.0</b></div>
+      <div class="pill"><span>Time</span><b id="time">0.0</b></div>
+    </div>
+  </header>
+
+  <div id="panelWrap">
+    <div class="panel" id="menu">
+      <h2>Start</h2>
+      <p>Arcade race down a neon highway into the sunset. Dodge traffic, drift a little, chase distance.</p>
+      <div class="row">
+        <button id="btnPlay">Drive</button>
+        <button id="btnQuality" class="secondary">Quality: High</button>
+      </div>
+      <p class="hint">Controls: steer <kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> • accelerate <kbd>W</kbd>/<kbd>↑</kbd> • brake <kbd>S</kbd>/<kbd>↓</kbd> • pause <kbd>P</kbd> • restart <kbd>R</kbd></p>
+      <p class="hint">VMware note: if WebGL is slow/black screen, enable 3D acceleration for the VM; try Quality: Low.</p>
+    </div>
+    <div class="panel" id="paused" style="display:none">
+      <h2>Paused</h2>
+      <p>Press <kbd>P</kbd> to resume.</p>
+      <div class="row">
+        <button id="btnResume">Resume</button>
+        <button id="btnRestart" class="secondary">Restart</button>
+      </div>
+    </div>
+    <div class="panel" id="gameover" style="display:none">
+      <h2>Wipeout</h2>
+      <p id="final">Distance: 0.0</p>
+      <div class="row">
+        <button id="btnAgain">Try again</button>
+        <button id="btnCopy" class="secondary">Copy result</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div style="color:var(--muted)">Steer <kbd>A</kbd>/<kbd>D</kbd> • Accelerate <kbd>W</kbd> • Brake <kbd>S</kbd> • Restart <kbd>R</kbd></div>
+    <div id="status" style="color:var(--muted)">Ready.</div>
+  </footer>
+
+  <script src="./three.min.js"></script>
+  <script>
+  (() => {
+    const THREE = window.THREE;
+    if(!THREE){ alert('three.min.js missing. Put three.min.js next to this HTML.'); return; }
+
+    const ui = {
+      spd: document.getElementById('spd'),
+      dist: document.getElementById('dist'),
+      time: document.getElementById('time'),
+      status: document.getElementById('status'),
+      menu: document.getElementById('menu'),
+      paused: document.getElementById('paused'),
+      gameover: document.getElementById('gameover'),
+      final: document.getElementById('final'),
+      btnPlay: document.getElementById('btnPlay'),
+      btnQuality: document.getElementById('btnQuality'),
+      btnResume: document.getElementById('btnResume'),
+      btnRestart: document.getElementById('btnRestart'),
+      btnAgain: document.getElementById('btnAgain'),
+      btnCopy: document.getElementById('btnCopy'),
+    };
+
+    const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+    const lerp = (a,b,t)=>a+(b-a)*t;
+    const rand = (a,b)=>a+Math.random()*(b-a);
+
+    function hidePanels(){ ui.menu.style.display='none'; ui.paused.style.display='none'; ui.gameover.style.display='none'; }
+    function show(panel){ hidePanels(); panel.style.display='block'; }
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:'high-performance' });
+    renderer.setClearColor(0x000000, 0);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    // Scene + fog
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x070518, 12, 120);
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 300);
+
+    // Lights
+    scene.add(new THREE.HemisphereLight(0x67f5ff, 0x22083a, 0.55));
+    const sunLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    sunLight.position.set(-6, 10, 8);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(1024,1024);
+    sunLight.shadow.camera.left = -20;
+    sunLight.shadow.camera.right = 20;
+    sunLight.shadow.camera.top = 20;
+    sunLight.shadow.camera.bottom = -20;
+    scene.add(sunLight);
+
+    // World group
+    const world = new THREE.Group();
+    scene.add(world);
+
+    // Sky: sunset disc + scanline grid
+    const sky = new THREE.Group();
+    world.add(sky);
+
+    // Sun (emissive disk)
+    const sun = new THREE.Mesh(
+      new THREE.CircleGeometry(6, 64),
+      new THREE.MeshBasicMaterial({ color: 0xff4fd8 })
+    );
+    sun.position.set(0, 6.5, -65);
+    sky.add(sun);
+
+    // Horizon glow plane
+    const glow = new THREE.Mesh(
+      new THREE.PlaneGeometry(200, 80),
+      new THREE.MeshBasicMaterial({ color: 0x1a0b48, transparent:true, opacity:0.85 })
+    );
+    glow.position.set(0, 16, -90);
+    sky.add(glow);
+
+    // Road parameters
+    const road = { halfW: 3.6, segLen: 10, segCount: 18, curvature: 0, targetCurv: 0 };
+
+    // Road segments
+    const segs = [];
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x0b1030, roughness: 0.85, metalness: 0.05 });
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x67f5ff, emissive:0x1b7f86, emissiveIntensity:1.2, roughness:0.35, metalness:0.2 });
+    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive:0xffffff, emissiveIntensity:0.18, transparent:true, opacity:0.35, roughness:0.6 });
+
+    function makeSegment(){
+      const g = new THREE.Group();
+      const slab = new THREE.Mesh(new THREE.PlaneGeometry(road.halfW*2.2, road.segLen, 1, 1), roadMat);
+      slab.rotation.x = -Math.PI/2;
+      slab.receiveShadow = true;
+      g.add(slab);
+
+      const railG = new THREE.BoxGeometry(0.10, 0.08, road.segLen);
+      const railL = new THREE.Mesh(railG, edgeMat);
+      const railR = new THREE.Mesh(railG, edgeMat);
+      railL.position.set(-road.halfW, 0.04, 0);
+      railR.position.set( road.halfW, 0.04, 0);
+      g.add(railL, railR);
+
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, road.segLen*0.65), stripeMat);
+      stripe.position.set(0, 0.015, 0);
+      g.add(stripe);
+
+      world.add(g);
+      return g;
+    }
+
+    for(let i=0;i<road.segCount;i++){
+      const s = makeSegment();
+      s.position.z = -i * road.segLen;
+      segs.push(s);
+    }
+
+    // Side scenery: palm silhouettes and neon posts
+    const scenery = [];
+    const palmMat = new THREE.MeshStandardMaterial({ color: 0x0a0720, roughness: 1.0 });
+    const postMat = new THREE.MeshStandardMaterial({ color: 0xff4fd8, emissive:0x5a0b4a, emissiveIntensity:1.2, roughness:0.4, metalness:0.1 });
+
+    function makePalm(){
+      const g = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,2.8, 8), palmMat);
+      trunk.position.y = 1.4;
+      trunk.rotation.z = rand(-0.12,0.12);
+      g.add(trunk);
+      const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.6, 6), palmMat);
+      leaf.position.y = 2.8;
+      leaf.rotation.x = -Math.PI/2;
+      leaf.scale.set(1.3,1,0.7);
+      g.add(leaf);
+      return g;
+    }
+
+    function makePost(){
+      const g = new THREE.Group();
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,3.2, 10), postMat);
+      pole.position.y = 1.6;
+      pole.castShadow = true;
+      g.add(pole);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), new THREE.MeshStandardMaterial({
+        color: 0x67f5ff, emissive:0x67f5ff, emissiveIntensity:1.6
+      }));
+      lamp.position.y = 3.2;
+      g.add(lamp);
+      return g;
+    }
+
+    for(let i=0;i<28;i++){
+      const o = (i%2===0) ? makePalm() : makePost();
+      o.position.set((i%2===0?-1:1) * (road.halfW + rand(1.6, 3.2)), 0, -rand(5, 140));
+      o.scale.setScalar(rand(0.9, 1.35));
+      world.add(o);
+      scenery.push(o);
+    }
+
+    // Player car (low-poly wedge)
+    const car = new THREE.Group();
+    const carBody = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.35, 2.2), new THREE.MeshStandardMaterial({
+      color: 0xff4fd8, emissive:0x4a0a35, emissiveIntensity:1.0, roughness:0.35, metalness:0.25
+    }));
+    carBody.position.y = 0.35;
+    carBody.castShadow = true;
+    car.add(carBody);
+
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.28, 0.8), new THREE.MeshStandardMaterial({
+      color: 0x67f5ff, emissive:0x12656b, emissiveIntensity:1.0, roughness:0.15, metalness:0.05, transparent:true, opacity:0.85
+    }));
+    canopy.position.set(0, 0.55, -0.15);
+    canopy.castShadow = true;
+    car.add(canopy);
+
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
+    const wheelG = new THREE.CylinderGeometry(0.18,0.18,0.14, 16);
+    function wheel(x,z){
+      const w = new THREE.Mesh(wheelG, wheelMat);
+      w.rotation.z = Math.PI/2;
+      w.position.set(x, 0.18, z);
+      w.castShadow = true;
+      car.add(w);
+      return w;
+    }
+    const wheels = [wheel(-0.45,0.75), wheel(0.45,0.75), wheel(-0.45,-0.75), wheel(0.45,-0.75)];
+
+    world.add(car);
+
+    // Traffic
+    const traffic = [];
+    function spawnTraffic(){
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(rand(0.85,1.05), 0.32, rand(1.7,2.2)), new THREE.MeshStandardMaterial({
+        color: new THREE.Color().setHSL(rand(0.78,0.98), 0.85, 0.55),
+        emissive: 0x12031d,
+        emissiveIntensity: 0.55,
+        roughness: 0.45,
+        metalness: 0.25
+      }));
+      body.position.y = 0.32;
+      body.castShadow = true;
+      g.add(body);
+      const light = new THREE.Mesh(new THREE.BoxGeometry(0.55,0.08,0.06), new THREE.MeshStandardMaterial({
+        color: 0xffffff, emissive:0xffffff, emissiveIntensity:0.9
+      }));
+      light.position.set(0,0.28, -0.9);
+      g.add(light);
+
+      g.position.set(rand(-road.halfW*0.78, road.halfW*0.78), 0, -rand(30, 130));
+      g.userData = { speed: rand(0.35, 0.75) }; // relative (slower than player)
+      world.add(g);
+      traffic.push(g);
+    }
+
+    for(let i=0;i<10;i++) spawnTraffic();
+
+    // Input
+    const input = { left:false,right:false,up:false,down:false };
+    addEventListener('keydown', (e)=>{
+      const k = e.key.toLowerCase();
+      if(['arrowleft','a'].includes(k)) input.left = true;
+      if(['arrowright','d'].includes(k)) input.right = true;
+      if(['arrowup','w'].includes(k)) input.up = true;
+      if(['arrowdown','s'].includes(k)) input.down = true;
+      if(k==='p') togglePause();
+      if(k==='r') restart();
+    });
+    addEventListener('keyup', (e)=>{
+      const k = e.key.toLowerCase();
+      if(['arrowleft','a'].includes(k)) input.left = false;
+      if(['arrowright','d'].includes(k)) input.right = false;
+      if(['arrowup','w'].includes(k)) input.up = false;
+      if(['arrowdown','s'].includes(k)) input.down = false;
+    });
+
+    // Game state
+    const state = {
+      running:false,
+      paused:false,
+      quality:'high',
+      t:0,
+      last:performance.now(),
+      speed:0,
+      dist:0,
+      crashed:false
+    };
+
+    function resize(){
+      const w = innerWidth, h = innerHeight;
+      camera.aspect = w/h;
+      camera.updateProjectionMatrix();
+      const dpr = devicePixelRatio || 1;
+      renderer.setPixelRatio(state.quality==='high' ? Math.min(2,dpr) : 1);
+      renderer.setSize(w,h,false);
+    }
+    addEventListener('resize', resize);
+
+    function togglePause(){
+      if(!state.running) return;
+      state.paused = !state.paused;
+      if(state.paused){ ui.status.textContent='Paused.'; show(ui.paused); }
+      else { ui.status.textContent='Go.'; hidePanels(); state.last = performance.now(); }
+    }
+
+    function restart(){
+      state.running=true;
+      state.paused=false;
+      state.t=0;
+      state.last=performance.now();
+      state.speed=0;
+      state.dist=0;
+      state.crashed=false;
+
+      car.position.set(0,0, 6);
+      road.curvature = 0;
+      road.targetCurv = 0;
+
+      for(let i=0;i<segs.length;i++) segs[i].position.z = -i*road.segLen;
+      for(const o of scenery){
+        o.position.z = -rand(5, 140);
+        o.position.x = (o.position.x<0?-1:1) * (road.halfW + rand(1.6, 3.2));
+      }
+      for(const t of traffic){
+        t.position.z = -rand(30, 130);
+        t.position.x = rand(-road.halfW*0.78, road.halfW*0.78);
+      }
+
+      ui.spd.textContent='0';
+      ui.dist.textContent='0.0';
+      ui.time.textContent='0.0';
+      ui.status.textContent='Drive!';
+      hidePanels();
+    }
+
+    function crash(){
+      if(state.crashed) return;
+      state.crashed=true;
+      ui.status.textContent='Wipeout!';
+      ui.final.textContent = `Distance: ${state.dist.toFixed(1)} • Time: ${state.t.toFixed(1)}s`;
+      show(ui.gameover);
+      state.running=false;
+    }
+
+    // UI buttons
+    ui.btnPlay.onclick = () => restart();
+    ui.btnResume.onclick = () => togglePause();
+    ui.btnRestart.onclick = () => restart();
+    ui.btnAgain.onclick = () => restart();
+    ui.btnCopy.onclick = async () => {
+      const txt = `Sunset Racer 3D — distance ${state.dist.toFixed(1)} in ${state.t.toFixed(1)}s`;
+      try{ await navigator.clipboard.writeText(txt); ui.status.textContent='Copied.'; }
+      catch{ ui.status.textContent=txt; }
+    };
+    ui.btnQuality.onclick = () => {
+      state.quality = state.quality==='high' ? 'low' : 'high';
+      ui.btnQuality.textContent = `Quality: ${state.quality==='high'?'High':'Low'}`;
+      ui.status.textContent = state.quality==='high' ? 'High quality.' : 'Low quality (VM-friendly).';
+      resize();
+    };
+
+    // Start menu
+    show(ui.menu);
+
+    // Camera setup
+    camera.position.set(0, 3.2, 10.5);
+    camera.lookAt(0, 0.5, 0);
+
+    // Animate
+    function tick(now){
+      requestAnimationFrame(tick);
+      if(!renderer.domElement.width) resize();
+
+      if(!state.running || state.paused){
+        // idle sway
+        car.rotation.y = Math.sin(performance.now()*0.001)*0.05;
+        renderer.render(scene, camera);
+        return;
+      }
+
+      const dt = Math.min(0.033, (now - state.last)/1000);
+      state.last = now;
+      state.t += dt;
+      ui.time.textContent = state.t.toFixed(1);
+
+      // Speed control
+      const accel = 22;
+      const brake = 28;
+      const drag = 6.5;
+      const maxSpeed = 38;
+
+      if(input.up) state.speed += accel*dt;
+      if(input.down) state.speed -= brake*dt;
+      state.speed = lerp(state.speed, 0, drag*dt);
+      state.speed = clamp(state.speed, 0, maxSpeed);
+
+      // Gentle procedural curvature
+      road.targetCurv = Math.sin(state.t*0.23)*0.55 + Math.sin(state.t*0.08)*0.35;
+      road.curvature = lerp(road.curvature, road.targetCurv, 0.8*dt);
+
+      // Steering (harder at higher speed)
+      const steerPower = 6.5;
+      const steer = (input.right?1:0) - (input.left?1:0);
+      const steerScale = (0.65 + state.speed/maxSpeed*0.9);
+      car.position.x += steer * steerPower * steerScale * dt;
+
+      // road curve drifts car outward
+      car.position.x += road.curvature * (state.speed/maxSpeed) * dt * 3.2;
+
+      // clamp within road
+      const edge = road.halfW*0.82;
+      if(Math.abs(car.position.x) > edge){
+        car.position.x = clamp(car.position.x, -edge, edge);
+        state.speed *= 0.86; // scrub speed
+      }
+
+      // visuals: car lean and wheel spin
+      car.rotation.z = lerp(car.rotation.z, -steer*0.12, 6*dt);
+      car.rotation.y = lerp(car.rotation.y, -steer*0.08 + road.curvature*0.06, 4*dt);
+      for(const w of wheels) w.rotation.x += state.speed*dt*0.55;
+
+      ui.spd.textContent = String(Math.round(state.speed*3.2));
+
+      // Move road segments toward camera (increase z)
+      const dz = state.speed*dt;
+      state.dist += dz*0.12;
+      ui.dist.textContent = state.dist.toFixed(1);
+
+      for(const s of segs){
+        s.position.z += dz;
+        // apply curve offset based on segment depth
+        const depth = (-s.position.z) / (road.segLen*road.segCount);
+        s.position.x = road.curvature * depth * 10.0;
+        if(s.position.z > road.segLen){
+          s.position.z -= road.segLen*road.segCount;
+        }
+      }
+
+      // Scenery scroll + slight parallax
+      for(const o of scenery){
+        o.position.z += dz * 0.9;
+        o.position.x += road.curvature * dt * (o.position.x<0?-1:1) * 0.55;
+        if(o.position.z > 12){
+          o.position.z = -rand(80, 160);
+          o.position.x = (o.position.x<0?-1:1) * (road.halfW + rand(1.6, 3.2));
+          o.rotation.y = rand(-Math.PI, Math.PI);
+        }
+      }
+
+      // Traffic
+      for(const t of traffic){
+        const rel = 1 - t.userData.speed; // if speed=0.5, rel=0.5 => comes toward us
+        t.position.z += dz * rel;
+        t.position.x += road.curvature * dt * 0.65;
+
+        // wobble
+        t.position.x += Math.sin(state.t*0.7 + t.position.z*0.02) * dt * 0.25;
+        t.position.x = clamp(t.position.x, -road.halfW*0.78, road.halfW*0.78);
+
+        if(t.position.z > car.position.z + 10){
+          t.position.z = -rand(80, 160);
+          t.position.x = rand(-road.halfW*0.78, road.halfW*0.78);
+          t.userData.speed = rand(0.35, 0.75);
+        }
+
+        // collision with car (simple AABB in x/z)
+        const dx = Math.abs(t.position.x - car.position.x);
+        const dzc = Math.abs(t.position.z - car.position.z);
+        if(dx < 0.8 && dzc < 1.25 && state.speed > 6){
+          crash();
+          return;
+        }
+      }
+
+      // Camera follow + shake with speed
+      const shake = (state.speed/maxSpeed) * 0.05;
+      camera.position.x = lerp(camera.position.x, car.position.x*0.35, 4.5*dt) + Math.sin(state.t*13)*shake;
+      camera.position.y = lerp(camera.position.y, 3.1, 2.5*dt);
+      camera.position.z = lerp(camera.position.z, 10.5, 2.5*dt);
+      camera.lookAt(car.position.x*0.20, 0.55, car.position.z-6);
+
+      // Sun drift
+      sun.position.x = Math.sin(state.t*0.08)*4.0;
+      sun.position.y = 6.5 + Math.sin(state.t*0.04)*1.0;
+
+      renderer.render(scene, camera);
+    }
+
+    resize();
+    requestAnimationFrame(tick);
+  })();
+  </script>
+</body>
+</html>

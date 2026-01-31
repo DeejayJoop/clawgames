@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blue Koala Platformer (Original)</title>
+  <style>
+    :root{--bg:#050613;--fg:#ecf1ff;--muted:#a9b3ff;--neon:#7cf7ff;--pink:#ff4fd8;--gold:#ffd66b;}
+    html,body{height:100%;margin:0;background:radial-gradient(1100px 800px at 50% 35%, #0b1030, var(--bg) 60%);color:var(--fg);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
+    header{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;
+      background:linear-gradient(to bottom, rgba(255,255,255,.09), rgba(255,255,255,0));border-bottom:1px solid rgba(255,255,255,.10)}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{color:var(--muted);font-size:12px}
+    .left{display:flex;gap:10px;align-items:baseline}
+    .right{display:flex;gap:10px;align-items:center}
+    .pill{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);backdrop-filter: blur(6px);
+      border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center}
+    .pill b{font-variant-numeric:tabular-nums}
+
+    #c{position:fixed;inset:48px 0 46px 0;width:100%;height:calc(100% - 94px);display:block}
+
+    footer{position:fixed;left:0;right:0;bottom:0;padding:10px 14px;border-top:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to top, rgba(255,255,255,.09), rgba(255,255,255,0));display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted)}
+    kbd{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:var(--fg);
+      border:1px solid rgba(255,255,255,.22);border-bottom-color: rgba(255,255,255,.08);
+      background:rgba(0,0,0,.30);border-radius:6px;padding:2px 6px}
+
+    #panelWrap{position:fixed;inset:48px 0 46px 0;display:grid;place-items:center;pointer-events:none}
+    .panel{pointer-events:auto;width:min(560px, calc(100% - 28px));border-radius:16px;border:1px solid rgba(255,255,255,.16);
+      background:linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.20));box-shadow:0 30px 90px rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);padding:16px 16px 14px}
+    .panel h2{margin:0 0 6px;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .panel p{margin:0 0 12px;color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    button{appearance:none;border:1px solid rgba(255,255,255,.18);
+      background:linear-gradient(180deg, rgba(124,247,255,.18), rgba(124,247,255,.06));color:var(--fg);
+      border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:650;box-shadow:0 10px 28px rgba(124,247,255,.08)}
+    button.secondary{background:rgba(0,0,0,.22)}
+    button:active{transform:translateY(1px)}
+    .hint{font-size:12px;color:rgba(232,236,255,.72)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="left">
+      <h1>Blue Koala Platformer</h1>
+      <div class="sub">original “cute blue alien” vibe • single-file • no external assets</div>
+    </div>
+    <div class="right">
+      <div class="pill"><span>Gems</span><b id="gems">0</b></div>
+      <div class="pill"><span>Lives</span><b id="lives">3</b></div>
+      <div class="pill"><span>Time</span><b id="time">0.0</b></div>
+    </div>
+  </header>
+
+  <canvas id="c"></canvas>
+
+  <div id="panelWrap">
+    <div class="panel" id="menu">
+      <h2>Start</h2>
+      <p>This is an <b>original</b> platformer with a “Stitch-like” vibe (blue alien + big ears), but it doesn’t use Disney assets.
+         If you upload / link images you own rights to, I can wire them in.</p>
+      <div class="row">
+        <button id="btnPlay">Play</button>
+        <button id="btnEasy" class="secondary">Mode: Chill</button>
+      </div>
+      <p class="hint">Controls: <kbd>←</kbd>/<kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> • Jump <kbd>Space</kbd>/<kbd>W</kbd>/<kbd>↑</kbd> • Dash <kbd>Shift</kbd> • Restart <kbd>R</kbd></p>
+    </div>
+    <div class="panel" id="gameover" style="display:none">
+      <h2>Game Over</h2>
+      <p id="final">You collected 0 gems.</p>
+      <div class="row">
+        <button id="btnAgain">Play again</button>
+        <button id="btnCopy" class="secondary">Copy result</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div>Move <kbd>A</kbd>/<kbd>D</kbd> • Jump <kbd>Space</kbd> • Dash <kbd>Shift</kbd> • Restart <kbd>R</kbd></div>
+    <div id="status">Ready.</div>
+  </footer>
+
+<script>
+(() => {
+  const c = document.getElementById('c');
+  const ctx = c.getContext('2d');
+
+  const ui = {
+    gems: document.getElementById('gems'),
+    lives: document.getElementById('lives'),
+    time: document.getElementById('time'),
+    status: document.getElementById('status'),
+    menu: document.getElementById('menu'),
+    gameover: document.getElementById('gameover'),
+    final: document.getElementById('final'),
+    btnPlay: document.getElementById('btnPlay'),
+    btnAgain: document.getElementById('btnAgain'),
+    btnCopy: document.getElementById('btnCopy'),
+    btnEasy: document.getElementById('btnEasy')
+  };
+
+  const DPR = () => Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  function resize(){
+    const top = 48, bottom = 46;
+    c.style.inset = `${top}px 0 ${bottom}px 0`;
+    const w = window.innerWidth;
+    const h = window.innerHeight - top - bottom;
+    c.width = Math.floor(w * DPR());
+    c.height = Math.floor(h * DPR());
+  }
+  window.addEventListener('resize', resize);
+
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+  const rand = (a,b)=>a+Math.random()*(b-a);
+
+  // World
+  const world = {
+    g: 26.0,
+    friction: 18.0,
+    airDrag: 1.4,
+    dashCd: 0,
+    easy: true
+  };
+
+  // Camera in world coords
+  const cam = { x:0, y:0 };
+
+  // Level layout (tile-based for fast collision)
+  // Each char = 1 tile.
+  // # = solid, . = empty, * = gem, ^ = spike
+  const mapStr = [
+    '......................................................................................',
+    '......................................................................................',
+    '......................................................................................',
+    '......................................................................................',
+    '..................*.............*............................*.......................',
+    '.............######........#############..............#######...........*............',
+    '............................................................#.......................',
+    '..............................................*.............#.............####......',
+    '..................#######..................#########........#.......................',
+    '...........*..........................*.....................#...............^.......',
+    '############################..###############################..#######################',
+  ];
+
+  const tile = 48; // world units
+  function tileAt(tx,ty){
+    if(ty<0||ty>=mapStr.length) return '#';
+    if(tx<0||tx>=mapStr[0].length) return '.';
+    return mapStr[ty][tx];
+  }
+  function setTile(tx,ty,ch){
+    const row = mapStr[ty];
+    mapStr[ty] = row.substring(0,tx) + ch + row.substring(tx+1);
+  }
+
+  // Player
+  const pl = {
+    x: 120, y: 120,
+    vx: 0, vy: 0,
+    w: 28, h: 34,
+    onGround: false,
+    jumpsLeft: 1,
+    facing: 1,
+    dash: 0,
+    inv: 0,
+    gems: 0,
+    lives: 3,
+    t: 0
+  };
+
+  const input = { left:false, right:false, jump:false, dash:false };
+
+  function hidePanels(){ ui.menu.style.display='none'; ui.gameover.style.display='none'; }
+  function show(panel){ hidePanels(); panel.style.display='block'; }
+
+  function reset(){
+    pl.x=120; pl.y=90; pl.vx=0; pl.vy=0;
+    pl.onGround=false; pl.jumpsLeft=1; pl.facing=1;
+    pl.dash=0; pl.inv=0; pl.gems=0; pl.lives=3; pl.t=0;
+    world.dashCd=0;
+
+    // restore gems by reloading strings? easiest: no, keep collected state only per run.
+    // (simple hack) Recreate base map each reset:
+    const base = [
+      '......................................................................................',
+      '......................................................................................',
+      '......................................................................................',
+      '......................................................................................',
+      '..................*.............*............................*.......................',
+      '.............######........#############..............#######...........*............',
+      '............................................................#.......................',
+      '..............................................*.............#.............####......',
+      '..................#######..................#########........#.......................',
+      '...........*..........................*.....................#...............^.......',
+      '############################..###############################..#######################',
+    ];
+    for(let i=0;i<mapStr.length;i++) mapStr[i]=base[i];
+
+    ui.gems.textContent='0'; ui.lives.textContent='3'; ui.time.textContent='0.0';
+    ui.status.textContent = world.easy ? 'Chill mode.' : 'Spicy mode.';
+    hidePanels();
+  }
+
+  function gameOver(){
+    ui.status.textContent='Game over.';
+    ui.final.textContent = `You collected ${pl.gems} gems in ${pl.t.toFixed(1)}s.`;
+    show(ui.gameover);
+  }
+
+  function key(e,down){
+    const k = e.key.toLowerCase();
+    if(['arrowleft','a'].includes(k)) input.left = down;
+    if(['arrowright','d'].includes(k)) input.right = down;
+    if(['arrowup','w'].includes(k) || k===' ') { input.jump = down; if(down) e.preventDefault(); }
+    if(k==='shift') input.dash = down;
+    if(down && k==='r') reset();
+  }
+  addEventListener('keydown', e=>key(e,true));
+  addEventListener('keyup', e=>key(e,false));
+
+  // one-shot jump press handling
+  let jumpWasDown=false;
+  let dashWasDown=false;
+
+  function rectVsSolid(nx,ny,w,h){
+    const minX = Math.floor((nx - w/2)/tile);
+    const maxX = Math.floor((nx + w/2)/tile);
+    const minY = Math.floor((ny - h/2)/tile);
+    const maxY = Math.floor((ny + h/2)/tile);
+    for(let ty=minY; ty<=maxY; ty++){
+      for(let tx=minX; tx<=maxX; tx++){
+        const t = tileAt(tx,ty);
+        if(t === '#') return true;
+      }
+    }
+    return false;
+  }
+
+  function collectAt(){
+    const tx = Math.floor(pl.x / tile);
+    const ty = Math.floor(pl.y / tile);
+    for(let oy=-1; oy<=1; oy++){
+      for(let ox=-1; ox<=1; ox++){
+        const ch = tileAt(tx+ox, ty+oy);
+        if(ch==='*'){
+          // simple distance check
+          const cx = (tx+ox+0.5)*tile;
+          const cy = (ty+oy+0.5)*tile;
+          const dx = pl.x - cx;
+          const dy = pl.y - cy;
+          if(dx*dx+dy*dy < (tile*0.55)*(tile*0.55)){
+            setTile(tx+ox, ty+oy, '.');
+            pl.gems += 1;
+            ui.gems.textContent = String(pl.gems);
+            ui.status.textContent = 'Gem collected!';
+          }
+        }
+        if(ch==='^'){
+          const cx = (tx+ox+0.5)*tile;
+          const cy = (ty+oy+0.5)*tile;
+          const dx = pl.x - cx;
+          const dy = pl.y - cy;
+          if(dx*dx+dy*dy < (tile*0.55)*(tile*0.55)){
+            if(pl.inv<=0){
+              pl.lives -= 1;
+              ui.lives.textContent = String(pl.lives);
+              ui.status.textContent = 'Ouch!';
+              pl.inv = 1.0;
+              pl.vy = -10;
+              pl.vx += (pl.facing*-1)*5;
+              if(pl.lives<=0) gameOver();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function update(dt){
+    pl.t += dt;
+    ui.time.textContent = pl.t.toFixed(1);
+
+    // jump edge
+    const jumpPressed = input.jump && !jumpWasDown;
+    jumpWasDown = input.jump;
+
+    const dashPressed = input.dash && !dashWasDown;
+    dashWasDown = input.dash;
+
+    // dash cooldown
+    world.dashCd = Math.max(0, world.dashCd - dt);
+
+    // horizontal control
+    const accel = 56;
+    const maxV = world.easy ? 11.5 : 13.5;
+    const dir = (input.right?1:0) - (input.left?1:0);
+    if(dir!==0) pl.facing = dir;
+
+    if(pl.dash>0){
+      pl.dash -= dt;
+      // keep speed during dash
+      pl.vx = pl.facing * (world.easy ? 18 : 21);
+      pl.vy *= 0.95;
+    } else {
+      pl.vx += dir * accel * dt;
+      // friction / air drag
+      if(pl.onGround) pl.vx = lerp(pl.vx, 0, world.friction*dt);
+      else pl.vx = lerp(pl.vx, 0, world.airDrag*dt);
+      pl.vx = clamp(pl.vx, -maxV, maxV);
+    }
+
+    // jump
+    if(jumpPressed){
+      if(pl.onGround){
+        pl.vy = -12.5;
+        pl.onGround=false;
+        pl.jumpsLeft = world.easy ? 1 : 0;
+        ui.status.textContent = 'Jump!';
+      } else if(pl.jumpsLeft>0){
+        pl.vy = -12.0;
+        pl.jumpsLeft--;
+        ui.status.textContent = 'Double jump!';
+      }
+    }
+
+    // dash
+    if(dashPressed && world.dashCd<=0){
+      pl.dash = 0.18;
+      pl.inv = Math.max(pl.inv, 0.22);
+      world.dashCd = 0.75;
+      ui.status.textContent = 'Dash!';
+    }
+
+    // gravity
+    pl.vy += world.g * dt;
+    pl.vy = clamp(pl.vy, -30, 30);
+
+    // move X with collision
+    let nx = pl.x + pl.vx;
+    if(rectVsSolid(nx, pl.y, pl.w, pl.h)){
+      // step out by small increments
+      const step = Math.sign(pl.vx) || 1;
+      while(!rectVsSolid(pl.x + step, pl.y, pl.w, pl.h) && Math.abs(nx - pl.x) > 1){
+        pl.x += step;
+      }
+      pl.vx = 0;
+    } else {
+      pl.x = nx;
+    }
+
+    // move Y with collision
+    let ny = pl.y + pl.vy;
+    if(rectVsSolid(pl.x, ny, pl.w, pl.h)){
+      const step = Math.sign(pl.vy) || 1;
+      while(!rectVsSolid(pl.x, pl.y + step, pl.w, pl.h) && Math.abs(ny - pl.y) > 1){
+        pl.y += step;
+      }
+      // landing / head bump
+      if(pl.vy > 0){
+        pl.onGround = true;
+        pl.jumpsLeft = world.easy ? 1 : 0;
+      }
+      pl.vy = 0;
+    } else {
+      pl.y = ny;
+      pl.onGround = false;
+    }
+
+    pl.inv = Math.max(0, pl.inv - dt);
+
+    collectAt();
+
+    // camera follow
+    const vw = c.width / DPR();
+    const vh = c.height / DPR();
+    cam.x = lerp(cam.x, pl.x - vw*0.30, 4.2*dt);
+    cam.y = lerp(cam.y, pl.y - vh*0.55, 4.2*dt);
+    cam.y = clamp(cam.y, -200, mapStr.length*tile);
+
+    // fall out
+    if(pl.y > mapStr.length*tile + 200){
+      if(pl.lives>0){
+        pl.lives--; ui.lives.textContent=String(pl.lives);
+        pl.x=120; pl.y=90; pl.vx=0; pl.vy=0; pl.inv=1.0;
+        ui.status.textContent='Fell!';
+      } else gameOver();
+    }
+  }
+
+  // Drawing helpers
+  function drawBackground(w,h,t){
+    // starfield
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0)';
+    ctx.fillRect(0,0,w,h);
+
+    // soft nebula
+    const g = ctx.createRadialGradient(w*0.45 + Math.sin(t*0.25)*w*0.08, h*0.35, 10, w*0.5, h*0.5, Math.max(w,h)*0.75);
+    g.addColorStop(0, 'rgba(124,247,255,0.10)');
+    g.addColorStop(0.5,'rgba(255,79,216,0.06)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,w,h);
+
+    // stars
+    ctx.globalAlpha = 0.8;
+    for(let i=0;i<80;i++){
+      const sx = (i*97)%w;
+      const sy = ((i*193)%(h+200)) - 100;
+      const tw = 0.8 + ((i*7)%10)/10;
+      const a = 0.15 + 0.20*Math.sin(t*0.9 + i);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = 'rgba(232,241,255,1)';
+      ctx.fillRect(sx, sy + (t*15)%200, tw, tw);
+    }
+    ctx.restore();
+    ctx.globalAlpha=1;
+  }
+
+  function drawTile(tx,ty,ch){
+    const x = tx*tile - cam.x;
+    const y = ty*tile - cam.y;
+    if(x<-tile||y<-tile||x>c.width/DPR()+tile||y>c.height/DPR()+tile) return;
+
+    if(ch==='#'){
+      // candy platform
+      const r = 10;
+      ctx.save();
+      ctx.translate(x,y);
+      // base
+      const grad = ctx.createLinearGradient(0,0,0,tile);
+      grad.addColorStop(0,'rgba(20,25,70,0.95)');
+      grad.addColorStop(1,'rgba(10,10,30,0.95)');
+      ctx.fillStyle = grad;
+      roundRect(4,6,tile-8,tile-10,r);
+      ctx.fill();
+      // neon top edge
+      ctx.strokeStyle = 'rgba(124,247,255,0.50)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(10,10);
+      ctx.lineTo(tile-10,10);
+      ctx.stroke();
+      ctx.restore();
+    } else if(ch==='*'){
+      // gem
+      const cx = x + tile/2;
+      const cy = y + tile/2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      const bob = Math.sin((pl.t*4) + tx*0.7 + ty)*4;
+      ctx.translate(0, bob);
+      ctx.rotate(pl.t*0.8 + tx);
+      ctx.fillStyle = 'rgba(255,214,107,0.90)';
+      diamond(0,0,10,16);
+      ctx.fill();
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = 'rgba(255,214,107,1)';
+      ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    } else if(ch==='^'){
+      // spike
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.fillStyle = 'rgba(255,86,102,0.75)';
+      ctx.beginPath();
+      ctx.moveTo(tile*0.15, tile*0.85);
+      ctx.lineTo(tile*0.50, tile*0.20);
+      ctx.lineTo(tile*0.85, tile*0.85);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawPlayer(){
+    const x = pl.x - cam.x;
+    const y = pl.y - cam.y;
+
+    ctx.save();
+    ctx.translate(x,y);
+
+    // inv flash
+    const inv = pl.inv>0 && Math.floor(pl.inv*20)%2===0;
+
+    // shadow
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = 'rgba(0,0,0,1)';
+    ctx.beginPath(); ctx.ellipse(0, pl.h*0.62, pl.w*0.55, pl.w*0.22, 0, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // ears (big)
+    const earW = 18, earH = 24;
+    ctx.save();
+    ctx.rotate(pl.vx*0.02);
+    ctx.translate(pl.facing*2, -8);
+    ctx.fillStyle = inv ? 'rgba(255,255,255,0.9)' : 'rgba(124,247,255,0.85)';
+    // left ear
+    ctx.save();
+    ctx.rotate(-0.35);
+    roundRect(-pl.w*0.62, -pl.h*0.35, earW, earH, 10);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,79,216,0.25)';
+    roundRect(-pl.w*0.56, -pl.h*0.30, earW*0.65, earH*0.7, 8);
+    ctx.fill();
+    ctx.restore();
+    // right ear
+    ctx.save();
+    ctx.rotate(0.35);
+    roundRect(pl.w*0.62-earW, -pl.h*0.35, earW, earH, 10);
+    ctx.fillStyle = inv ? 'rgba(255,255,255,0.9)' : 'rgba(124,247,255,0.85)';
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,79,216,0.25)';
+    roundRect(pl.w*0.62-earW+3, -pl.h*0.30, earW*0.65, earH*0.7, 8);
+    ctx.fill();
+    ctx.restore();
+    ctx.restore();
+
+    // body
+    ctx.fillStyle = inv ? 'rgba(255,255,255,0.92)' : 'rgba(124,247,255,0.92)';
+    roundRect(-pl.w/2, -pl.h/2, pl.w, pl.h, 12);
+    ctx.fill();
+
+    // belly
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = 'rgba(255,255,255,1)';
+    roundRect(-pl.w*0.22, -pl.h*0.05, pl.w*0.44, pl.h*0.50, 10);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // eyes
+    const ex = pl.facing*3;
+    ctx.fillStyle = 'rgba(0,0,0,0.70)';
+    ctx.beginPath(); ctx.ellipse(-6+ex, -6, 3.5, 5.0, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse( 6+ex, -6, 3.5, 5.0, 0, 0, Math.PI*2); ctx.fill();
+
+    // nose
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath(); ctx.ellipse(0+ex, 0, 5.2, 3.2, 0, 0, Math.PI*2); ctx.fill();
+
+    // dash glow
+    if(pl.dash>0){
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = 'rgba(124,247,255,1)';
+      ctx.beginPath(); ctx.arc(0,0,34,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+  }
+
+  function roundRect(x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y, x+w,y+h, r);
+    ctx.arcTo(x+w,y+h, x,y+h, r);
+    ctx.arcTo(x,y+h, x,y, r);
+    ctx.arcTo(x,y, x+w,y, r);
+    ctx.closePath();
+  }
+  function diamond(x,y,w,h){
+    ctx.beginPath();
+    ctx.moveTo(x, y-h);
+    ctx.lineTo(x+w, y);
+    ctx.lineTo(x, y+h);
+    ctx.lineTo(x-w, y);
+    ctx.closePath();
+  }
+
+  // loop
+  let last = performance.now();
+  function frame(now){
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.033, (now-last)/1000);
+    last = now;
+
+    const w = c.width / DPR();
+    const h = c.height / DPR();
+
+    ctx.setTransform(DPR(),0,0,DPR(),0,0);
+
+    drawBackground(w,h,pl.t);
+
+    // update only if playing
+    if(ui.menu.style.display==='none' && ui.gameover.style.display==='none'){
+      update(dt);
+    }
+
+    // draw tiles
+    const minTx = Math.floor(cam.x / tile) - 2;
+    const maxTx = Math.floor((cam.x + w) / tile) + 2;
+    const minTy = Math.floor(cam.y / tile) - 2;
+    const maxTy = Math.floor((cam.y + h) / tile) + 2;
+
+    for(let ty=minTy; ty<=maxTy; ty++){
+      for(let tx=minTx; tx<=maxTx; tx++){
+        const ch = tileAt(tx,ty);
+        if(ch!=='.') drawTile(tx,ty,ch);
+      }
+    }
+
+    drawPlayer();
+  }
+
+  // UI actions
+  ui.btnPlay.onclick = () => { reset(); };
+  ui.btnAgain.onclick = () => { reset(); };
+  ui.btnCopy.onclick = async () => {
+    const t = `Blue Koala Platformer: ${pl.gems} gems in ${pl.t.toFixed(1)}s`;
+    try{ await navigator.clipboard.writeText(t); ui.status.textContent='Copied.'; }
+    catch{ ui.status.textContent=t; }
+  };
+  ui.btnEasy.onclick = () => {
+    world.easy = !world.easy;
+    ui.btnEasy.textContent = `Mode: ${world.easy ? 'Chill' : 'Spicy'}`;
+    ui.status.textContent = world.easy ? 'Chill mode.' : 'Spicy mode (harder).';
+  };
+
+  resize();
+  show(ui.menu);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
