@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Plants Vs Brainrots Remix</title>
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1530;
+      --panel: rgba(255,255,255,.08);
+      --panel2: rgba(255,255,255,.12);
+      --text:#EAF0FF;
+      --muted:#B9C4E2;
+      --accent:#7CFFB2;
+      --danger:#FF5E78;
+      --warn:#FFD36A;
+      --grid:#1C2A57;
+      --shadow: 0 16px 40px rgba(0,0,0,.45);
+      --radius:16px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 15% 10%, rgba(124,255,178,.18), transparent 60%),
+        radial-gradient(900px 700px at 85% 20%, rgba(122,162,255,.20), transparent 55%),
+        radial-gradient(900px 700px at 60% 85%, rgba(255,94,120,.12), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+    }
+
+    a{ color:var(--text); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+
+    .wrap{
+      width:min(1100px, 100%);
+      padding:18px 16px 22px;
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:14px;
+      align-items:start;
+    }
+
+    .topline{
+      grid-column:1 / -1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .back{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 10px 22px rgba(0,0,0,.25);
+      backdrop-filter: blur(8px);
+    }
+
+    .brand{
+      display:flex;
+      align-items:baseline;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+      text-align:right;
+    }
+    .brand h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.2px;
+      font-weight:800;
+    }
+    .brand .note{
+      color:var(--muted);
+      font-size:12px;
+      opacity:.95;
+    }
+
+    .panel{
+      background: var(--panel);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .gamePanel{ padding:12px; }
+    .hud{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+
+    .pill{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 10px;
+      border-radius:999px;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .pill strong{ font-weight:800; }
+
+    .bar{
+      width:180px;
+      height:10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.12);
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block;
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(124,255,178,.95), rgba(122,162,255,.95));
+      border-radius:999px;
+    }
+
+    canvas{
+      width:100%;
+      height:auto;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(900px 600px at 30% 20%, rgba(124,255,178,.08), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.10));
+    }
+
+    .side{ padding:12px; }
+
+    .section{
+      padding:12px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      margin-bottom:12px;
+    }
+
+    .section h2{
+      margin:0 0 8px;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+
+    .help{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .card{
+      display:flex;
+      gap:10px;
+      padding:10px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease, background .12s ease, border-color .12s ease;
+    }
+    .card:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); }
+    .card.selected{ border-color: rgba(124,255,178,.55); background: rgba(124,255,178,.10); }
+
+    .icon{
+      width:40px;
+      height:40px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.12);
+    }
+
+    .meta{ flex:1; }
+    .meta .name{ font-weight:800; }
+    .meta .desc{ color:var(--muted); font-size:12px; margin-top:2px; }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:10px;
+    }
+
+    button{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.14);
+      color:var(--text);
+      background: rgba(255,255,255,.07);
+      border-radius: 12px;
+      padding:10px 12px;
+      font-weight:800;
+      cursor:pointer;
+      transition: transform .06s ease, background .12s ease, border-color .12s ease;
+    }
+    button:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
+    button.primary{ border-color: rgba(124,255,178,.55); background: rgba(124,255,178,.14); }
+    button.danger{ border-color: rgba(255,94,120,.55); background: rgba(255,94,120,.14); }
+    button:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+
+    .kbd{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:28px;
+      padding:2px 8px;
+      border-radius: 10px;
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.10);
+      font-weight:900;
+      font-size:12px;
+      color: var(--text);
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:14px;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+    }
+    .overlay.show{ display:flex; }
+
+    .modal{
+      width:min(680px, 100%);
+      background: rgba(12,18,40,.75);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      box-shadow: 0 28px 70px rgba(0,0,0,.55);
+      padding:16px;
+    }
+
+    .modal h3{ margin:0 0 6px; font-size:18px; }
+    .modal p{ margin:0 0 10px; color:var(--muted); line-height:1.4; }
+
+    .bullets{
+      display:grid;
+      gap:6px;
+      margin:10px 0 12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .fine{
+      font-size:12px;
+      color:rgba(234,240,255,.72);
+      margin-top:10px;
+    }
+
+    @media (max-width: 900px){
+      .wrap{ grid-template-columns: 1fr; }
+      .brand{ justify-content:flex-start; text-align:left; }
+      .bar{ width:140px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topline">
+      <a class="back" href="./index.html" aria-label="Back to Claw Games">
+        <span aria-hidden="true">←</span>
+        <span>Back to Claw Games</span>
+      </a>
+      <div class="brand">
+        <h1>Plants Vs Brainrots Remix</h1>
+        <div class="note">Inspired by Plants Vs Brainrots 🌻</div>
+      </div>
+    </div>
+
+    <div class="panel gamePanel" id="gamePanel">
+      <div class="hud">
+        <div class="pill"><span aria-hidden="true">☀️</span> <strong id="sun">0</strong> <span style="color:var(--muted)">sun</span></div>
+        <div class="pill"><span aria-hidden="true">🎯</span> <strong id="score">0</strong> <span style="color:var(--muted)">score</span></div>
+        <div class="pill"><span aria-hidden="true">🧠</span> <strong id="wave">0</strong> <span style="color:var(--muted)">threat</span></div>
+        <div class="pill" title="Survive until the timer fills">
+          <span style="color:var(--muted)">Survival</span>
+          <div class="bar" aria-label="Survival progress"><i id="survivalBar"></i></div>
+        </div>
+      </div>
+      <canvas id="c" width="900" height="520" aria-label="Game canvas"></canvas>
+      <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Game menu">
+        <div class="modal">
+          <h3 id="ovTitle">Plants Vs Brainrots Remix</h3>
+          <p id="ovBody">Place plants, collect sun, and stop the Brainrots from reaching your garden gate.</p>
+          <div class="bullets" id="ovBullets"></div>
+          <div class="row">
+            <button class="primary" id="btnStart">Start</button>
+            <button id="btnHow">How to play</button>
+            <button class="danger" id="btnRestart" style="display:none;">Restart</button>
+          </div>
+          <div class="fine" id="ovFine">Single-file microgame. No external assets.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel side">
+      <div class="section">
+        <h2>Build deck</h2>
+        <div class="help">
+          Choose a plant, then click a tile to place it. Right-click (or <span class="kbd">Esc</span>) clears selection.
+        </div>
+        <div class="cards" id="cards"></div>
+        <div class="row">
+          <button id="btnPause">Pause</button>
+          <button id="btnMute">Sound: On</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Quick tips</h2>
+        <div class="help">
+          • Collect falling <strong>sun</strong> (click it) to afford plants.
+          <br/>• Brainrots get faster as threat rises.
+          <br/>• Win by surviving until the bar fills.
+          <br/>• Lose if any Brainrot reaches the <strong>left gate</strong>.
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Controls</h2>
+        <div class="help">
+          <strong>Mouse</strong>: click to collect sun / place plants
+          <br/><strong><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span></strong>: select plant
+          <br/><strong><span class="kbd">P</span></strong>: pause
+          <br/><strong><span class="kbd">M</span></strong>: mute
+          <br/><strong><span class="kbd">R</span></strong>: restart
+          <br/><strong><span class="kbd">Esc</span></strong>: clear selection
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  // --- Utilities
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+  const rand = (a,b)=>a+Math.random()*(b-a);
+  const randi = (a,b)=>Math.floor(rand(a,b+1));
+
+  // --- Audio (tiny synthesizer)
+  let audioCtx = null;
+  let muted = false;
+  function beep(type='sine', freq=440, dur=0.08, gain=0.06){
+    if (muted) return;
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.02);
+    }catch(e){ /* ignore */ }
+  }
+  function chord(){
+    beep('triangle', 523.25, 0.09, 0.05);
+    setTimeout(()=>beep('triangle', 659.25, 0.09, 0.045), 30);
+    setTimeout(()=>beep('triangle', 783.99, 0.10, 0.04), 60);
+  }
+
+  // --- Canvas + layout
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const uiSun = document.getElementById('sun');
+  const uiScore = document.getElementById('score');
+  const uiWave = document.getElementById('wave');
+  const survivalBar = document.getElementById('survivalBar');
+
+  const overlay = document.getElementById('overlay');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovBody = document.getElementById('ovBody');
+  const ovBullets = document.getElementById('ovBullets');
+  const btnStart = document.getElementById('btnStart');
+  const btnHow = document.getElementById('btnHow');
+  const btnRestart = document.getElementById('btnRestart');
+
+  const btnPause = document.getElementById('btnPause');
+  const btnMute = document.getElementById('btnMute');
+
+  const cards = document.getElementById('cards');
+
+  // --- Game constants
+  const GRID_ROWS = 5;
+  const GRID_COLS = 9;
+
+  const world = {
+    // field area inside canvas
+    x: 70,
+    y: 70,
+    w: 760,
+    h: 380
+  };
+
+  const cellW = () => world.w / GRID_COLS;
+  const cellH = () => world.h / GRID_ROWS;
+
+  const gateX = world.x + 10;
+
+  // --- Entities
+  const state = {
+    running:false,
+    paused:false,
+    time:0,
+    dt:0,
+    lastT:0,
+
+    sun: 75,
+    score: 0,
+    threat: 0,
+    survival: 0, // 0..1
+
+    selected: null,
+    hover: null, // {r,c}
+
+    grid: Array.from({length: GRID_ROWS}, () => Array.from({length: GRID_COLS}, () => null)),
+    peas: [],
+    enemies: [],
+    suns: [],
+    particles: [],
+
+    nextEnemyIn: 2.2,
+    nextSkySunIn: 1.8,
+
+    killed: 0,
+    lost:false,
+    won:false,
+
+    msg: '',
+  };
+
+  const PLANTS = [
+    {
+      id:'sprout',
+      key:'1',
+      name:'Sprout Popper',
+      icon:'🌱',
+      cost: 50,
+      hp: 150,
+      cooldown: 0.55,
+      shotSpeed: 420,
+      dmg: 18,
+      flavor:'Basic shooter. Reliable lane coverage.'
+    },
+    {
+      id:'sunflower',
+      key:'2',
+      name:'Sun Bloom',
+      icon:'🌻',
+      cost: 75,
+      hp: 175,
+      cooldown: 3.8,
+      makesSun: true,
+      sunAmount: 25,
+      flavor:'Generates sun. Protect it.'
+    },
+    {
+      id:'cactus',
+      key:'3',
+      name:'Cactus Firewall',
+      icon:'🌵',
+      cost: 100,
+      hp: 420,
+      thorns:true,
+      thornDmg: 9,
+      flavor:'Tough wall with thorns when bitten.'
+    }
+  ];
+
+  function plantAt(r,c){ return state.grid[r]?.[c]; }
+
+  function addParticle(x,y, color, n=10){
+    for(let i=0;i<n;i++){
+      state.particles.push({
+        x,y,
+        vx: rand(-140,140),
+        vy: rand(-160,40),
+        life: rand(0.25,0.55),
+        t:0,
+        r: rand(1.5,3.2),
+        color
+      });
+    }
+  }
+
+  function spawnEnemy(row){
+    // "Brainrot" is a goofy lane-walker that chews plants.
+    const base = 26;
+    const speed = base + state.threat*10 + rand(-6,8);
+    const hp = 90 + state.threat*35;
+    const chew = 22 + state.threat*6;
+    const typeRoll = Math.random();
+
+    let kind = 'walker';
+    let emoji = '🧠';
+    let tint = 'rgba(255,94,120,.85)';
+
+    if(typeRoll < 0.18 + state.threat*0.02){
+      kind = 'skater';
+      emoji = '🛼';
+      tint = 'rgba(255,211,106,.85)';
+    } else if(typeRoll > 0.82){
+      kind = 'glitch';
+      emoji = '📺';
+      tint = 'rgba(122,162,255,.85)';
+    }
+
+    const e = {
+      row,
+      x: world.x + world.w + 30,
+      y: world.y + (row + 0.5) * cellH(),
+      r: 18,
+      hp,
+      maxHp: hp,
+      speed: speed * (kind==='skater' ? 1.25 : 1.0) * (kind==='glitch' ? 0.95 : 1.0),
+      chew,
+      biteCooldown: 0.55,
+      biteT: 0,
+      kind,
+      emoji,
+      tint,
+      stunnedT: 0,
+      wobble: rand(0,Math.PI*2)
+    };
+    state.enemies.push(e);
+  }
+
+  function spawnSkySun(){
+    const x = world.x + rand(60, world.w - 60);
+    const y = world.y - 40;
+    state.suns.push({ x, y, vy: rand(25, 55), t:0, life: 10, amount: 25, wob: rand(0,Math.PI*2) });
+  }
+
+  function dropSunFromPlant(x,y, amount){
+    state.suns.push({ x, y, vy: rand(10, 22), t:0, life: 10, amount, wob: rand(0,Math.PI*2) });
+  }
+
+  function addPea(x,y, row, dmg, speed){
+    state.peas.push({ x, y, row, dmg, speed, r: 4.2, life: 4.0, t:0 });
+  }
+
+  function resetGame(){
+    state.running = false;
+    state.paused = false;
+    state.time = 0;
+    state.dt = 0;
+    state.lastT = 0;
+
+    state.sun = 75;
+    state.score = 0;
+    state.threat = 0;
+    state.survival = 0;
+
+    state.selected = PLANTS[0].id;
+    state.hover = null;
+
+    state.grid = Array.from({length: GRID_ROWS}, () => Array.from({length: GRID_COLS}, () => null));
+    state.peas = [];
+    state.enemies = [];
+    state.suns = [];
+    state.particles = [];
+
+    state.nextEnemyIn = 2.0;
+    state.nextSkySunIn = 1.4;
+
+    state.killed = 0;
+    state.lost = false;
+    state.won = false;
+    state.msg = '';
+
+    syncUI();
+    highlightCards();
+  }
+
+  function startGame(){
+    state.running = true;
+    state.paused = false;
+    state.lastT = performance.now();
+    overlay.classList.remove('show');
+    beep('triangle', 440, 0.06, 0.05);
+    requestAnimationFrame(tick);
+  }
+
+  function endGame(win){
+    state.running = false;
+    state.paused = false;
+    state.won = !!win;
+    state.lost = !win;
+    overlay.classList.add('show');
+    btnRestart.style.display = '';
+    btnStart.textContent = 'Play again';
+    ovTitle.textContent = win ? 'You held the garden!' : 'Brainrot breach!';
+    ovBody.textContent = win
+      ? `Victory. Your plants kept the gate safe. Final score: ${state.score}.`
+      : `Defeat. A Brainrot reached the gate. Final score: ${state.score}.`;
+    ovBullets.innerHTML = '';
+    const list = [
+      `Score: ${state.score}`,
+      `Brainrots cleared: ${state.killed}`,
+      `Threat reached: ${Math.round(state.threat*10)/10}`
+    ];
+    for(const s of list){
+      const div = document.createElement('div');
+      div.textContent = '• ' + s;
+      ovBullets.appendChild(div);
+    }
+    if(win) chord();
+    else {
+      beep('sawtooth', 180, 0.10, 0.06);
+      setTimeout(()=>beep('sawtooth', 140, 0.12, 0.05), 70);
+    }
+  }
+
+  function syncUI(){
+    uiSun.textContent = Math.floor(state.sun);
+    uiScore.textContent = Math.floor(state.score);
+    uiWave.textContent = state.threat.toFixed(1);
+    survivalBar.style.width = `${clamp(state.survival,0,1)*100}%`;
+
+    btnPause.textContent = state.paused ? 'Resume' : 'Pause';
+    btnMute.textContent = `Sound: ${muted ? 'Off' : 'On'}`;
+  }
+
+  function showMenu(){
+    overlay.classList.add('show');
+    btnRestart.style.display = 'none';
+    btnStart.textContent = 'Start';
+    ovTitle.textContent = 'Plants Vs Brainrots Remix';
+    ovBody.textContent = 'Place plants, collect sun, and stop the Brainrots from reaching your garden gate.';
+    ovBullets.innerHTML = '';
+    const items = [
+      'Pick a plant (1/2/3) and click a tile to place it.',
+      'Click falling ☀️ to collect sun.',
+      'Win by surviving until the Survival bar fills.',
+      'Lose if any Brainrot reaches the left gate.'
+    ];
+    for(const s of items){
+      const div = document.createElement('div');
+      div.textContent = '• ' + s;
+      ovBullets.appendChild(div);
+    }
+  }
+
+  function showHow(){
+    overlay.classList.add('show');
+    btnRestart.style.display = state.won || state.lost ? '' : 'none';
+    btnStart.textContent = state.running ? 'Resume' : 'Start';
+    ovTitle.textContent = 'How to play';
+    ovBody.textContent = 'A tight, lane-based defense game. Simple rules, spicy scaling.';
+    ovBullets.innerHTML = '';
+    const items = [
+      'Sprout Popper: shoots down its lane while any enemy is present.',
+      'Sun Bloom: periodically drops sun you can click to collect.',
+      'Cactus Firewall: blocks and damages enemies when they bite it.',
+      'Threat increases over time → enemies spawn more often and hit harder.'
+    ];
+    for(const s of items){
+      const div = document.createElement('div');
+      div.textContent = '• ' + s;
+      ovBullets.appendChild(div);
+    }
+    const tip = document.createElement('div');
+    tip.style.marginTop = '10px';
+    tip.style.color = 'rgba(234,240,255,.78)';
+    tip.textContent = 'Tip: Early Sun Blooms pay for themselves quickly — if you can protect them.';
+    ovBullets.appendChild(tip);
+  }
+
+  // --- UI: cards
+  function renderCards(){
+    cards.innerHTML = '';
+    for(const p of PLANTS){
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.dataset.plant = p.id;
+      el.innerHTML = `
+        <div class="icon">${p.icon}</div>
+        <div class="meta">
+          <div class="name">${p.name} <span style="color:var(--muted); font-weight:800;">(${p.cost}☀️)</span></div>
+          <div class="desc">${p.flavor}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px;">
+          <span class="kbd">${p.key}</span>
+        </div>
+      `;
+      el.addEventListener('click', () => {
+        state.selected = p.id;
+        highlightCards();
+        beep('triangle', 660, 0.05, 0.04);
+      });
+      cards.appendChild(el);
+    }
+  }
+
+  function highlightCards(){
+    const kids = [...cards.querySelectorAll('.card')];
+    for(const k of kids){
+      k.classList.toggle('selected', k.dataset.plant === state.selected);
+    }
+  }
+
+  function plantDef(id){
+    return PLANTS.find(p=>p.id===id) || null;
+  }
+
+  function canAfford(id){
+    const p = plantDef(id);
+    return p && state.sun >= p.cost;
+  }
+
+  function placePlant(r,c,id){
+    const p = plantDef(id);
+    if(!p) return false;
+    if(state.grid[r][c]) return false;
+    if(!canAfford(id)){
+      beep('sawtooth', 240, 0.06, 0.05);
+      return false;
+    }
+    state.sun -= p.cost;
+    const cx = world.x + (c + 0.5) * cellW();
+    const cy = world.y + (r + 0.5) * cellH();
+    state.grid[r][c] = {
+      id,
+      r, c,
+      x: cx,
+      y: cy,
+      hp: p.hp,
+      maxHp: p.hp,
+      cd: 0,
+      anim: 0,
+      blink: 0,
+      sunT: 0,
+    };
+    addParticle(cx, cy, 'rgba(124,255,178,.9)', 14);
+    beep('triangle', 520, 0.06, 0.05);
+    syncUI();
+    return true;
+  }
+
+  // --- Input mapping
+  function screenToWorld(mx,my){
+    const rect = canvas.getBoundingClientRect();
+    const x = (mx - rect.left) * (canvas.width / rect.width);
+    const y = (my - rect.top) * (canvas.height / rect.height);
+    return {x,y};
+  }
+
+  function tileFromPoint(x,y){
+    if(x < world.x || x > world.x + world.w || y < world.y || y > world.y + world.h) return null;
+    const c = clamp(Math.floor((x - world.x) / cellW()), 0, GRID_COLS-1);
+    const r = clamp(Math.floor((y - world.y) / cellH()), 0, GRID_ROWS-1);
+    return {r,c};
+  }
+
+  canvas.addEventListener('mousemove', (e) => {
+    const p = screenToWorld(e.clientX, e.clientY);
+    state.hover = tileFromPoint(p.x, p.y);
+  });
+
+  canvas.addEventListener('mouseleave', () => state.hover = null);
+
+  canvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    state.selected = null;
+    highlightCards();
+    beep('triangle', 300, 0.05, 0.03);
+  });
+
+  canvas.addEventListener('mousedown', (e) => {
+    if(overlay.classList.contains('show')) return;
+    if(!state.running || state.paused) return;
+
+    const p = screenToWorld(e.clientX, e.clientY);
+
+    // click sun first
+    for(let i=state.suns.length-1;i>=0;i--){
+      const s = state.suns[i];
+      const dx = p.x - s.x;
+      const dy = p.y - s.y;
+      if(dx*dx + dy*dy < 18*18){
+        state.sun += s.amount;
+        state.score += Math.round(s.amount/5);
+        state.suns.splice(i,1);
+        addParticle(s.x, s.y, 'rgba(255,211,106,.95)', 16);
+        beep('triangle', 880, 0.05, 0.04);
+        syncUI();
+        return;
+      }
+    }
+
+    // then tile placement
+    const t = tileFromPoint(p.x, p.y);
+    if(!t) return;
+    if(!state.selected) return;
+
+    placePlant(t.r, t.c, state.selected);
+  });
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if(k === 'p'){
+      togglePause();
+      e.preventDefault();
+      return;
+    }
+    if(k === 'm'){
+      toggleMute();
+      e.preventDefault();
+      return;
+    }
+    if(k === 'r'){
+      resetGame();
+      showMenu();
+      e.preventDefault();
+      return;
+    }
+    if(k === 'escape'){
+      state.selected = null;
+      highlightCards();
+      e.preventDefault();
+      return;
+    }
+
+    // plant shortcuts
+    for(const p of PLANTS){
+      if(k === p.key){
+        state.selected = p.id;
+        highlightCards();
+        beep('triangle', 660, 0.05, 0.04);
+        e.preventDefault();
+        return;
+      }
+    }
+  });
+
+  function togglePause(){
+    if(!state.running) return;
+    state.paused = !state.paused;
+    if(!state.paused){
+      state.lastT = performance.now();
+      requestAnimationFrame(tick);
+      beep('triangle', 520, 0.06, 0.04);
+    }else{
+      beep('triangle', 320, 0.06, 0.04);
+    }
+    syncUI();
+  }
+
+  function toggleMute(){
+    muted = !muted;
+    syncUI();
+    if(!muted) beep('triangle', 740, 0.05, 0.04);
+  }
+
+  btnPause.addEventListener('click', () => togglePause());
+  btnMute.addEventListener('click', () => toggleMute());
+
+  btnStart.addEventListener('click', () => {
+    if(state.running){
+      overlay.classList.remove('show');
+      if(state.paused) togglePause();
+      return;
+    }
+    startGame();
+  });
+
+  btnHow.addEventListener('click', () => showHow());
+  btnRestart.addEventListener('click', () => {
+    resetGame();
+    showMenu();
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if(e.target === overlay){
+      if(state.running){ overlay.classList.remove('show'); }
+    }
+  });
+
+  // --- Simulation
+  function tick(t){
+    if(!state.running) return;
+    if(state.paused) return;
+
+    const dt = clamp((t - state.lastT) / 1000, 0, 0.05);
+    state.lastT = t;
+    state.time += dt;
+    state.dt = dt;
+
+    // scale: threat rises with time; survival fills over fixed duration
+    const SURVIVE_SECONDS = 85;
+    state.survival = clamp(state.time / SURVIVE_SECONDS, 0, 1);
+    // threat is a softer curve that affects spawn rate + stats
+    state.threat = clamp(Math.pow(state.time / 40, 1.15), 0, 6.2);
+
+    // spawn cadence
+    state.nextEnemyIn -= dt;
+    const spawnRate = lerp(2.2, 0.55, clamp(state.threat/6, 0, 1));
+    if(state.nextEnemyIn <= 0){
+      const row = randi(0, GRID_ROWS-1);
+      spawnEnemy(row);
+      // slight randomness prevents perfect periodicity
+      state.nextEnemyIn = spawnRate + rand(-0.18, 0.25);
+      beep('sine', 210 + state.threat*14, 0.03, 0.018);
+    }
+
+    // sky sun cadence
+    state.nextSkySunIn -= dt;
+    if(state.nextSkySunIn <= 0){
+      spawnSkySun();
+      state.nextSkySunIn = rand(1.6, 2.6);
+    }
+
+    // update plants
+    for(let r=0;r<GRID_ROWS;r++){
+      for(let c=0;c<GRID_COLS;c++){
+        const pl = state.grid[r][c];
+        if(!pl) continue;
+        const def = plantDef(pl.id);
+        pl.anim += dt;
+        pl.blink = Math.max(0, pl.blink - dt);
+
+        // if plant generates sun
+        if(def.makesSun){
+          pl.sunT += dt;
+          if(pl.sunT >= def.cooldown){
+            pl.sunT = 0;
+            dropSunFromPlant(pl.x + rand(-10,10), pl.y - 12, def.sunAmount);
+            addParticle(pl.x, pl.y - 10, 'rgba(255,211,106,.9)', 8);
+            beep('triangle', 760, 0.04, 0.022);
+          }
+        }
+
+        // shooter behavior: shoot if enemy in same row ahead
+        if(!def.makesSun && !def.thorns){
+          pl.cd -= dt;
+          if(pl.cd <= 0){
+            const hasTarget = state.enemies.some(en => en.row===r && en.x > pl.x + 10);
+            if(hasTarget){
+              addPea(pl.x + 18, pl.y - 2, r, def.dmg, def.shotSpeed);
+              pl.cd = def.cooldown;
+              beep('triangle', 500 + rand(-40,60), 0.03, 0.018);
+            }
+          }
+        }
+      }
+    }
+
+    // update peas
+    for(let i=state.peas.length-1;i>=0;i--){
+      const p = state.peas[i];
+      p.t += dt;
+      p.x += p.speed * dt;
+      p.life -= dt;
+
+      // collision with first enemy in row
+      for(let j=0;j<state.enemies.length;j++){
+        const e = state.enemies[j];
+        if(e.row !== p.row) continue;
+        const dx = e.x - p.x;
+        const dy = e.y - p.y;
+        if(dx*dx + dy*dy < (e.r + p.r + 2) * (e.r + p.r + 2)){
+          e.hp -= p.dmg;
+          e.stunnedT = Math.max(e.stunnedT, 0.05);
+          addParticle(p.x, p.y, 'rgba(122,162,255,.9)', 10);
+          state.peas.splice(i,1);
+          state.score += 3;
+          if(e.hp <= 0){
+            state.killed++;
+            state.score += 30 + Math.round(state.threat*2);
+            addParticle(e.x, e.y, e.tint, 22);
+            // small chance to drop sun on kill
+            if(Math.random() < 0.22){
+              dropSunFromPlant(e.x, e.y - 10, 25);
+            }
+            state.enemies.splice(j,1);
+            beep('square', 240, 0.05, 0.03);
+          }
+          break;
+        }
+      }
+
+      if(p.life <= 0 || p.x > world.x + world.w + 80){
+        state.peas.splice(i,1);
+      }
+    }
+
+    // update enemies
+    for(let i=state.enemies.length-1;i>=0;i--){
+      const e = state.enemies[i];
+      e.wobble += dt * 6;
+      e.stunnedT = Math.max(0, e.stunnedT - dt);
+
+      // determine if colliding with a plant in the cell ahead
+      const c = clamp(Math.floor((e.x - world.x) / cellW()), 0, GRID_COLS-1);
+      const r = e.row;
+      const pl = state.grid[r][c];
+      const targetX = world.x + (c + 0.5) * cellW();
+
+      const nearPlant = pl && e.x <= targetX + 20;
+
+      if(nearPlant){
+        e.biteT -= dt;
+        if(e.biteT <= 0){
+          // bite
+          const def = plantDef(pl.id);
+          pl.hp -= e.chew;
+          pl.blink = 0.14;
+          addParticle(pl.x + rand(-6,8), pl.y + rand(-8,8), 'rgba(255,94,120,.75)', 10);
+          beep('sawtooth', 160 + rand(-20,20), 0.05, 0.028);
+
+          if(def.thorns){
+            // thorns retaliate
+            e.hp -= def.thornDmg;
+            addParticle(e.x - 6, e.y, 'rgba(124,255,178,.8)', 8);
+            if(e.hp <= 0){
+              state.killed++;
+              state.score += 34 + Math.round(state.threat*2);
+              addParticle(e.x, e.y, e.tint, 22);
+              if(Math.random() < 0.18) dropSunFromPlant(e.x, e.y - 10, 25);
+              state.enemies.splice(i,1);
+              continue;
+            }
+          }
+
+          if(pl.hp <= 0){
+            addParticle(pl.x, pl.y, 'rgba(255,255,255,.55)', 14);
+            state.grid[r][c] = null;
+            state.score += 8;
+          }
+
+          e.biteT = e.biteCooldown;
+        }
+      } else {
+        const slow = (e.stunnedT > 0) ? 0.5 : 1.0;
+        e.x -= e.speed * slow * dt;
+      }
+
+      // lose condition
+      if(e.x <= gateX){
+        endGame(false);
+        break;
+      }
+    }
+
+    // update suns
+    for(let i=state.suns.length-1;i>=0;i--){
+      const s = state.suns[i];
+      s.t += dt;
+      s.y += s.vy * dt;
+      s.y = Math.min(s.y, world.y + world.h - 12);
+      s.x += Math.sin(s.wob + s.t*3.2) * 10 * dt;
+      s.life -= dt;
+      if(s.life <= 0){ state.suns.splice(i,1); }
+    }
+
+    // particles
+    for(let i=state.particles.length-1;i>=0;i--){
+      const p = state.particles[i];
+      p.t += dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 520 * dt;
+      if(p.t >= p.life) state.particles.splice(i,1);
+    }
+
+    // win condition
+    if(state.survival >= 1 && !state.won && !state.lost){
+      endGame(true);
+      syncUI();
+      draw();
+      return;
+    }
+
+    // score over time
+    state.score += dt * 0.6;
+
+    syncUI();
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  // --- Rendering
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // soft vignette
+    ctx.save();
+    const g = ctx.createRadialGradient(canvas.width*0.5, canvas.height*0.5, 120, canvas.width*0.5, canvas.height*0.5, 620);
+    g.addColorStop(0, 'rgba(255,255,255,.00)');
+    g.addColorStop(1, 'rgba(0,0,0,.35)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+
+    // gate line
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,94,120,.45)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(gateX, world.y);
+    ctx.lineTo(gateX, world.y + world.h);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,94,120,.15)';
+    ctx.fillRect(gateX-10, world.y, 20, world.h);
+    ctx.restore();
+
+    // grid
+    ctx.save();
+    ctx.strokeStyle = 'rgba(28,42,87,.65)';
+    ctx.lineWidth = 1;
+    for(let r=0;r<=GRID_ROWS;r++){
+      const y = world.y + r * cellH();
+      ctx.beginPath(); ctx.moveTo(world.x, y); ctx.lineTo(world.x + world.w, y); ctx.stroke();
+    }
+    for(let c=0;c<=GRID_COLS;c++){
+      const x = world.x + c * cellW();
+      ctx.beginPath(); ctx.moveTo(x, world.y); ctx.lineTo(x, world.y + world.h); ctx.stroke();
+    }
+
+    // hover highlight
+    if(state.hover && state.selected){
+      const {r,c} = state.hover;
+      const x = world.x + c * cellW();
+      const y = world.y + r * cellH();
+      const ok = !state.grid[r][c] && canAfford(state.selected);
+      ctx.fillStyle = ok ? 'rgba(124,255,178,.12)' : 'rgba(255,94,120,.10)';
+      ctx.fillRect(x+1,y+1,cellW()-2,cellH()-2);
+      ctx.strokeStyle = ok ? 'rgba(124,255,178,.45)' : 'rgba(255,94,120,.35)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x+1,y+1,cellW()-2,cellH()-2);
+    }
+
+    ctx.restore();
+
+    // plants
+    for(let r=0;r<GRID_ROWS;r++){
+      for(let c=0;c<GRID_COLS;c++){
+        const pl = state.grid[r][c];
+        if(!pl) continue;
+        const def = plantDef(pl.id);
+
+        // base shadow
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,.22)';
+        ctx.beginPath();
+        ctx.ellipse(pl.x, pl.y + 18, 22, 10, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+
+        // body
+        ctx.save();
+        const pulse = 1 + 0.03*Math.sin(pl.anim*6);
+        ctx.translate(pl.x, pl.y);
+        ctx.scale(pulse, pulse);
+
+        // hp ring
+        const hpPct = clamp(pl.hp / pl.maxHp, 0, 1);
+        ctx.strokeStyle = 'rgba(255,255,255,.18)';
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI*2); ctx.stroke();
+        ctx.strokeStyle = hpPct > 0.33 ? 'rgba(124,255,178,.75)' : 'rgba(255,94,120,.75)';
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(0, 0, 24, -Math.PI/2, -Math.PI/2 + Math.PI*2*hpPct); ctx.stroke();
+
+        const blink = pl.blink>0 ? 0.35 : 0;
+        ctx.fillStyle = `rgba(255,255,255,${blink})`;
+        ctx.beginPath(); ctx.arc(0,0,26,0,Math.PI*2); ctx.fill();
+
+        ctx.font = '26px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255,255,255,.95)';
+        ctx.fillText(def.icon, 0, -2);
+
+        // subtle label for shooter direction
+        if(!def.makesSun && !def.thorns){
+          ctx.strokeStyle = 'rgba(122,162,255,.35)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(14, 6);
+          ctx.lineTo(32, 6);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(28, 2);
+          ctx.lineTo(32, 6);
+          ctx.lineTo(28, 10);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // peas
+    for(const p of state.peas){
+      ctx.save();
+      ctx.fillStyle = 'rgba(122,162,255,.95)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.25)';
+      ctx.beginPath();
+      ctx.arc(p.x - 1.5, p.y - 1.5, p.r*0.55, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // enemies
+    for(const e of state.enemies){
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.24)';
+      ctx.beginPath();
+      ctx.ellipse(e.x, e.y + 18, 24, 10, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      // hp bar
+      const w = 46;
+      const h = 7;
+      const pct = clamp(e.hp / e.maxHp, 0, 1);
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      ctx.fillRect(e.x - w/2, e.y - 33, w, h);
+      ctx.fillStyle = pct > 0.35 ? 'rgba(255,211,106,.90)' : 'rgba(255,94,120,.90)';
+      ctx.fillRect(e.x - w/2, e.y - 33, w*pct, h);
+      ctx.strokeStyle = 'rgba(255,255,255,.15)';
+      ctx.strokeRect(e.x - w/2, e.y - 33, w, h);
+
+      // body orb
+      const wob = Math.sin(e.wobble)*2.2;
+      ctx.fillStyle = e.tint;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y + wob, e.r, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(0,0,0,.20)';
+      ctx.beginPath();
+      ctx.arc(e.x + 5, e.y + wob + 2, e.r*0.55, 0, Math.PI*2);
+      ctx.fill();
+
+      // emoji core
+      ctx.font = '22px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255,255,255,.92)';
+      ctx.fillText(e.emoji, e.x, e.y + wob);
+
+      // stun ring
+      if(e.stunnedT > 0){
+        ctx.strokeStyle = 'rgba(122,162,255,.45)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y + wob, e.r + 6, 0, Math.PI*2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    // suns
+    for(const s of state.suns){
+      ctx.save();
+      const bob = Math.sin(s.wob + s.t*4) * 2;
+      ctx.translate(s.x, s.y + bob);
+      ctx.fillStyle = 'rgba(255,211,106,.95)';
+      ctx.beginPath();
+      ctx.arc(0,0,14,0,Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.35)';
+      ctx.beginPath();
+      ctx.arc(-4,-4,6.5,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.font = '12px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(0,0,0,.65)';
+      ctx.fillText('☀️', 0, 0.5);
+      ctx.restore();
+    }
+
+    // particles
+    for(const p of state.particles){
+      const a = 1 - (p.t / p.life);
+      ctx.save();
+      ctx.globalAlpha = clamp(a,0,1);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // footer hint
+    ctx.save();
+    ctx.fillStyle = 'rgba(234,240,255,.55)';
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Click ☀️ to collect • Place plants on tiles • P pause • R restart', 18, canvas.height - 16);
+    ctx.restore();
+  }
+
+  // --- Boot
+  renderCards();
+  resetGame();
+  showMenu();
+  draw();
+
+})();
+</script>
+</body>
+</html>
