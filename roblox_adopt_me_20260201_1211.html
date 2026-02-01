@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Microgame: Adopt Me! Remix</title>
+  <style>
+    :root{--bg:#07080c;--panel:rgba(255,255,255,.06);--text:#e8ecff;--muted:#aab3d6;--accent:#60a5fa;}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(900px 520px at 20% 0%, rgba(96,165,250,.22), transparent 65%),radial-gradient(800px 520px at 80% 10%, rgba(34,197,94,.14), transparent 60%),linear-gradient(180deg,#07080c 0%, #050610 60%, #07080c 100%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+    .wrap{width:min(980px,92vw);}
+    header{display:flex;gap:12px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}
+    h1{margin:0;font-size:18px;letter-spacing:.4px;text-transform:uppercase}
+    .sub{color:var(--muted);font-size:13px}
+    canvas{width:100%;height:auto;border-radius:16px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 60px rgba(0,0,0,.55)}
+    .hud{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:10px}
+    .pill{padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--muted);font-size:12px}
+    .btn{cursor:pointer;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(135deg, rgba(96,165,250,.20), rgba(34,197,94,.14));color:var(--text);padding:10px 12px;font-weight:800}
+    .btn:hover{border-color:rgba(96,165,250,.55)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Microgame: Adopt Me! Remix</h1>
+        <div class="sub">Inspired by Roblox hit: Adopt Me! · Theme: arcade survival</div>
+      </div>
+      <div class="pill">Controls: WASD/Arrow keys · Space = dash</div>
+    </header>
+
+    <canvas id="c" width="960" height="540"></canvas>
+
+    <div class="hud">
+      <div class="pill" id="status">Collect stars. Avoid blobs. Survive as long as you can.</div>
+      <button class="btn" id="restart">Restart</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const status = document.getElementById('status');
+  const restartBtn = document.getElementById('restart');
+
+  const W = canvas.width, H = canvas.height;
+
+  const keys = new Set();
+  addEventListener('keydown', e => { keys.add(e.key.toLowerCase()); if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault(); });
+  addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+
+  const rand = (a,b)=>a+Math.random()*(b-a);
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+  let t0 = performance.now();
+  let score = 0;
+  let best = 0;
+  let alive = true;
+
+  let player, stars, blobs, dashCd;
+
+  function reset() {
+    player = { x: W*0.5, y: H*0.6, r: 14, vx:0, vy:0 };
+    stars = Array.from({length: 10}, ()=>({x: rand(40,W-40), y: rand(40,H-40), r: 8}));
+    blobs = Array.from({length: 6}, ()=>spawnBlob());
+    dashCd = 0;
+    score = 0;
+    alive = true;
+    t0 = performance.now();
+    status.textContent = 'Collect stars. Avoid blobs. Survive as long as you can.';
+  }
+
+  function spawnBlob() {
+    const side = Math.floor(rand(0,4));
+    let x = 0, y = 0;
+    if (side===0) { x = rand(0,W); y = -30; }
+    if (side===1) { x = W+30; y = rand(0,H); }
+    if (side===2) { x = rand(0,W); y = H+30; }
+    if (side===3) { x = -30; y = rand(0,H); }
+    const speed = rand(40, 95);
+    const a = Math.atan2(H*0.55 - y, W*0.5 - x);
+    return { x, y, r: rand(16,26), vx: Math.cos(a)*speed, vy: Math.sin(a)*speed };
+  }
+
+  function dist(a,b) {
+    const dx=a.x-b.x, dy=a.y-b.y;
+    return Math.hypot(dx,dy);
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+
+    // background grid
+    ctx.globalAlpha = 0.25;
+    ctx.strokeStyle = '#60a5fa';
+    ctx.lineWidth = 1;
+    for (let x=0;x<=W;x+=48) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y=0;y<=H;y+=48) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+
+    // stars
+    for (const s of stars) {
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.35)';
+      ctx.stroke();
+    }
+
+    // blobs
+    for (const b of blobs) {
+      ctx.fillStyle = '#fb7185';
+      ctx.beginPath();
+      ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.25)';
+      ctx.stroke();
+    }
+
+    // player
+    ctx.fillStyle = alive ? '#22c55e' : '#94a3b8';
+    ctx.beginPath();
+    ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.35)';
+    ctx.stroke();
+
+    // HUD text
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.font = '16px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    ctx.fillText(`Score: ${score}   Best: ${best}`, 16, 24);
+
+    const secs = Math.floor((performance.now()-t0)/1000);
+    ctx.fillStyle = 'rgba(255,255,255,.6)';
+    ctx.fillText(`Time: ${secs}s`, 16, 46);
+  }
+
+  function step(dt) {
+    if (!alive) return;
+
+    let ax=0, ay=0;
+    if (keys.has('a') || keys.has('arrowleft')) ax -= 1;
+    if (keys.has('d') || keys.has('arrowright')) ax += 1;
+    if (keys.has('w') || keys.has('arrowup')) ay -= 1;
+    if (keys.has('s') || keys.has('arrowdown')) ay += 1;
+
+    const len = Math.hypot(ax,ay) || 1;
+    ax/=len; ay/=len;
+
+    const accel = 520;
+    player.vx += ax*accel*dt;
+    player.vy += ay*accel*dt;
+
+    // dash
+    dashCd = Math.max(0, dashCd - dt);
+    if (keys.has(' ') && dashCd===0 && (ax||ay)) {
+      player.vx += ax*420;
+      player.vy += ay*420;
+      dashCd = 0.8;
+    }
+
+    // friction
+    player.vx *= Math.pow(0.002, dt);
+    player.vy *= Math.pow(0.002, dt);
+
+    player.x = clamp(player.x + player.vx*dt, player.r, W-player.r);
+    player.y = clamp(player.y + player.vy*dt, player.r, H-player.r);
+
+    // move blobs
+    for (const b of blobs) {
+      b.x += b.vx*dt;
+      b.y += b.vy*dt;
+      // wrap
+      if (b.x < -60 || b.x > W+60 || b.y < -60 || b.y > H+60) {
+        Object.assign(b, spawnBlob());
+      }
+      // collision
+      if (dist(player,b) < player.r + b.r) {
+        alive = false;
+        best = Math.max(best, score);
+        status.textContent = `Game over. Score ${score}. Press Restart.`;
+      }
+    }
+
+    // collect stars
+    for (const s of stars) {
+      if (dist(player,s) < player.r + s.r) {
+        score++;
+        s.x = rand(40,W-40);
+        s.y = rand(40,H-40);
+        // ramp difficulty
+        if (score % 5 === 0) blobs.push(spawnBlob());
+      }
+    }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.033, (now-last)/1000);
+    last = now;
+    step(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  restartBtn.addEventListener('click', reset);
+  reset();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
