@@ -1,0 +1,1328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dandy's World Remix — Sticker Sprint</title>
+  <style>
+    :root{
+      --bg:#070812;
+      --panel:#0f1226;
+      --panel2:#0b0d1d;
+      --text:#eaf0ff;
+      --muted:#a9b4d6;
+      --accent:#7bf3d4;
+      --accent2:#ffb3e6;
+      --danger:#ff5e7a;
+      --good:#7cff8e;
+      --shadow:rgba(0,0,0,.35);
+      --glow:0 10px 30px rgba(123,243,212,.16);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 700px at 20% 0%, rgba(123,243,212,.12), transparent 60%),
+                  radial-gradient(900px 600px at 85% 15%, rgba(255,179,230,.10), transparent 55%),
+                  radial-gradient(800px 700px at 55% 120%, rgba(136,124,255,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      overflow:hidden;
+    }
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    .topbar{
+      position:fixed;
+      top:10px; left:12px; right:12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      pointer-events:none;
+      z-index:20;
+    }
+    .topbar > *{pointer-events:auto}
+    .back{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 10px 22px rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+    }
+    .badge{
+      font-size:12px;
+      color:var(--muted);
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(15,18,38,.75);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .wrap{
+      height:100%;
+      display:grid;
+      place-items:center;
+      padding:70px 16px 18px;
+    }
+
+    .frame{
+      width:min(980px, 100%);
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+
+    .hud{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px 14px;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(15,18,38,.92), rgba(11,13,29,.85));
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: var(--glow);
+    }
+    .hud .left, .hud .right{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--text);
+      font-size: 13px;
+    }
+    .pill b{font-variant-numeric: tabular-nums}
+    .btn{
+      cursor:pointer;
+      border:none;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(123,243,212,.18), rgba(123,243,212,.08));
+      border:1px solid rgba(123,243,212,.35);
+      box-shadow: 0 10px 20px rgba(0,0,0,.24);
+    }
+    .btn:hover{filter:brightness(1.08)}
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .btn.danger{
+      background: linear-gradient(180deg, rgba(255,94,122,.22), rgba(255,94,122,.10));
+      border:1px solid rgba(255,94,122,.38);
+    }
+
+    .stage{
+      position:relative;
+      border-radius: var(--radius);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.10);
+      background: radial-gradient(900px 600px at 30% 10%, rgba(123,243,212,.12), transparent 60%),
+                  radial-gradient(900px 600px at 80% 30%, rgba(255,179,230,.10), transparent 60%),
+                  rgba(10,12,26,.85);
+      box-shadow: 0 24px 80px rgba(0,0,0,.45);
+      aspect-ratio: 16 / 9;
+      min-height: 380px;
+    }
+    canvas{width:100%; height:100%; display:block}
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      padding:18px;
+      background: radial-gradient(900px 600px at 30% 10%, rgba(123,243,212,.10), transparent 60%),
+                  radial-gradient(900px 600px at 80% 30%, rgba(255,179,230,.08), transparent 60%),
+                  rgba(7,8,18,.72);
+      backdrop-filter: blur(6px);
+    }
+    .card{
+      width:min(680px, 100%);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(15,18,38,.95), rgba(11,13,29,.92));
+      border:1px solid rgba(255,255,255,.10);
+      padding:18px;
+      box-shadow: 0 30px 90px rgba(0,0,0,.55);
+    }
+    h1{
+      margin: 4px 0 8px;
+      font-size: clamp(24px, 3.6vw, 40px);
+      letter-spacing:.2px;
+    }
+    .sub{
+      margin:0 0 14px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+    .how{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .how > div{
+      padding:12px;
+      border-radius:14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .how b{color:var(--accent)}
+    .how small{display:block; color:var(--muted); margin-top:6px; line-height:1.3}
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-top: 10px;
+    }
+    .actions .left{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      user-select:none;
+    }
+    .toggle input{accent-color: var(--accent)}
+
+    .note{
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height:1.35;
+    }
+
+    @media (max-width: 680px){
+      .how{grid-template-columns: 1fr}
+      .hud{gap:8px}
+      .pill{font-size:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="./index.html" aria-label="Back to Claw Games">← Back to Claw Games</a>
+    <div class="badge">Inspired by <span id="inspired">Dandy's World [ALPHA]</span></div>
+  </div>
+
+  <div class="wrap">
+    <div class="frame">
+      <div class="hud" role="status" aria-live="polite">
+        <div class="left">
+          <div class="pill">Score: <b id="score">0</b></div>
+          <div class="pill">Stickers: <b id="stickers">0</b>/<span id="stickersMax">12</span></div>
+          <div class="pill">Time: <b id="time">90</b>s</div>
+          <div class="pill" id="comboPill" style="display:none">Glow Combo: <b id="combo">x1</b></div>
+        </div>
+        <div class="right">
+          <button class="btn secondary" id="pauseBtn" title="Pause (P)">Pause</button>
+          <button class="btn danger" id="restartBtn" title="Restart (R)">Restart</button>
+        </div>
+      </div>
+
+      <div class="stage" aria-label="Game canvas">
+        <canvas id="c" width="1280" height="720"></canvas>
+
+        <div class="overlay" id="overlay">
+          <div class="card" id="card">
+            <h1 id="title">Sticker Sprint</h1>
+            <p class="sub" id="subtitle">
+              Dash through a dreamy maze, collect glitter-stickers, and keep your <b>Glow</b> safe from the Gloom.
+            </p>
+            <div class="grid">
+              <div class="how">
+                <div>
+                  <b>Move</b>
+                  <small>WASD / Arrow keys. Hold <b>Shift</b> for a short sprint (uses Glow).</small>
+                </div>
+                <div>
+                  <b>Goal</b>
+                  <small>Collect all stickers before time runs out. Avoid the Gloom touching you.</small>
+                </div>
+                <div>
+                  <b>Glow Combo</b>
+                  <small>Collect stickers quickly to build a combo multiplier. Sprinting breaks the combo.</small>
+                </div>
+                <div>
+                  <b>Helpers</b>
+                  <small>Your buddy “Dandy” drops a <b>Charm Ring</b> occasionally. Stand in it to slow the Gloom.</small>
+                </div>
+              </div>
+
+              <div class="actions">
+                <div class="left">
+                  <button class="btn" id="startBtn">Start</button>
+                  <button class="btn secondary" id="practiceBtn" title="Slower Gloom, shorter win">Practice</button>
+                  <label class="toggle" title="Sound effects">
+                    <input type="checkbox" id="sound" checked /> Sound
+                  </label>
+                </div>
+                <div style="color:var(--muted); font-size:12.5px">
+                  Tip: press <b>P</b> to pause, <b>R</b> to restart.
+                </div>
+              </div>
+
+              <div class="note" id="note">
+                No external assets. Single-file microgame. PG-friendly.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ------- Utilities -------
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t) => a + (b-a)*t;
+  const rand = (a,b) => a + Math.random()*(b-a);
+  const randi = (a,b) => Math.floor(rand(a, b+1));
+  const now = () => performance.now();
+
+  // ------- DOM -------
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const overlay = document.getElementById('overlay');
+  const titleEl = document.getElementById('title');
+  const subtitleEl = document.getElementById('subtitle');
+
+  const scoreEl = document.getElementById('score');
+  const stickersEl = document.getElementById('stickers');
+  const stickersMaxEl = document.getElementById('stickersMax');
+  const timeEl = document.getElementById('time');
+
+  const comboPill = document.getElementById('comboPill');
+  const comboEl = document.getElementById('combo');
+
+  const startBtn = document.getElementById('startBtn');
+  const practiceBtn = document.getElementById('practiceBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const soundToggle = document.getElementById('sound');
+
+  // ------- Audio (tiny synth, no assets) -------
+  let audioCtx = null;
+  const SFX = {
+    enabled: true,
+    blip(freq=640, dur=0.08, type='sine', gain=0.05){
+      if(!SFX.enabled) return;
+      try{
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const t0 = audioCtx.currentTime;
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.connect(g).connect(audioCtx.destination);
+        o.start(t0);
+        o.stop(t0 + dur + 0.02);
+      }catch(_){/* ignore */}
+    },
+    chord(){
+      SFX.blip(440, 0.10, 'triangle', 0.05);
+      setTimeout(()=>SFX.blip(660, 0.10, 'triangle', 0.045), 40);
+      setTimeout(()=>SFX.blip(880, 0.12, 'triangle', 0.04), 85);
+    },
+    bad(){
+      SFX.blip(180, 0.12, 'sawtooth', 0.06);
+      setTimeout(()=>SFX.blip(140, 0.16, 'sawtooth', 0.05), 80);
+    },
+    ring(){
+      SFX.blip(980, 0.07, 'sine', 0.04);
+      setTimeout(()=>SFX.blip(1220, 0.08, 'sine', 0.03), 60);
+    },
+    sprint(){
+      SFX.blip(520, 0.06, 'square', 0.03);
+      setTimeout(()=>SFX.blip(720, 0.06, 'square', 0.02), 50);
+    }
+  };
+
+  // ------- Input -------
+  const keys = new Set();
+  const wasDown = new Set();
+  window.addEventListener('keydown', (e) => {
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Shift','KeyW','KeyA','KeyS','KeyD','KeyP','KeyR','Escape'].includes(e.code)) e.preventDefault();
+    keys.add(e.code);
+
+    if(e.code === 'KeyP') togglePause();
+    if(e.code === 'KeyR') restart();
+    if(e.code === 'Escape' && state !== 'play') hideOverlay();
+  }, {passive:false});
+  window.addEventListener('keyup', (e) => {
+    keys.delete(e.code);
+    wasDown.delete(e.code);
+  });
+
+  const pressed = (code) => {
+    // Rising-edge detection.
+    const down = keys.has(code);
+    if(down && !wasDown.has(code)) { wasDown.add(code); return true; }
+    if(!down && wasDown.has(code)) wasDown.delete(code);
+    return false;
+  };
+
+  // ------- Game constants -------
+  const W = canvas.width, H = canvas.height;
+  const TILE = 40;
+  const COLS = Math.floor(W / TILE);
+  const ROWS = Math.floor(H / TILE);
+
+  // Colors
+  const C = {
+    floor1: '#0e1030',
+    floor2: '#101547',
+    wall:   '#1a1f55',
+    wall2:  '#141a44',
+    accent: '#7bf3d4',
+    accent2:'#ffb3e6',
+    glow:   '#a6ffe9',
+    gloom:  '#2b103a',
+    gloom2: '#6f1b4b',
+    text:   '#eaf0ff',
+    muted:  '#a9b4d6',
+    good:   '#7cff8e',
+    danger: '#ff5e7a'
+  };
+
+  // ------- World generation -------
+  // Simple maze-like map: start with walls, carve random walk corridors.
+  function makeMap(seedBias=0){
+    const grid = new Array(ROWS).fill(0).map(()=>new Array(COLS).fill(1)); // 1=wall, 0=floor
+
+    // Start near center, carve.
+    let x = randi(2, COLS-3);
+    let y = randi(2, ROWS-3);
+    grid[y][x] = 0;
+
+    const steps = (COLS*ROWS) * 7;
+    for(let i=0;i<steps;i++){
+      const dir = randi(0,3);
+      if(dir===0) x++; else if(dir===1) x--; else if(dir===2) y++; else y--;
+      x = clamp(x, 2, COLS-3);
+      y = clamp(y, 2, ROWS-3);
+      grid[y][x] = 0;
+
+      // widen corridors occasionally
+      if(Math.random() < 0.35){
+        const wx = clamp(x + randi(-1,1), 1, COLS-2);
+        const wy = clamp(y + randi(-1,1), 1, ROWS-2);
+        grid[wy][wx] = 0;
+      }
+      if(Math.random() < (0.10 + seedBias)){
+        // carve a small room
+        const rw = randi(2,4);
+        const rh = randi(2,4);
+        for(let yy=-rh; yy<=rh; yy++) for(let xx=-rw; xx<=rw; xx++){
+          const gx = clamp(x+xx, 1, COLS-2);
+          const gy = clamp(y+yy, 1, ROWS-2);
+          grid[gy][gx] = 0;
+        }
+      }
+    }
+
+    // Ensure border is mostly walls.
+    for(let i=0;i<COLS;i++){ grid[0][i]=1; grid[ROWS-1][i]=1; }
+    for(let j=0;j<ROWS;j++){ grid[j][0]=1; grid[j][COLS-1]=1; }
+
+    // Clean up isolated walls/floors a bit.
+    for(let pass=0; pass<2; pass++){
+      const copy = grid.map(r=>r.slice());
+      for(let j=1;j<ROWS-1;j++) for(let i=1;i<COLS-1;i++){
+        let walls=0;
+        for(let yy=-1; yy<=1; yy++) for(let xx=-1; xx<=1; xx++) if(copy[j+yy][i+xx]===1) walls++;
+        if(copy[j][i]===1 && walls<=3) grid[j][i]=0;
+        if(copy[j][i]===0 && walls>=7) grid[j][i]=1;
+      }
+    }
+
+    return grid;
+  }
+
+  function isWall(map, px, py, rad=0){
+    const minX = Math.floor((px - rad) / TILE);
+    const maxX = Math.floor((px + rad) / TILE);
+    const minY = Math.floor((py - rad) / TILE);
+    const maxY = Math.floor((py + rad) / TILE);
+    for(let y=minY; y<=maxY; y++){
+      for(let x=minX; x<=maxX; x++){
+        if(y<0||y>=ROWS||x<0||x>=COLS) return true;
+        if(map[y][x]===1) return true;
+      }
+    }
+    return false;
+  }
+
+  function findOpen(map){
+    for(let tries=0; tries<5000; tries++){
+      const x = randi(1, COLS-2);
+      const y = randi(1, ROWS-2);
+      if(map[y][x]===0){
+        const px = (x+0.5)*TILE;
+        const py = (y+0.5)*TILE;
+        // avoid too cramped
+        if(!isWall(map, px, py, 12)) return {x:px, y:py};
+      }
+    }
+    return {x: W*0.5, y:H*0.5};
+  }
+
+  // ------- Entities -------
+  function dist(a,b){
+    const dx=a.x-b.x, dy=a.y-b.y;
+    return Math.hypot(dx,dy);
+  }
+
+  const player = {
+    x: W*0.2, y: H*0.5,
+    vx:0, vy:0,
+    r: 14,
+    glow: 1.0, // 0..1 sprint fuel
+    invuln: 0,
+    trail: []
+  };
+
+  const dandy = {
+    x: W*0.2, y:H*0.5,
+    r: 12,
+    wob:0,
+    dropCooldown: 0
+  };
+
+  const gloom = {
+    x: W*0.8, y:H*0.5,
+    vx:0, vy:0,
+    r: 16,
+    anger: 0,
+    slow: 0
+  };
+
+  let stickers = [];
+  let rings = [];
+
+  // ------- Game state -------
+  let map = null;
+  let state = 'title'; // title, play, pause, win, lose
+  let mode = 'normal'; // normal, practice
+
+  let score = 0;
+  let collected = 0;
+  let targetStickers = 12;
+  let timeLeft = 90;
+  let tPrev = now();
+
+  let combo = 1;
+  let comboTimer = 0;
+
+  // ------- UI helpers -------
+  function showOverlay(kind){
+    overlay.style.display = 'grid';
+    if(kind==='title'){
+      titleEl.textContent = "Sticker Sprint";
+      subtitleEl.innerHTML = "Dash through a dreamy maze, collect glitter-stickers, and keep your <b>Glow</b> safe from the Gloom.";
+      startBtn.textContent = 'Start';
+      practiceBtn.style.display = '';
+    } else if(kind==='pause'){
+      titleEl.textContent = 'Paused';
+      subtitleEl.innerHTML = 'Take a breath. The Gloom can wait.';
+      startBtn.textContent = 'Resume';
+      practiceBtn.style.display = 'none';
+    } else if(kind==='win'){
+      titleEl.textContent = 'You Won!';
+      subtitleEl.innerHTML = `You collected every sticker and kept your Glow intact.<br><span style="color:var(--muted)">Final score:</span> <b>${score}</b>`;
+      startBtn.textContent = 'Play again';
+      practiceBtn.style.display = 'none';
+    } else if(kind==='lose'){
+      titleEl.textContent = 'Caught by the Gloom';
+      subtitleEl.innerHTML = `Your Glow went out… but you can relight it.<br><span style="color:var(--muted)">Final score:</span> <b>${score}</b>`;
+      startBtn.textContent = 'Try again';
+      practiceBtn.style.display = 'none';
+    }
+  }
+
+  function hideOverlay(){
+    overlay.style.display = 'none';
+  }
+
+  function setHud(){
+    scoreEl.textContent = String(score);
+    stickersEl.textContent = String(collected);
+    stickersMaxEl.textContent = String(targetStickers);
+    timeEl.textContent = String(Math.max(0, Math.ceil(timeLeft)));
+
+    const showCombo = combo > 1 || comboTimer > 0;
+    comboPill.style.display = showCombo ? 'inline-flex' : 'none';
+    comboEl.textContent = 'x' + combo;
+  }
+
+  // ------- Placement -------
+  function placeStickers(){
+    stickers = [];
+    for(let i=0;i<targetStickers;i++){
+      let p = findOpen(map);
+      // ensure not too close to player
+      for(let tries=0; tries<120 && Math.hypot(p.x-player.x, p.y-player.y) < 140; tries++) p = findOpen(map);
+      stickers.push({x:p.x, y:p.y, r: 10, spin: rand(0,Math.PI*2), kind: randi(0,2)});
+    }
+  }
+
+  function resetEntities(){
+    map = makeMap(mode==='practice' ? 0.06 : 0);
+
+    const p0 = findOpen(map);
+    player.x = p0.x; player.y = p0.y;
+    player.vx = 0; player.vy = 0;
+    player.glow = 1.0;
+    player.invuln = 0;
+    player.trail.length = 0;
+
+    dandy.x = player.x; dandy.y = player.y;
+    dandy.wob = 0;
+    dandy.dropCooldown = 2.5;
+
+    const g0 = findOpen(map);
+    gloom.x = g0.x; gloom.y = g0.y;
+    // keep gloom far-ish
+    for(let tries=0; tries<250 && dist(gloom, player) < 320; tries++){
+      const t = findOpen(map);
+      gloom.x=t.x; gloom.y=t.y;
+    }
+    gloom.vx=0; gloom.vy=0;
+    gloom.anger=0;
+    gloom.slow=0;
+
+    rings = [];
+    placeStickers();
+  }
+
+  // ------- Flow -------
+  function startGame(){
+    score = 0;
+    collected = 0;
+    combo = 1;
+    comboTimer = 0;
+
+    timeLeft = mode==='practice' ? 65 : 90;
+    targetStickers = mode==='practice' ? 9 : 12;
+
+    resetEntities();
+    setHud();
+    state = 'play';
+    hideOverlay();
+    tPrev = now();
+    SFX.chord();
+  }
+
+  function restart(){
+    if(state==='title') return;
+    startGame();
+  }
+
+  function togglePause(){
+    if(state==='play'){
+      state='pause';
+      pauseBtn.textContent = 'Resume';
+      showOverlay('pause');
+      SFX.blip(320, 0.06, 'sine', 0.03);
+    } else if(state==='pause'){
+      state='play';
+      pauseBtn.textContent = 'Pause';
+      hideOverlay();
+      tPrev = now();
+      SFX.blip(520, 0.06, 'sine', 0.03);
+    }
+  }
+
+  function end(kind){
+    state = kind;
+    pauseBtn.textContent = 'Pause';
+    showOverlay(kind);
+    if(kind==='win') SFX.chord();
+    if(kind==='lose') SFX.bad();
+  }
+
+  // Buttons
+  startBtn.addEventListener('click', () => {
+    if(state==='title' || state==='win' || state==='lose') startGame();
+    else if(state==='pause') togglePause();
+  });
+  practiceBtn.addEventListener('click', () => {
+    mode = 'practice';
+    startGame();
+  });
+  pauseBtn.addEventListener('click', () => togglePause());
+  restartBtn.addEventListener('click', () => restart());
+  soundToggle.addEventListener('change', () => {
+    SFX.enabled = !!soundToggle.checked;
+    if(SFX.enabled) SFX.blip(660, 0.06, 'triangle', 0.03);
+  });
+
+  // ------- Physics helpers -------
+  function tryMoveCircle(ent, dx, dy){
+    // Slide along walls.
+    const nx = ent.x + dx;
+    const ny = ent.y + dy;
+
+    if(!isWall(map, nx, ent.y, ent.r)) ent.x = nx;
+    else ent.vx = 0;
+
+    if(!isWall(map, ent.x, ny, ent.r)) ent.y = ny;
+    else ent.vy = 0;
+  }
+
+  function nearestSticker(){
+    let best=null, bd=1e9;
+    for(const s of stickers){
+      const d = Math.hypot(s.x-player.x, s.y-player.y);
+      if(d<bd){ bd=d; best=s; }
+    }
+    return best;
+  }
+
+  // ------- Update loop -------
+  function update(dt){
+    if(state!=='play') return;
+
+    timeLeft -= dt;
+    if(timeLeft <= 0){
+      timeLeft = 0;
+      end('lose');
+      return;
+    }
+
+    // Combo decay
+    if(comboTimer > 0){
+      comboTimer -= dt;
+      if(comboTimer <= 0){
+        comboTimer = 0;
+        combo = 1;
+      }
+    }
+
+    // Player movement
+    let ax=0, ay=0;
+    const up = keys.has('ArrowUp') || keys.has('KeyW');
+    const dn = keys.has('ArrowDown') || keys.has('KeyS');
+    const lt = keys.has('ArrowLeft') || keys.has('KeyA');
+    const rt = keys.has('ArrowRight') || keys.has('KeyD');
+
+    if(up) ay -= 1;
+    if(dn) ay += 1;
+    if(lt) ax -= 1;
+    if(rt) ax += 1;
+
+    const mag = Math.hypot(ax,ay) || 1;
+    ax/=mag; ay/=mag;
+
+    const sprintHeld = keys.has('ShiftLeft') || keys.has('ShiftRight');
+    const canSprint = sprintHeld && player.glow > 0.08 && (ax!==0 || ay!==0);
+
+    const baseSpeed = 240;
+    const sprintSpeed = 380;
+
+    let speed = baseSpeed;
+    if(canSprint){
+      speed = sprintSpeed;
+      player.glow = Math.max(0, player.glow - dt*0.35);
+      // sprint breaks combo
+      if(combo > 1 || comboTimer > 0){
+        combo = 1;
+        comboTimer = 0;
+      }
+      if(pressed('ShiftLeft') || pressed('ShiftRight')) SFX.sprint();
+    } else {
+      // recharge glow slowly when moving or idle
+      player.glow = Math.min(1, player.glow + dt*0.12);
+    }
+
+    // soft acceleration
+    const targetVx = ax * speed;
+    const targetVy = ay * speed;
+    player.vx = lerp(player.vx, targetVx, 1 - Math.pow(0.0005, dt));
+    player.vy = lerp(player.vy, targetVy, 1 - Math.pow(0.0005, dt));
+
+    const dx = player.vx * dt;
+    const dy = player.vy * dt;
+    tryMoveCircle(player, dx, dy);
+
+    // Trail
+    player.trail.unshift({x:player.x, y:player.y, a:1});
+    if(player.trail.length > 18) player.trail.pop();
+    for(const t of player.trail) t.a -= dt*2.6;
+
+    // Dandy follows + drops ring
+    dandy.wob += dt*2.1;
+    const follow = {x: player.x - player.vx*0.06, y: player.y - player.vy*0.06};
+    const dfx = follow.x - dandy.x;
+    const dfy = follow.y - dandy.y;
+    const fd = Math.hypot(dfx, dfy) || 1;
+    const fspd = 220;
+    dandy.x += (dfx/fd) * Math.min(fspd*dt, fd);
+    dandy.y += (dfy/fd) * Math.min(fspd*dt, fd);
+
+    dandy.dropCooldown -= dt;
+    if(dandy.dropCooldown <= 0){
+      dandy.dropCooldown = mode==='practice' ? rand(5.5, 7.5) : rand(6.5, 9.0);
+      const p = findOpen(map);
+      // bias ring near player
+      const rr = {
+        x: clamp(lerp(p.x, player.x, 0.55), TILE, W-TILE),
+        y: clamp(lerp(p.y, player.y, 0.55), TILE, H-TILE),
+        r: 46,
+        t: 0,
+        live: 9.0
+      };
+      if(!isWall(map, rr.x, rr.y, rr.r-10)){
+        rings.push(rr);
+        SFX.ring();
+      }
+    }
+
+    // Rings update + apply slow
+    let gloomSlowMul = 1;
+    for(const ring of rings){
+      ring.t += dt;
+      ring.live -= dt;
+      if(ring.live > 0){
+        // if gloom in ring, slow it
+        const d = Math.hypot(gloom.x - ring.x, gloom.y - ring.y);
+        if(d < ring.r) gloomSlowMul = Math.min(gloomSlowMul, 0.55);
+      }
+    }
+    rings = rings.filter(r => r.live > 0);
+
+    // Gloom AI: seek player with slight wandering, avoid walls with steering.
+    const toP = {x: player.x - gloom.x, y: player.y - gloom.y};
+    const pd = Math.hypot(toP.x, toP.y) || 1;
+
+    gloom.anger = clamp(gloom.anger + dt*(pd < 320 ? 0.7 : -0.45), 0, 1);
+
+    const baseGloom = (mode==='practice' ? 160 : 190);
+    const maxGloom  = (mode==='practice' ? 220 : 260);
+    let gSpeed = lerp(baseGloom, maxGloom, gloom.anger);
+    gSpeed *= gloomSlowMul;
+
+    // Add a bit of drift so it feels alive.
+    const drift = {
+      x: Math.sin(now()*0.0011 + 1.7) * 0.35,
+      y: Math.cos(now()*0.0013 + 0.9) * 0.35
+    };
+
+    let gx = (toP.x/pd) + drift.x;
+    let gy = (toP.y/pd) + drift.y;
+    const gm = Math.hypot(gx,gy) || 1;
+    gx/=gm; gy/=gm;
+
+    gloom.vx = lerp(gloom.vx, gx*gSpeed, 1 - Math.pow(0.001, dt));
+    gloom.vy = lerp(gloom.vy, gy*gSpeed, 1 - Math.pow(0.001, dt));
+
+    // If about to hit wall, try perpendicular nudge.
+    const gdx = gloom.vx * dt;
+    const gdy = gloom.vy * dt;
+    const testX = gloom.x + gdx;
+    const testY = gloom.y + gdy;
+    if(isWall(map, testX, testY, gloom.r)){
+      // rotate direction a bit
+      const sign = Math.random() < 0.5 ? -1 : 1;
+      const ang = 0.85 * sign;
+      const rx = gx*Math.cos(ang) - gy*Math.sin(ang);
+      const ry = gx*Math.sin(ang) + gy*Math.cos(ang);
+      gloom.vx = rx*gSpeed;
+      gloom.vy = ry*gSpeed;
+    }
+    tryMoveCircle(gloom, gloom.vx*dt, gloom.vy*dt);
+
+    // Collect stickers
+    for(let i=stickers.length-1; i>=0; i--){
+      const s = stickers[i];
+      s.spin += dt*2.4;
+      const d = Math.hypot(player.x - s.x, player.y - s.y);
+      if(d < player.r + s.r + 4){
+        stickers.splice(i,1);
+        collected++;
+
+        // Combo: pick up within 3.1s to increase.
+        if(comboTimer > 0) combo = clamp(combo + 1, 1, 6);
+        comboTimer = 3.1;
+
+        const bonus = 50;
+        const timeBonus = Math.floor(clamp(timeLeft, 0, 90));
+        const gained = Math.floor((bonus + timeBonus*0.15) * combo);
+        score += gained;
+
+        // little glow burst
+        player.glow = Math.min(1, player.glow + 0.18);
+        player.invuln = Math.max(player.invuln, 0.18);
+
+        SFX.blip(740 + combo*60, 0.07, 'triangle', 0.05);
+        if(combo >= 4) SFX.blip(980, 0.05, 'sine', 0.03);
+
+        if(collected >= targetStickers){
+          end('win');
+          return;
+        }
+      }
+    }
+
+    // Collision with gloom
+    if(player.invuln > 0) player.invuln -= dt;
+    const gdist = Math.hypot(player.x - gloom.x, player.y - gloom.y);
+    if(gdist < player.r + gloom.r - 2 && player.invuln <= 0){
+      end('lose');
+      return;
+    }
+
+    // Passive score drip for survival when combo is high
+    if(combo >= 3){
+      score += dt * (combo - 2) * 0.9;
+    }
+
+    score = Math.floor(score);
+    setHud();
+  }
+
+  // ------- Render -------
+  function draw(){
+    const t = now()*0.001;
+
+    // Background vignette
+    ctx.clearRect(0,0,W,H);
+
+    // Draw tiles
+    for(let y=0;y<ROWS;y++){
+      for(let x=0;x<COLS;x++){
+        const px = x*TILE;
+        const py = y*TILE;
+        const isW = map ? map[y][x]===1 : ((x===0||y===0||x===COLS-1||y===ROWS-1) ? 1 : 0);
+        if(isW){
+          const g = ctx.createLinearGradient(px, py, px+TILE, py+TILE);
+          g.addColorStop(0, C.wall);
+          g.addColorStop(1, C.wall2);
+          ctx.fillStyle = g;
+          ctx.fillRect(px,py,TILE,TILE);
+
+          // subtle studs
+          ctx.fillStyle = 'rgba(123,243,212,0.05)';
+          ctx.fillRect(px+6, py+6, 6, 6);
+        } else {
+          ctx.fillStyle = ((x+y)&1) ? C.floor1 : C.floor2;
+          ctx.fillRect(px,py,TILE,TILE);
+
+          // sparkles
+          const n = (x*928371 + y*19349663) % 7;
+          if(n===0){
+            ctx.fillStyle = 'rgba(255,179,230,0.05)';
+            ctx.fillRect(px+TILE*0.73, py+TILE*0.30, 2, 2);
+          }
+        }
+      }
+    }
+
+    // Soft lighting layers
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    // player glow
+    if(state !== 'title'){
+      const gr = ctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, 170);
+      gr.addColorStop(0, `rgba(123,243,212,${0.28 + player.glow*0.16})`);
+      gr.addColorStop(1, 'rgba(123,243,212,0)');
+      ctx.fillStyle = gr;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, 170, 0, Math.PI*2);
+      ctx.fill();
+
+      // gloom aura
+      const ar = ctx.createRadialGradient(gloom.x, gloom.y, 10, gloom.x, gloom.y, 190);
+      ar.addColorStop(0, `rgba(255,94,122,${0.12 + gloom.anger*0.10})`);
+      ar.addColorStop(1, 'rgba(255,94,122,0)');
+      ctx.fillStyle = ar;
+      ctx.beginPath();
+      ctx.arc(gloom.x, gloom.y, 190, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Rings
+    for(const ring of rings){
+      const p = clamp(ring.live/9, 0, 1);
+      const pulse = 0.75 + Math.sin((ring.t*3.2) + t*1.7)*0.12;
+      ctx.save();
+      ctx.globalAlpha = 0.75 * p;
+      ctx.strokeStyle = 'rgba(123,243,212,0.9)';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(ring.x, ring.y, ring.r * pulse, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.25 * p;
+      ctx.strokeStyle = 'rgba(255,179,230,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ring.x, ring.y, ring.r * (pulse*0.85), 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Stickers
+    for(const s of stickers){
+      const bob = Math.sin(s.spin*2) * 3;
+      const w = 22;
+      const h = 18;
+
+      ctx.save();
+      ctx.translate(s.x, s.y + bob);
+      ctx.rotate(s.spin*0.45);
+
+      const grad = ctx.createLinearGradient(-w, -h, w, h);
+      grad.addColorStop(0, 'rgba(123,243,212,0.95)');
+      grad.addColorStop(1, 'rgba(255,179,230,0.95)');
+
+      // sticker base
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if(s.kind===0){
+        roundedRect(-w*0.8, -h*0.55, w*1.6, h*1.1, 7);
+      } else if(s.kind===1){
+        heartPath(0,0, 10);
+      } else {
+        starPath(0,0, 11, 6);
+      }
+      ctx.fill();
+      ctx.stroke();
+
+      // shine
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.ellipse(-4, -4, 6, 3, -0.7, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Player trail
+    if(state==='play'){
+      for(let i=0;i<player.trail.length;i++){
+        const tr = player.trail[i];
+        if(tr.a<=0) continue;
+        const a = tr.a * 0.25;
+        ctx.fillStyle = `rgba(123,243,212,${a})`;
+        ctx.beginPath();
+        ctx.arc(tr.x, tr.y, player.r - i*0.3, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    // Dandy
+    if(state!=='title'){
+      const wob = Math.sin(dandy.wob) * 2.3;
+      drawDandy(dandy.x, dandy.y + wob);
+    }
+
+    // Player
+    if(state!=='title'){
+      drawPlayer(player.x, player.y);
+    }
+
+    // Gloom
+    if(state!=='title'){
+      drawGloom(gloom.x, gloom.y);
+    }
+
+    // Mini help text (in-game)
+    if(state==='play'){
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      roundedRect(16, H-56, 430, 40, 12);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(234,240,255,0.92)';
+      ctx.font = '14px ui-sans-serif, system-ui';
+      ctx.fillText('Collect stickers • Sprint uses Glow • Stand in Charm Rings to slow the Gloom', 28, H-30);
+      ctx.restore();
+    }
+
+    // Title ambient draw
+    if(state==='title'){
+      ctx.save();
+      ctx.globalAlpha = 0.8;
+      const cx = W*0.5, cy = H*0.55;
+      const rr = 240 + Math.sin(t)*18;
+      const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, rr);
+      g.addColorStop(0, 'rgba(123,243,212,0.20)');
+      g.addColorStop(1, 'rgba(123,243,212,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rr, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function roundedRect(x,y,w,h,r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+  }
+
+  function heartPath(x,y,s){
+    // Simple heart shape
+    ctx.beginPath();
+    ctx.moveTo(x, y + s*0.65);
+    ctx.bezierCurveTo(x - s*1.2, y + s*0.15, x - s*0.9, y - s*0.9, x, y - s*0.25);
+    ctx.bezierCurveTo(x + s*0.9, y - s*0.9, x + s*1.2, y + s*0.15, x, y + s*0.65);
+    ctx.closePath();
+  }
+
+  function starPath(x,y,outer,inner){
+    ctx.beginPath();
+    for(let i=0;i<10;i++){
+      const a = -Math.PI/2 + i*(Math.PI/5);
+      const rr = (i%2===0) ? outer : inner;
+      const px = x + Math.cos(a)*rr;
+      const py = y + Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(px,py);
+      else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+  }
+
+  function drawPlayer(x,y){
+    const flicker = (player.invuln>0) ? (0.55 + Math.sin(now()*0.03)*0.25) : 1;
+    // body
+    ctx.save();
+    ctx.translate(x,y);
+
+    // glow ring
+    ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = `rgba(123,243,212,${0.35*flicker})`;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(0,0, player.r + 9 + player.glow*8, 0, Math.PI*2);
+    ctx.stroke();
+
+    // core
+    const g = ctx.createRadialGradient(-4,-4, 4, 0,0, player.r+6);
+    g.addColorStop(0, `rgba(255,255,255,${0.95*flicker})`);
+    g.addColorStop(1, `rgba(123,243,212,${0.90*flicker})`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0,0, player.r+2, 0, Math.PI*2);
+    ctx.fill();
+
+    // face
+    ctx.globalAlpha = 0.85*flicker;
+    ctx.fillStyle = 'rgba(10,12,26,0.65)';
+    ctx.beginPath();
+    ctx.arc(-4, -2, 2.2, 0, Math.PI*2);
+    ctx.arc( 4, -2, 2.2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(10,12,26,0.45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 4, 5, 0.15*Math.PI, 0.85*Math.PI);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Glow bar above player
+    const bw = 60;
+    const bh = 8;
+    const px = x - bw/2;
+    const py = y - player.r - 26;
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    roundedRect(px, py, bw, bh, 6);
+    ctx.fill();
+    const fill = clamp(player.glow,0,1);
+    const grad = ctx.createLinearGradient(px, py, px+bw, py);
+    grad.addColorStop(0, 'rgba(123,243,212,0.95)');
+    grad.addColorStop(1, 'rgba(255,179,230,0.95)');
+    ctx.fillStyle = grad;
+    roundedRect(px, py, bw*fill, bh, 6);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawDandy(x,y){
+    ctx.save();
+    ctx.translate(x,y);
+
+    // petal halo
+    ctx.globalCompositeOperation = 'lighter';
+    for(let i=0;i<7;i++){
+      const a = i*(Math.PI*2/7) + now()*0.001;
+      const rr = 18;
+      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = (i%2===0) ? 'rgba(255,179,230,0.9)' : 'rgba(123,243,212,0.9)';
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(a)*rr, Math.sin(a)*rr, 8, 4, a, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // body
+    const grad = ctx.createLinearGradient(-10,-10, 12, 12);
+    grad.addColorStop(0, 'rgba(255,179,230,0.95)');
+    grad.addColorStop(1, 'rgba(123,243,212,0.95)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0,0, dandy.r+1, 0, Math.PI*2);
+    ctx.fill();
+
+    // eye wink
+    ctx.strokeStyle = 'rgba(10,12,26,0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(-4,-2, 2.4, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(3,-2);
+    ctx.lineTo(7,-2);
+    ctx.stroke();
+
+    // tiny badge
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = 'rgba(10,12,26,0.35)';
+    roundedRect(-10, 10, 20, 8, 4);
+    ctx.fill();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = 'rgba(234,240,255,0.8)';
+    ctx.font = '10px ui-sans-serif, system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('D', 0, 14);
+
+    ctx.restore();
+  }
+
+  function drawGloom(x,y){
+    const pulse = 1 + Math.sin(now()*0.004) * 0.06;
+    ctx.save();
+    ctx.translate(x,y);
+
+    // outer haze
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.20 + gloom.anger*0.10;
+    const g = ctx.createRadialGradient(0,0, 6, 0,0, 70);
+    g.addColorStop(0, 'rgba(255,94,122,0.55)');
+    g.addColorStop(1, 'rgba(255,94,122,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0,0, 70, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    // body
+    const grad = ctx.createLinearGradient(-16,-18, 18, 20);
+    grad.addColorStop(0, C.gloom2);
+    grad.addColorStop(1, C.gloom);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(0,0, gloom.r*pulse, (gloom.r+4)*pulse, 0.2, 0, Math.PI*2);
+    ctx.fill();
+
+    // eyes
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = 'rgba(234,240,255,0.7)';
+    ctx.beginPath();
+    ctx.ellipse(-6,-4, 3, 6, -0.3, 0, Math.PI*2);
+    ctx.ellipse( 6,-4, 3, 6,  0.3, 0, Math.PI*2);
+    ctx.fill();
+
+    // mouth
+    ctx.strokeStyle = 'rgba(234,240,255,0.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 6, 8, 0.15*Math.PI, 0.85*Math.PI);
+    ctx.stroke();
+
+    // tiny wisps
+    ctx.globalAlpha = 0.22;
+    for(let i=0;i<4;i++){
+      const a = i*1.5 + now()*0.0012;
+      ctx.fillStyle = 'rgba(255,94,122,0.7)';
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(a)*18, Math.sin(a)*18, 6, 3, a, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  // ------- Main loop -------
+  function tick(){
+    const t = now();
+    let dt = (t - tPrev) / 1000;
+    tPrev = t;
+    dt = clamp(dt, 0, 0.033);
+
+    update(dt);
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  // Init
+  function boot(){
+    SFX.enabled = !!soundToggle.checked;
+    map = makeMap();
+    showOverlay('title');
+    setHud();
+    tick();
+  }
+
+  boot();
+
+})();
+</script>
+</body>
+</html>
