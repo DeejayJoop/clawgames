@@ -1,0 +1,1308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dress To Impress✨ Remix — Claw Games</title>
+  <style>
+    :root{
+      --bg0:#070813;
+      --bg1:#0d1030;
+      --card:#10143a;
+      --card2:#0c0f2a;
+      --text:#eef1ff;
+      --muted:#a7b0e6;
+      --accent:#ff4fd8;
+      --accent2:#47e7ff;
+      --good:#40ff9a;
+      --warn:#ffd24a;
+      --bad:#ff4c6b;
+      --shadow: 0 14px 50px rgba(0,0,0,.45);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background:
+        radial-gradient(1000px 700px at 20% 10%, rgba(255,79,216,.18), transparent 55%),
+        radial-gradient(900px 650px at 85% 20%, rgba(71,231,255,.16), transparent 55%),
+        radial-gradient(1000px 800px at 55% 90%, rgba(64,255,154,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow:hidden;
+    }
+
+    a{ color:var(--accent2); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+
+    .topbar{
+      position:fixed;
+      left:0; right:0; top:0;
+      padding:12px 14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      background: linear-gradient(180deg, rgba(7,8,19,.88), rgba(7,8,19,.35));
+      backdrop-filter: blur(8px);
+      z-index:20;
+    }
+    .topbar .left{ display:flex; align-items:center; gap:10px; }
+    .crumb{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:12px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.09);
+    }
+    .meta{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:min(55vw, 520px);
+    }
+
+    .wrap{
+      position:relative;
+      height:100%;
+      padding-top:56px;
+      display:grid;
+      place-items:center;
+    }
+
+    .shell{
+      width:min(1120px, 96vw);
+      height:min(680px, 86vh);
+      border-radius:22px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .grid{
+      height:100%;
+      display:grid;
+      grid-template-columns: 360px 1fr;
+    }
+    @media (max-width: 980px){
+      body{ overflow:auto; }
+      .shell{ height:auto; }
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      padding:16px;
+      background: linear-gradient(180deg, rgba(16,20,58,.80), rgba(12,15,42,.78));
+      border-right: 1px solid rgba(255,255,255,.09);
+      position:relative;
+    }
+    .panel h1{
+      margin:2px 0 10px;
+      font-size:22px;
+      letter-spacing:.2px;
+    }
+    .pillrow{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+    .pill{
+      font-size:12px;
+      color:var(--muted);
+      padding:7px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .statrow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin:10px 0 12px;
+    }
+    .stat{
+      padding:10px 12px;
+      border-radius:16px;
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .stat .k{ font-size:11px; color:var(--muted); }
+    .stat .v{ font-weight:700; margin-top:3px; font-size:16px; }
+
+    .themeCard{
+      padding:12px;
+      border-radius:18px;
+      background: linear-gradient(135deg, rgba(255,79,216,.13), rgba(71,231,255,.10));
+      border:1px solid rgba(255,255,255,.14);
+    }
+    .themeCard .label{ font-size:11px; color:var(--muted); }
+    .themeCard .theme{ font-size:18px; font-weight:800; margin-top:3px; }
+    .themeCard .hint{ font-size:12px; color:rgba(238,241,255,.86); margin-top:6px; line-height:1.35; }
+
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+      align-items:center;
+    }
+    button{
+      appearance:none;
+      border:0;
+      color:var(--text);
+      font-weight:800;
+      letter-spacing:.2px;
+      padding:10px 12px;
+      border-radius:14px;
+      background: linear-gradient(180deg, rgba(255,79,216,.95), rgba(170,49,255,.90));
+      box-shadow: 0 10px 24px rgba(255,79,216,.20);
+      cursor:pointer;
+      transition: transform .08s ease, filter .08s ease;
+    }
+    button.secondary{
+      background: rgba(255,255,255,.08);
+      box-shadow:none;
+      border:1px solid rgba(255,255,255,.14);
+      color:var(--text);
+      font-weight:700;
+    }
+    button:active{ transform: translateY(1px) scale(.99); filter:saturate(1.05); }
+    button[disabled]{ opacity:.45; cursor:not-allowed; }
+
+    .tip{
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    .stage{
+      position:relative;
+      background:
+        radial-gradient(900px 600px at 60% 25%, rgba(255,255,255,.08), transparent 50%),
+        radial-gradient(800px 500px at 20% 35%, rgba(71,231,255,.10), transparent 55%),
+        radial-gradient(1000px 700px at 75% 90%, rgba(255,79,216,.10), transparent 55%),
+        linear-gradient(180deg, rgba(9,10,25,.60), rgba(8,10,24,.90));
+      overflow:hidden;
+    }
+
+    .runwayGlow{
+      position:absolute;
+      left:-20%; right:-20%; bottom:-10%;
+      height:60%;
+      background: radial-gradient(closest-side at 50% 0%, rgba(71,231,255,.14), transparent 60%);
+      filter: blur(2px);
+      pointer-events:none;
+    }
+
+    .mannequin{
+      position:absolute;
+      left:55%;
+      top:50%;
+      transform: translate(-50%, -50%);
+      width:260px;
+      height:460px;
+      border-radius:26px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 20px 70px rgba(0,0,0,.42);
+      display:grid;
+      grid-template-rows: 1fr;
+      overflow:hidden;
+    }
+
+    .figure{
+      position:relative;
+      width:100%;
+      height:100%;
+      padding:16px;
+    }
+
+    .silhouette{
+      position:absolute;
+      inset:14px;
+      border-radius:24px;
+      background:
+        radial-gradient(120px 110px at 50% 12%, rgba(255,255,255,.09), transparent 60%),
+        radial-gradient(110px 180px at 50% 45%, rgba(255,255,255,.07), transparent 65%),
+        radial-gradient(120px 200px at 50% 88%, rgba(255,255,255,.06), transparent 70%);
+      border:1px dashed rgba(255,255,255,.12);
+    }
+
+    .slot{
+      position:absolute;
+      left:22px;
+      right:22px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.20);
+      overflow:hidden;
+    }
+    .slotHead{ top:36px; height:80px; }
+    .slotTop{ top:130px; height:110px; }
+    .slotBottom{ top:250px; height:135px; }
+    .slotAccessory{ top:395px; height:48px; }
+
+    .slot .slotLabel{
+      position:absolute;
+      left:10px;
+      top:7px;
+      font-size:10px;
+      color:rgba(167,176,230,.85);
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      pointer-events:none;
+    }
+
+    .applied{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      letter-spacing:.3px;
+      text-shadow: 0 8px 18px rgba(0,0,0,.5);
+      user-select:none;
+    }
+
+    .closet{
+      position:absolute;
+      left:10%;
+      top:50%;
+      transform: translateY(-50%);
+      width:min(420px, 46%);
+      max-width:440px;
+      padding:14px;
+      border-radius:22px;
+      background: rgba(16,20,58,.48);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 16px 50px rgba(0,0,0,.33);
+    }
+    .closet h2{
+      margin:0 0 10px;
+      font-size:14px;
+      color:rgba(238,241,255,.95);
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .closet small{ color:var(--muted); font-weight:600; }
+
+    .items{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+    }
+    @media (max-width: 980px){
+      .closet{ position:relative; left:auto; top:auto; transform:none; width:auto; max-width:none; margin:14px; }
+      .mannequin{ position:relative; left:auto; top:auto; transform:none; margin:14px auto 18px; }
+      .stage{ padding-bottom:20px; }
+    }
+
+    .item{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.24);
+      padding:10px;
+      cursor:grab;
+      user-select:none;
+      position:relative;
+      min-height:68px;
+      transition: transform .08s ease, border-color .08s ease, filter .08s ease;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .item:active{ cursor:grabbing; transform: scale(.99); }
+    .item .name{ font-weight:900; font-size:13px; }
+    .item .tags{ display:flex; flex-wrap:wrap; gap:6px; }
+    .tag{
+      font-size:10px;
+      padding:4px 7px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      color:rgba(238,241,255,.86);
+      background: rgba(255,255,255,.06);
+    }
+
+    .toast{
+      position:absolute;
+      left:50%;
+      top:12px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.38);
+      border:1px solid rgba(255,255,255,.12);
+      padding:10px 12px;
+      border-radius:14px;
+      font-size:12px;
+      color:rgba(238,241,255,.92);
+      pointer-events:none;
+      opacity:0;
+      transition: opacity .18s ease, transform .18s ease;
+      z-index:10;
+      max-width:min(92%, 520px);
+      text-align:center;
+      backdrop-filter: blur(6px);
+    }
+    .toast.show{
+      opacity:1;
+      transform: translateX(-50%) translateY(4px);
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      background: radial-gradient(900px 700px at 50% 20%, rgba(0,0,0,.10), rgba(0,0,0,.62));
+      z-index:30;
+    }
+    .modal{
+      width:min(680px, 92vw);
+      border-radius:26px;
+      padding:18px 18px 16px;
+      background: linear-gradient(180deg, rgba(16,20,58,.95), rgba(12,15,42,.94));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: var(--shadow);
+    }
+    .modal h3{ margin:0 0 6px; font-size:24px; }
+    .modal p{ margin:8px 0; color:rgba(238,241,255,.90); line-height:1.45; }
+    .modal ul{ margin:10px 0 0 18px; color:rgba(238,241,255,.86); line-height:1.45; }
+    .modal .fine{ margin-top:10px; color:var(--muted); font-size:12px; }
+    .modal .row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+
+    .resultBadge{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:7px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      color:rgba(238,241,255,.92);
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .sparkle{
+      position:absolute;
+      width:6px; height:6px;
+      border-radius:2px;
+      background: rgba(255,255,255,.8);
+      box-shadow: 0 0 10px rgba(255,255,255,.7);
+      pointer-events:none;
+      opacity:.0;
+    }
+
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:11px; padding:2px 6px; border-radius:8px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color:rgba(238,241,255,.9); }
+
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="left">
+      <a class="crumb" href="./index.html">← Back to Claw Games</a>
+      <div class="meta">Inspired by <strong>Dress To Impress✨</strong> (fan-made microgame, no Roblox branding)</div>
+    </div>
+    <div class="meta" id="statusLine">Drag outfit cards onto the mannequin.</div>
+  </div>
+
+  <div class="wrap">
+    <div class="shell" id="shell">
+      <div class="grid">
+        <div class="panel">
+          <h1>Runway Remix</h1>
+          <div class="pillrow">
+            <span class="pill">drag & drop</span>
+            <span class="pill">3 rounds</span>
+            <span class="pill">style score</span>
+            <span class="pill">PG</span>
+          </div>
+
+          <div class="statrow">
+            <div class="stat"><div class="k">Round</div><div class="v" id="roundV">—</div></div>
+            <div class="stat"><div class="k">Time</div><div class="v" id="timeV">—</div></div>
+            <div class="stat"><div class="k">Score</div><div class="v" id="scoreV">0</div></div>
+            <div class="stat"><div class="k">Streak</div><div class="v" id="streakV">0</div></div>
+          </div>
+
+          <div class="themeCard">
+            <div class="label">This round's theme</div>
+            <div class="theme" id="themeV">—</div>
+            <div class="hint" id="hintV">—</div>
+          </div>
+
+          <div class="controls">
+            <button id="submitBtn" disabled>Submit Look</button>
+            <button class="secondary" id="clearBtn" disabled>Clear</button>
+            <button class="secondary" id="muteBtn" aria-pressed="false" title="Toggle sound">Sound: On</button>
+          </div>
+
+          <div class="tip">
+            Tips: matching tags earns points; mismatches cost style.<br/>
+            Quick keys: <span class="kbd">R</span> restart (after game over), <span class="kbd">M</span> mute.
+          </div>
+        </div>
+
+        <div class="stage" id="stage">
+          <div class="toast" id="toast"></div>
+          <div class="runwayGlow"></div>
+
+          <div class="closet" aria-label="Closet">
+            <h2>
+              Closet
+              <small id="closetNote">Pick 1 head, 1 top, 1 bottom, 1 accessory</small>
+            </h2>
+            <div class="items" id="items"></div>
+          </div>
+
+          <div class="mannequin" aria-label="Mannequin">
+            <div class="figure">
+              <div class="silhouette"></div>
+              <div class="slot slotHead" data-slot="head" aria-label="Head slot">
+                <div class="slotLabel">Head</div>
+                <div class="applied" id="applied_head"></div>
+              </div>
+              <div class="slot slotTop" data-slot="top" aria-label="Top slot">
+                <div class="slotLabel">Top</div>
+                <div class="applied" id="applied_top"></div>
+              </div>
+              <div class="slot slotBottom" data-slot="bottom" aria-label="Bottom slot">
+                <div class="slotLabel">Bottom</div>
+                <div class="applied" id="applied_bottom"></div>
+              </div>
+              <div class="slot slotAccessory" data-slot="accessory" aria-label="Accessory slot">
+                <div class="slotLabel">Accessory</div>
+                <div class="applied" id="applied_accessory"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="overlay" id="overlay">
+            <div class="modal" id="modal">
+              <h3 id="modalTitle">Dress To Impress✨ Remix</h3>
+              <p id="modalText">
+                Build a runway look that fits the theme before the timer hits zero.
+              </p>
+              <ul id="modalList">
+                <li>Drag outfit cards from the Closet onto the mannequin slots.</li>
+                <li>Each round: choose exactly <strong>4</strong> pieces (Head, Top, Bottom, Accessory).</li>
+                <li>Hit <strong>Submit Look</strong> to get judged.</li>
+              </ul>
+              <div class="fine" id="modalFine">Win by scoring <strong>160+</strong> after 3 rounds. Lose if you miss a round or end below the target.</div>
+              <div class="row" id="modalButtons">
+                <button id="startBtn">Start Show</button>
+                <button class="secondary" id="howBtn">How scoring works</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ------- Mini audio (no external assets) -------
+  let audioCtx = null;
+  let muted = false;
+  function beep(type="sine", freq=440, dur=0.07, gain=0.05){
+    if(muted) return;
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.02);
+    }catch{ /* ignore */ }
+  }
+  function chord(){
+    beep("triangle", 523.25, 0.08, 0.045);
+    setTimeout(()=>beep("triangle", 659.25, 0.08, 0.04), 20);
+    setTimeout(()=>beep("triangle", 783.99, 0.10, 0.038), 40);
+  }
+
+  // ------- UI refs -------
+  const overlay = document.getElementById('overlay');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalText = document.getElementById('modalText');
+  const modalFine = document.getElementById('modalFine');
+  const modalButtons = document.getElementById('modalButtons');
+  const startBtn = document.getElementById('startBtn');
+  const howBtn = document.getElementById('howBtn');
+
+  const itemsEl = document.getElementById('items');
+  const toastEl = document.getElementById('toast');
+
+  const roundV = document.getElementById('roundV');
+  const timeV = document.getElementById('timeV');
+  const scoreV = document.getElementById('scoreV');
+  const streakV = document.getElementById('streakV');
+  const themeV = document.getElementById('themeV');
+  const hintV = document.getElementById('hintV');
+  const statusLine = document.getElementById('statusLine');
+
+  const submitBtn = document.getElementById('submitBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const muteBtn = document.getElementById('muteBtn');
+
+  const appliedEls = {
+    head: document.getElementById('applied_head'),
+    top: document.getElementById('applied_top'),
+    bottom: document.getElementById('applied_bottom'),
+    accessory: document.getElementById('applied_accessory')
+  };
+
+  // ------- Game data -------
+  const THEMES = [
+    {
+      name: "Neon Night",
+      hint: "Glow-up vibes. Think bright, cyber, and a little dramatic.",
+      wants: ["neon","bold","party","futuristic"],
+      avoid: ["cozy","formal","nature"]
+    },
+    {
+      name: "Cozy Cafe",
+      hint: "Soft, comfy, warm. Like a rainy-day latte run.",
+      wants: ["cozy","soft","casual"],
+      avoid: ["neon","sport","futuristic"]
+    },
+    {
+      name: "Red Carpet",
+      hint: "Elegant. You should look expensive even if you aren't.",
+      wants: ["formal","glam","classic"],
+      avoid: ["sport","messy","casual"]
+    },
+    {
+      name: "Street Star",
+      hint: "Confident, trendy, effortless. Layers welcomed.",
+      wants: ["street","casual","bold"],
+      avoid: ["formal","classic"]
+    },
+    {
+      name: "Garden Gala",
+      hint: "Fresh and playful. Floral, nature, and light colors.",
+      wants: ["nature","soft","classic"],
+      avoid: ["futuristic","neon","messy"]
+    },
+    {
+      name: "Athleisure Rush",
+      hint: "Comfort, movement, clean lines. Ready to sprint OR nap.",
+      wants: ["sport","casual","clean"],
+      avoid: ["formal","glam"]
+    }
+  ];
+
+  // Each item belongs to a slot + has a few tags for scoring.
+  const ITEM_POOL = {
+    head: [
+      { name:"Star Bangs", tags:["bold","party","neon"] , color:"#ff8cff"},
+      { name:"Velvet Beret", tags:["classic","formal","soft"], color:"#a889ff"},
+      { name:"Sport Visor", tags:["sport","clean","casual"], color:"#47e7ff"},
+      { name:"Garden Crown", tags:["nature","soft","glam"], color:"#40ff9a"},
+      { name:"Street Cap", tags:["street","casual","bold"], color:"#ffd24a"},
+      { name:"Cyber Helm", tags:["futuristic","neon","clean"], color:"#7affff"}
+    ],
+    top: [
+      { name:"Glitter Jacket", tags:["glam","party","bold"], color:"#ff4fd8"},
+      { name:"Soft Hoodie", tags:["cozy","casual","soft"], color:"#7ad1ff"},
+      { name:"Silk Blouse", tags:["formal","classic","clean"], color:"#ffe6ff"},
+      { name:"Neon Mesh", tags:["neon","futuristic","bold"], color:"#47e7ff"},
+      { name:"Denim Layer", tags:["street","casual","clean"], color:"#7aa6ff"},
+      { name:"Floral Cardigan", tags:["nature","soft","cozy"], color:"#40ff9a"}
+    ],
+    bottom: [
+      { name:"Runway Skirt", tags:["formal","glam","classic"], color:"#ffb3ee"},
+      { name:"Comfy Shorts", tags:["cozy","casual","soft"], color:"#a7b0e6"},
+      { name:"Track Pants", tags:["sport","clean","casual"], color:"#47e7ff"},
+      { name:"Neon Leggings", tags:["neon","party","bold"], color:"#ff4fd8"},
+      { name:"Street Cargo", tags:["street","bold","casual"], color:"#ffd24a"},
+      { name:"Garden Pants", tags:["nature","soft","clean"], color:"#40ff9a"}
+    ],
+    accessory: [
+      { name:"Glow Bracelet", tags:["neon","party","futuristic"], color:"#47e7ff"},
+      { name:"Pearl Pin", tags:["classic","formal","clean"], color:"#ffe6ff"},
+      { name:"Beanie Charm", tags:["cozy","soft","street"], color:"#a889ff"},
+      { name:"Mini Backpack", tags:["street","casual","clean"], color:"#ffd24a"},
+      { name:"Floral Brooch", tags:["nature","soft","classic"], color:"#40ff9a"},
+      { name:"Sport Band", tags:["sport","clean","casual"], color:"#7affff"}
+    ]
+  };
+
+  // ------- State -------
+  const ROUNDS_TOTAL = 3;
+  const ROUND_TIME = 22; // seconds
+  const WIN_SCORE = 160;
+
+  let running = false;
+  let round = 0;
+  let timer = ROUND_TIME;
+  let tickHandle = null;
+
+  let score = 0;
+  let streak = 0;
+  let theme = null;
+
+  let applied = { head:null, top:null, bottom:null, accessory:null };
+
+  // ------- Helpers -------
+  function randInt(n){ return Math.floor(Math.random()*n); }
+  function choice(arr){ return arr[randInt(arr.length)]; }
+
+  function showToast(text, kind=""){
+    toastEl.textContent = text;
+    toastEl.style.borderColor = kind === "good" ? "rgba(64,255,154,.35)" :
+                               kind === "bad" ? "rgba(255,76,107,.35)" :
+                               "rgba(255,255,255,.12)";
+    toastEl.style.background = kind === "good" ? "rgba(64,255,154,.12)" :
+                              kind === "bad" ? "rgba(255,76,107,.12)" :
+                              "rgba(0,0,0,.38)";
+    toastEl.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>toastEl.classList.remove('show'), 1200);
+  }
+
+  function setStatus(text){ statusLine.textContent = text; }
+
+  function updateStats(){
+    roundV.textContent = running ? `${round}/${ROUNDS_TOTAL}` : "—";
+    timeV.textContent = running ? `${timer}s` : "—";
+    scoreV.textContent = String(score);
+    streakV.textContent = String(streak);
+    themeV.textContent = theme ? theme.name : "—";
+    hintV.textContent = theme ? theme.hint : "—";
+
+    const filled = Object.values(applied).filter(Boolean).length;
+    submitBtn.disabled = !(running && filled === 4);
+    clearBtn.disabled = !(running && filled > 0);
+  }
+
+  function clearApplied(){
+    applied = { head:null, top:null, bottom:null, accessory:null };
+    for(const k of Object.keys(appliedEls)){
+      appliedEls[k].textContent = "";
+      appliedEls[k].style.background = "transparent";
+    }
+    updateStats();
+  }
+
+  function sparkleBurst(x, y, n=14){
+    const stage = document.getElementById('stage');
+    for(let i=0;i<n;i++){
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      const a = Math.random()*Math.PI*2;
+      const r = 18 + Math.random()*70;
+      const dx = Math.cos(a)*r;
+      const dy = Math.sin(a)*r;
+      const size = 4 + Math.random()*5;
+      s.style.width = size+"px";
+      s.style.height = size+"px";
+      s.style.left = (x - size/2) + "px";
+      s.style.top = (y - size/2) + "px";
+      s.style.opacity = "1";
+      s.style.transform = "translate(0,0) rotate(0deg)";
+      stage.appendChild(s);
+
+      const hue = 190 + Math.random()*140;
+      s.style.background = `hsla(${hue}, 95%, 70%, .9)`;
+      s.style.boxShadow = `0 0 14px hsla(${hue}, 95%, 75%, .7)`;
+
+      const rot = (-40 + Math.random()*80);
+      requestAnimationFrame(()=>{
+        s.style.transition = "transform .55s ease, opacity .55s ease";
+        s.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+        s.style.opacity = "0";
+      });
+
+      setTimeout(()=>s.remove(), 650);
+    }
+  }
+
+  // ------- Closet generation per round -------
+  function shuffled(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function buildCloset(){
+    itemsEl.innerHTML = "";
+
+    // Pick 4 candidates per slot (ensures choice but not overwhelming)
+    const perSlot = 4;
+    const slots = ["head","top","bottom","accessory"];
+    const pack = [];
+    for(const slot of slots){
+      const pool = shuffled(ITEM_POOL[slot]).slice(0, perSlot);
+      for(const it of pool) pack.push({slot, ...it});
+    }
+
+    // Shuffle display
+    const display = shuffled(pack);
+
+    for(const it of display){
+      const card = document.createElement('div');
+      card.className = 'item';
+      card.draggable = true;
+      card.dataset.slot = it.slot;
+      card.dataset.name = it.name;
+      card.dataset.tags = it.tags.join(',');
+      card.dataset.color = it.color;
+
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = `${slotIcon(it.slot)} ${it.name}`;
+      const tags = document.createElement('div');
+      tags.className = 'tags';
+      for(const t of it.tags){
+        const chip = document.createElement('span');
+        chip.className = 'tag';
+        chip.textContent = t;
+        tags.appendChild(chip);
+      }
+
+      card.appendChild(name);
+      card.appendChild(tags);
+
+      card.addEventListener('dragstart', (e)=>{
+        if(!running) { e.preventDefault(); return; }
+        e.dataTransfer.setData('text/plain', JSON.stringify({
+          slot: it.slot,
+          name: it.name,
+          tags: it.tags,
+          color: it.color
+        }));
+        e.dataTransfer.effectAllowed = 'move';
+        card.style.filter = "brightness(1.12)";
+        setTimeout(()=>card.style.filter = "", 140);
+        beep("sine", 740, 0.05, 0.03);
+      });
+
+      // Mobile friendly: tap-to-apply
+      card.addEventListener('click', (e)=>{
+        if(!running) return;
+        applyItem({slot: it.slot, name: it.name, tags: it.tags, color: it.color}, e.clientX || 0, e.clientY || 0);
+      });
+
+      itemsEl.appendChild(card);
+    }
+
+    setStatus("Pick a look: drag cards onto the mannequin (or tap cards on mobile).")
+  }
+
+  function slotIcon(slot){
+    return slot === 'head' ? '👑' :
+           slot === 'top' ? '🧥' :
+           slot === 'bottom' ? '👖' :
+           '✨';
+  }
+
+  // ------- Drag targets -------
+  function setDropTargets(){
+    const slots = document.querySelectorAll('.slot');
+    for(const el of slots){
+      el.addEventListener('dragover', (e)=>{
+        if(!running) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        el.style.borderColor = "rgba(71,231,255,.35)";
+      });
+      el.addEventListener('dragleave', ()=>{
+        el.style.borderColor = "rgba(255,255,255,.12)";
+      });
+      el.addEventListener('drop', (e)=>{
+        if(!running) return;
+        e.preventDefault();
+        el.style.borderColor = "rgba(255,255,255,.12)";
+        let payload = null;
+        try{ payload = JSON.parse(e.dataTransfer.getData('text/plain')); }catch{}
+        if(!payload) return;
+        const wantSlot = el.dataset.slot;
+        if(payload.slot !== wantSlot){
+          showToast(`That goes in ${wantSlot.toUpperCase()}!`, "bad");
+          beep("square", 180, 0.06, 0.04);
+          return;
+        }
+        applyItem(payload, e.clientX, e.clientY);
+      });
+    }
+  }
+
+  function applyItem(payload, x, y){
+    applied[payload.slot] = payload;
+    const out = appliedEls[payload.slot];
+    out.textContent = payload.name;
+    out.style.background = `linear-gradient(135deg, ${hexA(payload.color, .35)}, ${hexA(payload.color, .10)})`;
+    out.style.borderRadius = "16px";
+    out.style.height = "100%";
+    out.style.display = "flex";
+    out.style.alignItems = "center";
+    out.style.justifyContent = "center";
+
+    showToast(`${slotIcon(payload.slot)} ${payload.name} applied`, "good");
+    beep("triangle", 540, 0.05, 0.03);
+    if(x && y) sparkleBurst(x, y, 10);
+    updateStats();
+  }
+
+  function hexA(hex, a){
+    // supports #rrggbb
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+    if(!m) return `rgba(255,255,255,${a})`;
+    const r = parseInt(m[1],16), g = parseInt(m[2],16), b = parseInt(m[3],16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  // ------- Scoring -------
+  function judgeLook(){
+    // Must have all 4
+    const picks = Object.values(applied);
+    if(picks.some(v=>!v)) return { ok:false, points:0, breakdown:[] };
+
+    const tags = new Map();
+    for(const p of picks){
+      for(const t of p.tags){
+        tags.set(t, (tags.get(t)||0) + 1);
+      }
+    }
+
+    let points = 0;
+    const breakdown = [];
+
+    // Theme matches
+    let matchCount = 0;
+    for(const w of theme.wants){
+      if(tags.has(w)){
+        const add = 10 + 4*(tags.get(w)-1);
+        points += add;
+        matchCount += 1;
+        breakdown.push({label:`+${add} theme tag: ${w}`, kind:"good"});
+      }
+    }
+
+    // Avoid penalties
+    let avoidHits = 0;
+    for(const a of theme.avoid){
+      if(tags.has(a)){
+        const sub = 10 + 4*(tags.get(a)-1);
+        points -= sub;
+        avoidHits += 1;
+        breakdown.push({label:`-${sub} off-theme: ${a}`, kind:"bad"});
+      }
+    }
+
+    // Cohesion bonus: repeated tag across pieces
+    let cohesion = 0;
+    for(const [t, c] of tags.entries()){
+      if(c >= 2){
+        cohesion += (c === 2 ? 6 : 10);
+      }
+    }
+    if(cohesion){
+      points += cohesion;
+      breakdown.push({label:`+${cohesion} cohesion`, kind:"good"});
+    }
+
+    // Base style (always something)
+    const base = 28;
+    points += base;
+
+    // Speed bonus
+    const speed = Math.max(0, Math.floor(timer * 1.4));
+    points += speed;
+
+    // Clamp
+    points = Math.max(-20, Math.min(110, points));
+
+    // Streak
+    const onTheme = (matchCount >= 2 && avoidHits === 0);
+    if(onTheme){
+      streak += 1;
+    }else{
+      streak = 0;
+    }
+
+    const streakBonus = onTheme ? (6 * streak) : 0;
+    points += streakBonus;
+    if(streakBonus){
+      breakdown.push({label:`+${streakBonus} streak x${streak}`, kind:"good"});
+    }
+
+    // Final clamp per round
+    points = Math.max(0, Math.min(140, points));
+
+    breakdown.unshift({label:`+${base} base style`, kind:"good"});
+    breakdown.push({label:`+${speed} speed`, kind:"good"});
+
+    return { ok:true, points, breakdown, onTheme };
+  }
+
+  // ------- Round flow -------
+  function nextRound(){
+    round += 1;
+    if(round > ROUNDS_TOTAL){
+      endGame();
+      return;
+    }
+
+    timer = ROUND_TIME;
+    theme = pickTheme();
+    clearApplied();
+    buildCloset();
+    updateStats();
+
+    setStatus(`Round ${round}: build a look for “${theme.name}”.`);
+    showToast(`Theme: ${theme.name}`, "");
+    beep("sine", 660, 0.05, 0.03);
+
+    clearInterval(tickHandle);
+    tickHandle = setInterval(()=>{
+      if(!running) return;
+      timer -= 1;
+      if(timer <= 0){
+        timer = 0;
+        updateStats();
+        clearInterval(tickHandle);
+        onTimeUp();
+        return;
+      }
+      if(timer <= 5) beep("square", 360 + (5-timer)*55, 0.05, 0.02);
+      updateStats();
+    }, 1000);
+  }
+
+  function pickTheme(){
+    // Avoid repeats back-to-back.
+    let t = choice(THEMES);
+    if(theme && t.name === theme.name){
+      t = THEMES[(THEMES.indexOf(t)+1) % THEMES.length];
+    }
+    return t;
+  }
+
+  function onTimeUp(){
+    const filled = Object.values(applied).filter(Boolean).length;
+    if(filled < 4){
+      showToast("Time! You didn't finish the look.", "bad");
+      beep("sawtooth", 120, 0.12, 0.06);
+      loseGame("You ran out of time before completing the outfit.");
+      return;
+    }
+    // If full, auto-submit
+    showToast("Time! Auto-submitting…", "");
+    setTimeout(()=>submitLook(true), 350);
+  }
+
+  function submitLook(auto=false){
+    if(!running) return;
+    const res = judgeLook();
+    if(!res.ok) return;
+
+    clearInterval(tickHandle);
+
+    score += res.points;
+    updateStats();
+
+    const badge = res.onTheme ? "On-theme!" : "Risky choice!";
+    const pointsTxt = `+${res.points} points`;
+
+    if(res.onTheme){
+      chord();
+    }else{
+      beep("triangle", 220, 0.10, 0.05);
+    }
+
+    // Build modal summary
+    overlay.style.display = "grid";
+    modalTitle.textContent = `Judging: Round ${round}`;
+    modalText.innerHTML = `<span class="resultBadge">${badge}</span> &nbsp; <strong>${pointsTxt}</strong>\n      <div style="margin-top:10px; color:rgba(238,241,255,.9);">Total score: <strong>${score}</strong></div>`;
+
+    const lines = res.breakdown.slice(0, 7).map(b =>
+      `<li style="color:${b.kind==="good"?"rgba(64,255,154,.92)":b.kind==="bad"?"rgba(255,76,107,.92)":"rgba(238,241,255,.86)"}">${escapeHtml(b.label)}</li>`
+    ).join("");
+
+    document.getElementById('modalList').innerHTML = lines || "";
+
+    const remaining = ROUNDS_TOTAL - round;
+    modalFine.textContent = remaining > 0
+      ? `Next: ${remaining} round${remaining===1?"":"s"} left. Aim for ${WIN_SCORE}+ to win.`
+      : `Show's over. Target: ${WIN_SCORE}+ to win.`;
+
+    modalButtons.innerHTML = "";
+    const cont = document.createElement('button');
+    cont.textContent = remaining > 0 ? "Next Round" : "See Results";
+    cont.addEventListener('click', () => {
+      overlay.style.display = "none";
+      if(remaining > 0) nextRound();
+      else endGame();
+    });
+
+    const tweak = document.createElement('button');
+    tweak.className = "secondary";
+    tweak.textContent = "Replay this round";
+    tweak.title = "Practice (no penalty), but consumes time";
+    tweak.addEventListener('click', () => {
+      overlay.style.display = "none";
+      // Practice costs a small style tax
+      score = Math.max(0, score - 8);
+      streak = 0;
+      showToast("Practice costs -8 style.", "");
+      nextRound();
+    });
+
+    modalButtons.appendChild(cont);
+    modalButtons.appendChild(tweak);
+
+    if(auto) sparkleBurst(window.innerWidth*0.62, window.innerHeight*0.45, 18);
+  }
+
+  function endGame(){
+    running = false;
+    clearInterval(tickHandle);
+    updateStats();
+
+    overlay.style.display = "grid";
+    const win = score >= WIN_SCORE;
+
+    modalTitle.textContent = win ? "You impressed the runway!" : "Not quite runway-ready";
+    const verdict = win
+      ? `Final score: <strong>${score}</strong> — you cleared the target.`
+      : `Final score: <strong>${score}</strong> — target was <strong>${WIN_SCORE}</strong>.`;
+
+    modalText.innerHTML = `${win ? "<span class=\"resultBadge\">WIN</span>" : "<span class=\"resultBadge\">LOSE</span>"}
+      <div style="margin-top:10px;">${verdict}</div>
+      <div style="margin-top:8px; color:rgba(238,241,255,.86);">Try new combos; the closet reshuffles each round.</div>`;
+
+    document.getElementById('modalList').innerHTML = "";
+    modalFine.textContent = "Press R to restart anytime from this screen.";
+
+    modalButtons.innerHTML = "";
+    const again = document.createElement('button');
+    again.textContent = "Restart";
+    again.addEventListener('click', () => restart());
+
+    const free = document.createElement('button');
+    free.className = "secondary";
+    free.textContent = "Freeplay (no timer)";
+    free.addEventListener('click', () => freeplay());
+
+    modalButtons.appendChild(again);
+    modalButtons.appendChild(free);
+
+    setStatus(win ? "You won!" : "Game over — try again.");
+    if(win){ chord(); }
+    else { beep("sawtooth", 140, 0.16, 0.06); }
+  }
+
+  function loseGame(reason){
+    running = false;
+    clearInterval(tickHandle);
+    updateStats();
+
+    overlay.style.display = "grid";
+    modalTitle.textContent = "Show stopped";
+    modalText.innerHTML = `<span class="resultBadge">LOSE</span>
+      <div style="margin-top:10px;">${escapeHtml(reason)}</div>
+      <div style="margin-top:8px; color:rgba(238,241,255,.86);">Finish the outfit faster, then submit before time ends.</div>`;
+    document.getElementById('modalList').innerHTML = "";
+    modalFine.textContent = "Press R to restart.";
+
+    modalButtons.innerHTML = "";
+    const again = document.createElement('button');
+    again.textContent = "Restart";
+    again.addEventListener('click', () => restart());
+    modalButtons.appendChild(again);
+
+    setStatus("Game over.");
+  }
+
+  function startGame(){
+    score = 0;
+    streak = 0;
+    round = 0;
+    running = true;
+    overlay.style.display = "none";
+
+    setStatus("Showtime! Build your first look.");
+    nextRound();
+  }
+
+  function restart(){
+    // Reset to start screen
+    running = false;
+    clearInterval(tickHandle);
+    clearApplied();
+    itemsEl.innerHTML = "";
+    theme = null;
+    score = 0;
+    streak = 0;
+    round = 0;
+    timer = ROUND_TIME;
+    updateStats();
+    showStartOverlay();
+  }
+
+  function freeplay(){
+    // No timer, infinite rounds, score still accumulates
+    running = true;
+    round = 1;
+    timer = 999;
+    theme = pickTheme();
+    clearApplied();
+    buildCloset();
+
+    overlay.style.display = "none";
+    setStatus("Freeplay: no timer. Build a look, submit, and keep going.");
+    showToast("Freeplay mode", "");
+
+    clearInterval(tickHandle);
+    tickHandle = setInterval(()=>{
+      if(!running) return;
+      timer = Math.max(0, timer - 1);
+      // don't end
+      updateStats();
+    }, 1000);
+
+    // In freeplay, "Next Round" just changes theme/closet
+    submitBtn.onclick = () => {
+      const res = judgeLook();
+      if(!res.ok) return;
+      score += res.points;
+      updateStats();
+      chord();
+      showToast(`+${res.points} (${theme.name})`, "good");
+      theme = pickTheme();
+      timer = 999;
+      clearApplied();
+      buildCloset();
+      updateStats();
+    };
+  }
+
+  function showStartOverlay(){
+    overlay.style.display = "grid";
+    modalTitle.textContent = "Dress To Impress✨ Remix";
+    modalText.textContent = "Build runway outfits under pressure. Match the theme. Get judged. Repeat.";
+    document.getElementById('modalList').innerHTML = `
+      <li>Choose exactly one piece per slot (Head, Top, Bottom, Accessory).</li>
+      <li>Theme tags give points; off-theme tags subtract.</li>
+      <li>Finish 3 rounds with <strong>${WIN_SCORE}+</strong> to win.</li>
+    `;
+    modalFine.textContent = "Pro tip: cohesion matters — repeating a good tag across pieces earns a bonus.";
+
+    modalButtons.innerHTML = "";
+    const s = document.createElement('button');
+    s.textContent = "Start Show";
+    s.addEventListener('click', () => startGame());
+
+    const h = document.createElement('button');
+    h.className = "secondary";
+    h.textContent = "How scoring works";
+    h.addEventListener('click', () => showHow());
+
+    modalButtons.appendChild(s);
+    modalButtons.appendChild(h);
+
+    setStatus("Ready when you are.");
+  }
+
+  function showHow(){
+    overlay.style.display = "grid";
+    modalTitle.textContent = "Scoring (quick)";
+    modalText.innerHTML = `
+      Each round is worth up to <strong>~140</strong> points.
+      <div style="margin-top:10px; color:rgba(238,241,255,.86); line-height:1.45;">
+        <strong>+ Theme tags</strong> (10+ each) &nbsp; • &nbsp;
+        <strong>- Off-theme</strong> penalties &nbsp; • &nbsp;
+        <strong>+ Cohesion</strong> bonus for repeated tags &nbsp; • &nbsp;
+        <strong>+ Speed</strong> bonus based on time left
+      </div>
+    `;
+    document.getElementById('modalList').innerHTML = `
+      <li>Try to hit at least <strong>2</strong> theme tags with <strong>0</strong> avoid tags to build a streak.</li>
+      <li>Streak adds extra points each round you stay on-theme.</li>
+      <li>Tap cards on mobile if dragging is annoying.</li>
+    `;
+    modalFine.textContent = "Ready? Start the show.";
+
+    modalButtons.innerHTML = "";
+    const back = document.createElement('button');
+    back.textContent = "Start Show";
+    back.addEventListener('click', () => startGame());
+
+    const b2 = document.createElement('button');
+    b2.className = "secondary";
+    b2.textContent = "Back";
+    b2.addEventListener('click', () => showStartOverlay());
+
+    modalButtons.appendChild(back);
+    modalButtons.appendChild(b2);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>\"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  // ------- Wire buttons / keys -------
+  submitBtn.addEventListener('click', ()=>submitLook(false));
+  clearBtn.addEventListener('click', ()=>{ clearApplied(); showToast("Cleared.", ""); beep("sine", 320, 0.05, 0.02); });
+
+  muteBtn.addEventListener('click', ()=>{
+    muted = !muted;
+    muteBtn.textContent = muted ? "Sound: Off" : "Sound: On";
+    muteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
+    showToast(muted ? "Muted" : "Sound on", "");
+  });
+
+  window.addEventListener('keydown', (e)=>{
+    if(e.key.toLowerCase() === 'm'){
+      muted = !muted;
+      muteBtn.textContent = muted ? "Sound: Off" : "Sound: On";
+      muteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
+      showToast(muted ? "Muted" : "Sound on", "");
+    }
+    if(e.key.toLowerCase() === 'r'){
+      if(!running) restart();
+    }
+  });
+
+  // The initial buttons exist in markup; re-route them.
+  startBtn.addEventListener('click', ()=>startGame());
+  howBtn.addEventListener('click', ()=>showHow());
+
+  // Ensure drag targets.
+  setDropTargets();
+
+  // Boot state
+  updateStats();
+  showStartOverlay();
+
+})();
+</script>
+</body>
+</html>
