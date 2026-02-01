@@ -1,0 +1,1491 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalog Avatar Creator Remix — Wardrobe Wizard</title>
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0D1630;
+      --panel:#0C1226CC;
+      --panel2:#0D132BCC;
+      --ink:#EAF1FF;
+      --muted:#AFC3FF;
+      --accent:#7CFFB2;
+      --accent2:#7DB6FF;
+      --warn:#FFD36E;
+      --bad:#FF6B8B;
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --radius: 18px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, #1B2A66 0%, transparent 60%),
+        radial-gradient(900px 650px at 90% 20%, #1C6B4A 0%, transparent 58%),
+        radial-gradient(900px 700px at 60% 90%, #5B2A80 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    a.back{
+      display:inline-flex;
+      gap:.55rem;
+      align-items:center;
+      color:var(--ink);
+      text-decoration:none;
+      padding:10px 14px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: 0 6px 20px rgba(0,0,0,.25);
+      margin:14px;
+    }
+    a.back:hover{background:rgba(255,255,255,.09)}
+
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:0 16px 24px;
+    }
+
+    header{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin:8px 0 14px;
+    }
+
+    .hero{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      padding:16px;
+      border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width: 280px;
+    }
+
+    h1{margin:0;font-size:22px;letter-spacing:.3px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.35}
+    .note{
+      font-size:12px;
+      color:rgba(234,241,255,.75);
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      padding:8px 10px;
+      border-radius:12px;
+      width:fit-content;
+    }
+
+    .hud{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:10px;
+      align-items:stretch;
+      min-width: 320px;
+      flex:1;
+    }
+    .card{
+      border-radius: 16px;
+      background: var(--panel);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px 12px 10px;
+      box-shadow: 0 12px 25px rgba(0,0,0,.25);
+      min-height: 64px;
+    }
+    .label{font-size:11px;color:rgba(234,241,255,.70);letter-spacing:.12em;text-transform:uppercase}
+    .value{margin-top:6px;font-size:18px;font-weight:700}
+
+    .meter{
+      height:10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+      margin-top:8px;
+    }
+    .meter > div{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width .15s linear;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr;}
+    }
+
+    .stage{
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+      min-height: 540px;
+    }
+
+    canvas{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .controls{
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+      padding:14px;
+      min-height: 540px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px;
+      border-radius: 14px;
+      background: var(--panel2);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .slot{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      flex:1;
+      min-width: 0;
+    }
+    .slot .name{font-weight:700}
+    .slot .tags{font-size:12px;color:rgba(234,241,255,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    .btns{display:flex;gap:8px}
+
+    button{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      border-radius: 14px;
+      padding:10px 12px;
+      font-weight:700;
+      color: var(--ink);
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: 0 10px 18px rgba(0,0,0,.22);
+      transition: transform .04s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+    }
+    button:hover{background: rgba(255,255,255,.11)}
+    button:active{transform: translateY(1px)}
+    button.primary{
+      background: linear-gradient(90deg, rgba(125,182,255,.24), rgba(124,255,178,.22));
+      border-color: rgba(124,255,178,.30);
+    }
+    button.warn{
+      background: linear-gradient(90deg, rgba(255,211,110,.22), rgba(255,107,139,.18));
+      border-color: rgba(255,211,110,.35);
+    }
+
+    .bigActions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding:12px;
+      border-radius: 16px;
+      background: rgba(0,0,0,.16);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .promptBox{
+      padding:12px;
+      border-radius: 16px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .promptTitle{font-weight:800;letter-spacing:.2px}
+    .req{
+      margin-top:8px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.12);
+      font-size:12px;
+      color:rgba(234,241,255,.90);
+    }
+    .chip.good{border-color: rgba(124,255,178,.35); background: rgba(124,255,178,.12)}
+    .chip.bad{border-color: rgba(255,107,139,.35); background: rgba(255,107,139,.12)}
+
+    .log{
+      flex:1;
+      padding:12px;
+      border-radius: 16px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:auto;
+      font-size:13px;
+      line-height:1.45;
+      color:rgba(234,241,255,.85);
+    }
+    .log b{color:var(--ink)}
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background: radial-gradient(800px 500px at 50% 30%, rgba(0,0,0,.55), rgba(0,0,0,.82));
+    }
+    .overlay.show{display:flex}
+
+    .modal{
+      max-width: 720px;
+      width:100%;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: 0 30px 80px rgba(0,0,0,.55);
+      padding:18px;
+    }
+
+    .modal h2{margin:0 0 8px;font-size:22px}
+    .modal p{margin:8px 0;color:rgba(234,241,255,.82);line-height:1.5}
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; padding:2px 8px; border-radius: 999px; background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.12)}
+
+    .modal .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-top:12px}
+    @media (max-width: 860px){
+      .modal .cols{grid-template-columns:1fr}
+    }
+
+    .how{
+      border-radius: 16px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      padding:12px;
+      font-size:13px;
+      line-height:1.45;
+      color:rgba(234,241,255,.85);
+    }
+
+    .credits{
+      margin-top:10px;
+      font-size:12px;
+      color:rgba(234,241,255,.70);
+    }
+
+    .pillRow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+
+    .sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+  </style>
+</head>
+<body>
+  <a class="back" href="./index.html" aria-label="Back to Claw Games">← Back to Claw Games</a>
+
+  <div class="wrap">
+    <header>
+      <div class="hero">
+        <div class="title">
+          <h1>Wardrobe Wizard</h1>
+          <div class="sub">Build an outfit to match a style brief. Earn flair points for matching tags. Miss too many tags and you bomb the photoshoot.</div>
+          <div class="note">Inspired by <b>Catalog Avatar Creator</b> (remix)</div>
+        </div>
+
+        <div class="hud" aria-label="HUD">
+          <div class="card">
+            <div class="label">Round</div>
+            <div class="value"><span id="roundNum">0</span> / <span id="roundTotal">5</span></div>
+          </div>
+          <div class="card">
+            <div class="label">Score</div>
+            <div class="value" id="score">0</div>
+          </div>
+          <div class="card">
+            <div class="label">Time</div>
+            <div class="value"><span id="time">0.0</span>s</div>
+            <div class="meter" aria-hidden="true"><div id="timeBar"></div></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="stage" aria-label="Avatar Stage">
+        <canvas id="c" width="840" height="780"></canvas>
+        <div class="overlay show" id="overlay">
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <h2 id="modalTitle">Wardrobe Wizard</h2>
+            <p>
+              You are the stylist. Every round gives you a <b>style brief</b> (tags). Pick one item per slot to match.
+              Click <b>Submit Outfit</b> before time runs out.
+            </p>
+            <div class="cols">
+              <div class="how">
+                <div><b>How scoring works</b></div>
+                <ul style="margin:8px 0 0; padding-left:18px">
+                  <li>Each round: match as many required tags as you can.</li>
+                  <li>+25 points per matched tag.</li>
+                  <li>+10 bonus if you match <i>all</i> tags.</li>
+                  <li>+1 flair point for each unique extra tag in your outfit.</li>
+                  <li>Lose instantly if you submit with <b>2 or more missing</b> required tags.</li>
+                </ul>
+                <p style="margin:10px 0 0">
+                  Controls: use the <span class="kbd">◀</span> and <span class="kbd">▶</span> buttons or press
+                  <span class="kbd">A</span>/<span class="kbd">D</span> to cycle a slot.
+                </p>
+              </div>
+              <div class="how">
+                <div><b>Win / Lose</b></div>
+                <ul style="margin:8px 0 0; padding-left:18px">
+                  <li>Win by finishing all rounds with a total score of <b id="targetScore">220</b>+.</li>
+                  <li>Lose if time hits 0, or you miss too many tags.</li>
+                </ul>
+                <div class="pillRow" aria-label="Tips">
+                  <span class="chip">Look for color tags</span>
+                  <span class="chip">Some items have 3 tags</span>
+                  <span class="chip">Extra flair adds points</span>
+                </div>
+              </div>
+            </div>
+            <div class="bigActions" style="margin-top:12px">
+              <button class="primary" id="startBtn">Start</button>
+              <button id="practiceBtn">Practice Round</button>
+              <button class="warn" id="muteBtn" aria-pressed="false">Sound: On</button>
+            </div>
+            <div class="credits">Single-file microgame. No external assets.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Controls">
+        <div class="promptBox">
+          <div class="promptTitle">Style brief</div>
+          <div class="sub" id="briefText" style="margin-top:6px">Press Start to get your first brief.</div>
+          <div class="req" id="reqChips" aria-label="Required tags"></div>
+        </div>
+
+        <div class="row" data-slot="hair">
+          <div class="slot">
+            <div class="name">Hair</div>
+            <div class="tags" id="hairDesc">—</div>
+          </div>
+          <div class="btns">
+            <button data-action="prev" aria-label="Previous hair">◀</button>
+            <button data-action="next" aria-label="Next hair">▶</button>
+          </div>
+        </div>
+
+        <div class="row" data-slot="top">
+          <div class="slot">
+            <div class="name">Top</div>
+            <div class="tags" id="topDesc">—</div>
+          </div>
+          <div class="btns">
+            <button data-action="prev" aria-label="Previous top">◀</button>
+            <button data-action="next" aria-label="Next top">▶</button>
+          </div>
+        </div>
+
+        <div class="row" data-slot="bottom">
+          <div class="slot">
+            <div class="name">Bottom</div>
+            <div class="tags" id="bottomDesc">—</div>
+          </div>
+          <div class="btns">
+            <button data-action="prev" aria-label="Previous bottom">◀</button>
+            <button data-action="next" aria-label="Next bottom">▶</button>
+          </div>
+        </div>
+
+        <div class="row" data-slot="shoes">
+          <div class="slot">
+            <div class="name">Shoes</div>
+            <div class="tags" id="shoesDesc">—</div>
+          </div>
+          <div class="btns">
+            <button data-action="prev" aria-label="Previous shoes">◀</button>
+            <button data-action="next" aria-label="Next shoes">▶</button>
+          </div>
+        </div>
+
+        <div class="row" data-slot="accessory">
+          <div class="slot">
+            <div class="name">Accessory</div>
+            <div class="tags" id="accessoryDesc">—</div>
+          </div>
+          <div class="btns">
+            <button data-action="prev" aria-label="Previous accessory">◀</button>
+            <button data-action="next" aria-label="Next accessory">▶</button>
+          </div>
+        </div>
+
+        <div class="bigActions">
+          <button class="primary" id="submitBtn">Submit Outfit</button>
+          <button id="shuffleBtn" title="Randomize outfit">Randomize</button>
+          <button class="warn" id="restartBtn">Restart Run</button>
+        </div>
+
+        <div class="log" id="log" aria-label="Run log"></div>
+      </section>
+    </main>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  // -------------------------
+  // Tiny audio (no external assets)
+  // -------------------------
+  const AudioSys = (() => {
+    let ctx = null;
+    let enabled = true;
+
+    function ensure(){
+      if(!ctx){
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
+    }
+
+    function tone(freq, dur=0.08, type='sine', vol=0.06){
+      if(!enabled) return;
+      ensure();
+      const t0 = ctx.currentTime;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.02);
+    }
+
+    function chord(kind){
+      if(kind === 'good'){
+        tone(660, 0.07, 'triangle', 0.07);
+        setTimeout(()=>tone(880, 0.08, 'triangle', 0.06), 60);
+      } else if(kind === 'bad'){
+        tone(220, 0.10, 'sawtooth', 0.05);
+        setTimeout(()=>tone(185, 0.12, 'sawtooth', 0.05), 70);
+      } else if(kind === 'tick'){
+        tone(880, 0.03, 'square', 0.03);
+      } else if(kind === 'start'){
+        tone(440, 0.06, 'triangle', 0.05);
+        setTimeout(()=>tone(554, 0.06, 'triangle', 0.05), 70);
+        setTimeout(()=>tone(659, 0.07, 'triangle', 0.05), 140);
+      }
+    }
+
+    return {
+      setEnabled(v){ enabled = !!v; },
+      isEnabled(){ return enabled; },
+      poke(){ if(enabled) ensure(); },
+      tone, chord
+    };
+  })();
+
+  // -------------------------
+  // Data model
+  // -------------------------
+  const slots = ["hair","top","bottom","shoes","accessory"];
+
+  const ITEMS = {
+    hair: [
+      { name:"Nebula Bob", color:"#7DB6FF", tags:["neon","space","cool"] },
+      { name:"Cozy Waves", color:"#FFD36E", tags:["cozy","warm","casual"] },
+      { name:"Shadow Spikes", color:"#B7B9C9", tags:["stealth","edgy","cool"] },
+      { name:"Garden Braids", color:"#7CFFB2", tags:["nature","cute","fresh"] },
+      { name:"Retro Puff", color:"#FF6B8B", tags:["retro","bold","cute"] },
+      { name:"Pixel Fringe", color:"#B0FF7D", tags:["pixel","tech","playful"] },
+    ],
+    top: [
+      { name:"Arcade Hoodie", color:"#B0FF7D", tags:["pixel","casual","tech"] },
+      { name:"Starlight Jacket", color:"#7DB6FF", tags:["space","cool","bold"] },
+      { name:"Cafe Cardigan", color:"#FFD36E", tags:["cozy","warm","soft"] },
+      { name:"Ninja Wrap", color:"#B7B9C9", tags:["stealth","edgy","cool"] },
+      { name:"Meadow Tee", color:"#7CFFB2", tags:["nature","fresh","casual"] },
+      { name:"Pop Star Blazer", color:"#FF6B8B", tags:["bold","retro","sparkle"] },
+    ],
+    bottom: [
+      { name:"Neon Skirt", color:"#7DB6FF", tags:["neon","bold","sparkle"] },
+      { name:"Trail Shorts", color:"#7CFFB2", tags:["nature","fresh","casual"] },
+      { name:"Comfy Pants", color:"#FFD36E", tags:["cozy","warm","soft"] },
+      { name:"Stealth Joggers", color:"#B7B9C9", tags:["stealth","tech","cool"] },
+      { name:"Retro Jeans", color:"#FF6B8B", tags:["retro","playful","casual"] },
+      { name:"Orbit Leggings", color:"#7DB6FF", tags:["space","tech","cool"] },
+    ],
+    shoes: [
+      { name:"Hover Kicks", color:"#7DB6FF", tags:["tech","neon","cool"] },
+      { name:"Forest Boots", color:"#7CFFB2", tags:["nature","fresh","sturdy"] },
+      { name:"Cafe Slippers", color:"#FFD36E", tags:["cozy","soft","warm"] },
+      { name:"Shadow Sneakers", color:"#B7B9C9", tags:["stealth","edgy","cool"] },
+      { name:"Retro Runners", color:"#FF6B8B", tags:["retro","bold","playful"] },
+      { name:"Star Sandals", color:"#7DB6FF", tags:["space","sparkle","cute"] },
+    ],
+    accessory: [
+      { name:"Holo Visor", color:"#7DB6FF", tags:["tech","neon","bold"] },
+      { name:"Leaf Pin", color:"#7CFFB2", tags:["nature","cute","fresh"] },
+      { name:"Warm Scarf", color:"#FFD36E", tags:["cozy","warm","soft"] },
+      { name:"Smoke Mask", color:"#B7B9C9", tags:["stealth","edgy","cool"] },
+      { name:"Disco Star", color:"#FF6B8B", tags:["retro","sparkle","bold"] },
+      { name:"Pixel Pet", color:"#B0FF7D", tags:["pixel","playful","cute"] },
+    ]
+  };
+
+  // briefs: 2-4 tags + a short sentence
+  const BRIEFS = [
+    { name:"Neon Ninja", text:"A secret agent with flashy street tech.", tags:["neon","stealth","tech"] },
+    { name:"Cozy Cafe", text:"Soft, warm, and ready for a rainy window seat.", tags:["cozy","warm","soft"] },
+    { name:"Galactic Cool", text:"Space vibes, clean lines, and confidence.", tags:["space","cool"] },
+    { name:"Forest Fresh", text:"Nature energy with an outdoorsy twist.", tags:["nature","fresh"] },
+    { name:"Retro Pop", text:"Bold throwback with sparkle potential.", tags:["retro","bold"] },
+    { name:"Pixel Party", text:"Arcade aesthetic—playful and techy.", tags:["pixel","playful","tech"] },
+    { name:"Edgy Shadow", text:"Dark, sharp, and not here to chat.", tags:["edgy","stealth","cool"] },
+    { name:"Cute Sparkle", text:"Adorable, shiny, and camera-ready.", tags:["cute","sparkle"] },
+    { name:"Warm Wanderer", text:"Comfy fit with sturdy choices.", tags:["warm","casual","sturdy"] },
+    { name:"Tech Idol", text:"A performer with futuristic accessories.", tags:["tech","bold","sparkle"] },
+  ];
+
+  // -------------------------
+  // DOM
+  // -------------------------
+  const els = {
+    c: document.getElementById('c'),
+    overlay: document.getElementById('overlay'),
+    startBtn: document.getElementById('startBtn'),
+    practiceBtn: document.getElementById('practiceBtn'),
+    muteBtn: document.getElementById('muteBtn'),
+
+    roundNum: document.getElementById('roundNum'),
+    roundTotal: document.getElementById('roundTotal'),
+    score: document.getElementById('score'),
+    time: document.getElementById('time'),
+    timeBar: document.getElementById('timeBar'),
+
+    briefText: document.getElementById('briefText'),
+    reqChips: document.getElementById('reqChips'),
+
+    submitBtn: document.getElementById('submitBtn'),
+    shuffleBtn: document.getElementById('shuffleBtn'),
+    restartBtn: document.getElementById('restartBtn'),
+
+    log: document.getElementById('log'),
+
+    targetScore: document.getElementById('targetScore'),
+
+    desc: {
+      hair: document.getElementById('hairDesc'),
+      top: document.getElementById('topDesc'),
+      bottom: document.getElementById('bottomDesc'),
+      shoes: document.getElementById('shoesDesc'),
+      accessory: document.getElementById('accessoryDesc')
+    }
+  };
+
+  const ctx2d = els.c.getContext('2d');
+
+  // -------------------------
+  // Game state
+  // -------------------------
+  const STATE = {
+    running: false,
+    practice: false,
+    round: 0,
+    roundsTotal: 5,
+    score: 0,
+    target: 220,
+    t: 0,
+    tMax: 26.0,
+    brief: null,
+    // selection indices per slot
+    sel: {
+      hair: 0,
+      top: 0,
+      bottom: 0,
+      shoes: 0,
+      accessory: 0,
+    },
+    lastTickBeep: 999,
+    // particles for feedback
+    pops: []
+  };
+
+  function clamp(v,a,b){return Math.max(a, Math.min(b,v));}
+
+  function rand(n){return Math.floor(Math.random()*n);}
+
+  function choice(arr){return arr[rand(arr.length)];}
+
+  function uniq(arr){return Array.from(new Set(arr));}
+
+  function outfitItems(){
+    return slots.map(s => ITEMS[s][STATE.sel[s]]);
+  }
+
+  function outfitTags(){
+    return uniq(outfitItems().flatMap(it => it.tags));
+  }
+
+  function setLog(html){
+    els.log.innerHTML = html;
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  function addLog(line){
+    const d = document.createElement('div');
+    d.innerHTML = line;
+    els.log.appendChild(d);
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  function describeSlot(slot){
+    const it = ITEMS[slot][STATE.sel[slot]];
+    return `<b>${it.name}</b> — tags: ${it.tags.join(', ')}`;
+  }
+
+  function refreshSlotDescs(){
+    for(const s of slots){
+      const it = ITEMS[s][STATE.sel[s]];
+      els.desc[s].textContent = `${it.name} — ${it.tags.join(', ')}`;
+    }
+  }
+
+  function refreshHud(){
+    els.roundNum.textContent = String(STATE.round);
+    els.roundTotal.textContent = String(STATE.roundsTotal);
+    els.score.textContent = String(STATE.score);
+    els.targetScore.textContent = String(STATE.target);
+    els.time.textContent = STATE.running ? STATE.t.toFixed(1) : (STATE.tMax).toFixed(1);
+    const pct = STATE.running ? (STATE.t / STATE.tMax) : 1;
+    els.timeBar.style.width = `${(pct*100).toFixed(2)}%`;
+  }
+
+  function renderReqChips(){
+    els.reqChips.innerHTML = '';
+    if(!STATE.brief){ return; }
+    const have = new Set(outfitTags());
+    for(const tag of STATE.brief.tags){
+      const span = document.createElement('span');
+      span.className = 'chip ' + (have.has(tag) ? 'good' : 'bad');
+      span.textContent = tag;
+      els.reqChips.appendChild(span);
+    }
+  }
+
+  function setBrief(b){
+    STATE.brief = b;
+    els.briefText.innerHTML = `<b>${b.name}</b> — ${b.text}`;
+    renderReqChips();
+  }
+
+  function shuffleOutfit(){
+    for(const s of slots){
+      STATE.sel[s] = rand(ITEMS[s].length);
+    }
+    refreshSlotDescs();
+    renderReqChips();
+    pop("shuffle");
+  }
+
+  function cycle(slot, dir){
+    const n = ITEMS[slot].length;
+    const i = STATE.sel[slot];
+    STATE.sel[slot] = (i + dir + n) % n;
+    refreshSlotDescs();
+    renderReqChips();
+    pop(slot);
+    AudioSys.tone(dir>0 ? 520 : 460, 0.045, 'triangle', 0.04);
+  }
+
+  function pop(where){
+    // spawn a few particles near the slot area
+    const map = {
+      hair:[420, 190],
+      top:[420, 340],
+      bottom:[420, 470],
+      shoes:[420, 600],
+      accessory:[620, 260],
+      shuffle:[560, 520]
+    };
+    const p = map[where] || [420, 380];
+    const it = where in STATE.sel ? ITEMS[where][STATE.sel[where]] : null;
+    const col = it ? it.color : '#FFFFFF';
+    for(let k=0;k<10;k++){
+      STATE.pops.push({
+        x:p[0] + (Math.random()*24-12),
+        y:p[1] + (Math.random()*24-12),
+        vx:(Math.random()*2-1)*3.2,
+        vy:(Math.random()*2-1)*3.2,
+        life: 0.7 + Math.random()*0.35,
+        t: 0,
+        col
+      });
+    }
+  }
+
+  function startRun({practice=false}={}){
+    AudioSys.poke();
+    STATE.practice = practice;
+    STATE.running = true;
+    STATE.round = 1;
+    STATE.score = 0;
+    STATE.lastTickBeep = 999;
+    STATE.roundsTotal = practice ? 1 : 5;
+    STATE.target = practice ? 0 : 220;
+    STATE.tMax = practice ? 999 : 26.0;
+    STATE.t = STATE.tMax;
+
+    shuffleOutfit();
+    // pick a brief that isn't too strict early on
+    const b = choice(BRIEFS);
+    setBrief(b);
+
+    setLog('');
+    addLog(`<b>Run started.</b> Brief: <b>${b.name}</b> — required tags: <b>${b.tags.join(', ')}</b>.`);
+    if(practice){
+      addLog(`Practice mode: no timer, no target score. Submit to see scoring.`);
+    } else {
+      addLog(`You have <b>${STATE.tMax.toFixed(0)} seconds</b>. Miss <b>2+</b> required tags and you lose.`);
+    }
+
+    els.overlay.classList.remove('show');
+    AudioSys.chord('start');
+    refreshHud();
+  }
+
+  function endRun({win, reason}){
+    STATE.running = false;
+    refreshHud();
+
+    const title = win ? 'You Win!' : 'Run Over';
+    const msg = win
+      ? `You cleared ${STATE.roundsTotal} rounds with <b>${STATE.score}</b> points.`
+      : `Reason: <b>${reason}</b>. Final score: <b>${STATE.score}</b>.`;
+
+    document.getElementById('modalTitle').textContent = title;
+
+    const modal = els.overlay.querySelector('.modal');
+    // rewrite modal body but keep buttons
+    const buttons = modal.querySelector('.bigActions');
+    const credits = modal.querySelector('.credits');
+    const cols = modal.querySelector('.cols');
+
+    // remove existing explanatory paragraphs (keep title only)
+    [...modal.querySelectorAll('p')].forEach(p => p.remove());
+
+    const p1 = document.createElement('p');
+    p1.innerHTML = msg;
+    const p2 = document.createElement('p');
+    p2.innerHTML = `Tip: chase required tags first, then collect extra flair tags for +1 each.`;
+    modal.insertBefore(p1, cols);
+    modal.insertBefore(p2, cols);
+
+    // update buttons text
+    els.startBtn.textContent = 'Play Again';
+    els.practiceBtn.textContent = 'Practice';
+
+    els.overlay.classList.add('show');
+
+    if(win) AudioSys.chord('good');
+    else AudioSys.chord('bad');
+  }
+
+  function nextRound(){
+    STATE.round++;
+    if(STATE.round > STATE.roundsTotal){
+      const win = STATE.practice ? true : (STATE.score >= STATE.target);
+      endRun({win, reason: win ? 'Target met' : `Need ${STATE.target}+ points`});
+      return;
+    }
+
+    STATE.t = STATE.tMax;
+    STATE.lastTickBeep = 999;
+
+    // pick a new brief different from previous
+    let b = choice(BRIEFS);
+    for(let tries=0; tries<8 && STATE.brief && b.name === STATE.brief.name; tries++){
+      b = choice(BRIEFS);
+    }
+    setBrief(b);
+
+    // small reshuffle for variety (but keep player choice momentum)
+    if(Math.random() < 0.35) shuffleOutfit();
+
+    addLog(`<hr style="border:none;border-top:1px solid rgba(255,255,255,.12);margin:10px 0">`);
+    addLog(`<b>Round ${STATE.round}/${STATE.roundsTotal}.</b> Brief: <b>${b.name}</b> — required: <b>${b.tags.join(', ')}</b>.`);
+
+    AudioSys.tone(740, 0.05, 'triangle', 0.05);
+    refreshHud();
+  }
+
+  function submitOutfit(){
+    if(!STATE.brief){
+      addLog('No brief yet.');
+      return;
+    }
+
+    const tags = outfitTags();
+    const have = new Set(tags);
+    const req = STATE.brief.tags;
+
+    const matched = req.filter(t => have.has(t));
+    const missing = req.filter(t => !have.has(t));
+
+    // flair: unique tags that are NOT required
+    const flairTags = tags.filter(t => !req.includes(t));
+
+    const base = matched.length * 25;
+    const allBonus = (missing.length === 0) ? 10 : 0;
+    const flair = flairTags.length;
+
+    const roundPts = base + allBonus + flair;
+
+    // lose conditions
+    if(!STATE.practice){
+      if(missing.length >= 2){
+        addLog(`<b style="color: var(--bad)">Submission failed.</b> Missing: <b>${missing.join(', ')}</b>.`);
+        addLog(`You missed <b>${missing.length}</b> required tags (2+ is an instant loss).`);
+        endRun({win:false, reason:`Missed ${missing.length} required tags`});
+        return;
+      }
+
+      // time check (if player somehow submits at exactly zero)
+      if(STATE.t <= 0){
+        endRun({win:false, reason:"Time ran out"});
+        return;
+      }
+    }
+
+    STATE.score += roundPts;
+
+    // feedback log
+    const mLine = matched.length ? `<span style="color: var(--accent)"><b>Matched</b></span>: ${matched.join(', ')}` : `<span style="color: var(--bad)"><b>Matched</b></span>: none`;
+    const missLine = missing.length ? `<span style="color: var(--warn)"><b>Missing</b></span>: ${missing.join(', ')}` : `<span style="color: var(--accent)"><b>Missing</b></span>: none`;
+
+    addLog(`<b>Submitted:</b> +<b>${roundPts}</b> points (${matched.length}×25${allBonus?` +${allBonus} perfect`:''} +${flair} flair).`);
+    addLog(`${mLine}<br>${missLine}`);
+
+    if(missing.length === 0) AudioSys.chord('good');
+    else AudioSys.tone(520, 0.06, 'triangle', 0.05);
+
+    pop('shuffle');
+    refreshHud();
+
+    if(STATE.practice){
+      addLog(`<i>Practice complete.</i> Change items and submit again, or Play Again.`);
+      return;
+    }
+
+    nextRound();
+  }
+
+  // -------------------------
+  // Canvas rendering
+  // -------------------------
+  function roundRect(g, x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    g.beginPath();
+    g.moveTo(x+r,y);
+    g.arcTo(x+w,y, x+w,y+h, r);
+    g.arcTo(x+w,y+h, x,y+h, r);
+    g.arcTo(x,y+h, x,y, r);
+    g.arcTo(x,y, x+w,y, r);
+    g.closePath();
+  }
+
+  function drawBackdrop(g, W, H){
+    // tiled soft glows
+    g.save();
+    g.fillStyle = 'rgba(0,0,0,0)';
+    g.clearRect(0,0,W,H);
+
+    const grad = g.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, 'rgba(255,255,255,0.06)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.00)');
+    g.fillStyle = grad;
+    g.fillRect(0,0,W,H);
+
+    // stage frame
+    roundRect(g, 26, 26, W-52, H-52, 26);
+    g.fillStyle = 'rgba(10,16,38,0.55)';
+    g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.14)';
+    g.lineWidth = 2;
+    g.stroke();
+
+    // spotlights
+    for(let i=0;i<3;i++){
+      const x = 140 + i*240;
+      const y = 30;
+      const r = 260;
+      const gg = g.createRadialGradient(x,y, 10, x,y, r);
+      gg.addColorStop(0, 'rgba(125,182,255,0.20)');
+      gg.addColorStop(0.55, 'rgba(124,255,178,0.08)');
+      gg.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gg;
+      g.beginPath();
+      g.arc(x,y, r, 0, Math.PI*2);
+      g.fill();
+    }
+
+    // floor
+    const floor = g.createLinearGradient(0,H-220, 0,H);
+    floor.addColorStop(0, 'rgba(255,255,255,0.00)');
+    floor.addColorStop(1, 'rgba(255,255,255,0.05)');
+    g.fillStyle = floor;
+    g.fillRect(52, H-220, W-104, 180);
+
+    g.restore();
+  }
+
+  function drawMannequin(g, W, H){
+    const cx = 300;
+    const topY = 140;
+
+    // shadow
+    g.save();
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.beginPath();
+    g.ellipse(cx, H-135, 150, 36, 0, 0, Math.PI*2);
+    g.fill();
+
+    // base body
+    const bodyGrad = g.createLinearGradient(cx-80, topY, cx+80, topY+480);
+    bodyGrad.addColorStop(0, 'rgba(255,255,255,0.20)');
+    bodyGrad.addColorStop(1, 'rgba(255,255,255,0.06)');
+
+    // head
+    g.fillStyle = 'rgba(255,255,255,0.14)';
+    g.beginPath();
+    g.ellipse(cx, topY, 58, 62, 0, 0, Math.PI*2);
+    g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.18)';
+    g.lineWidth = 2;
+    g.stroke();
+
+    // torso
+    roundRect(g, cx-82, topY+78, 164, 210, 48);
+    g.fillStyle = 'rgba(255,255,255,0.11)';
+    g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.14)';
+    g.stroke();
+
+    // hips
+    roundRect(g, cx-74, topY+280, 148, 130, 42);
+    g.fillStyle = 'rgba(255,255,255,0.10)';
+    g.fill();
+    g.stroke();
+
+    // legs
+    roundRect(g, cx-70, topY+392, 62, 190, 30);
+    roundRect(g, cx+8, topY+392, 62, 190, 30);
+    g.fillStyle = 'rgba(255,255,255,0.09)';
+    g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.12)';
+    g.stroke();
+
+    // arms
+    roundRect(g, cx-150, topY+116, 70, 230, 32);
+    roundRect(g, cx+80, topY+116, 70, 230, 32);
+    g.fillStyle = 'rgba(255,255,255,0.08)';
+    g.fill();
+    g.stroke();
+
+    g.restore();
+  }
+
+  function drawItemLayer(g, slot, item){
+    const cx = 300;
+    const topY = 140;
+
+    g.save();
+
+    // subtle glow
+    const glow = g.createRadialGradient(cx, topY+260, 30, cx, topY+260, 330);
+    glow.addColorStop(0, item.color + '35');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = glow;
+    g.beginPath();
+    g.arc(cx, topY+260, 330, 0, Math.PI*2);
+    g.fill();
+
+    // slot-specific shapes
+    g.strokeStyle = 'rgba(255,255,255,0.20)';
+    g.lineWidth = 2;
+
+    function fillWith(alpha=0.82){
+      g.fillStyle = hexToRgba(item.color, alpha);
+    }
+
+    if(slot === 'hair'){
+      fillWith(0.86);
+      // hair cap
+      g.beginPath();
+      g.ellipse(cx, topY-20, 70, 44, 0, Math.PI, Math.PI*2);
+      g.lineTo(cx+70, topY+8);
+      g.ellipse(cx, topY+8, 70, 40, 0, 0, Math.PI);
+      g.closePath();
+      g.fill();
+      g.stroke();
+      // bangs
+      g.fillStyle = hexToRgba(item.color, 0.62);
+      for(let i=-2;i<=2;i++){
+        g.beginPath();
+        g.ellipse(cx + i*20, topY+18, 12, 26, 0.3*i, 0, Math.PI*2);
+        g.fill();
+      }
+    }
+
+    if(slot === 'top'){
+      fillWith(0.78);
+      // jacket/top shape
+      roundRect(g, cx-90, topY+92, 180, 210, 54);
+      g.fill();
+      g.stroke();
+      // collar stripe
+      g.fillStyle = 'rgba(255,255,255,0.14)';
+      roundRect(g, cx-60, topY+102, 120, 24, 14);
+      g.fill();
+      // chest emblem based on tags
+      const tset = new Set(item.tags);
+      g.save();
+      g.translate(cx, topY+190);
+      g.fillStyle = 'rgba(0,0,0,0.18)';
+      if(tset.has('pixel')){
+        for(let y=-18;y<=18;y+=12){
+          for(let x=-18;x<=18;x+=12){
+            if((x+y)%24===0){
+              g.fillRect(x-5,y-5,10,10);
+            }
+          }
+        }
+      } else if(tset.has('space')){
+        g.beginPath();
+        g.moveTo(0,-22);
+        g.lineTo(18,18);
+        g.lineTo(-22,-2);
+        g.lineTo(22,-2);
+        g.lineTo(-18,18);
+        g.closePath();
+        g.fill();
+      } else if(tset.has('nature')){
+        g.beginPath();
+        g.ellipse(-10, 6, 18, 10, -0.6, 0, Math.PI*2);
+        g.ellipse(10, 6, 18, 10, 0.6, 0, Math.PI*2);
+        g.fill();
+      } else {
+        g.beginPath();
+        g.arc(0,0,20,0,Math.PI*2);
+        g.fill();
+      }
+      g.restore();
+    }
+
+    if(slot === 'bottom'){
+      fillWith(0.78);
+      // hips coverage
+      roundRect(g, cx-80, topY+284, 160, 142, 46);
+      g.fill();
+      g.stroke();
+      // belt
+      g.fillStyle = 'rgba(255,255,255,0.12)';
+      roundRect(g, cx-72, topY+304, 144, 18, 10);
+      g.fill();
+      // skirt flare if tag sparkle or cute
+      const tset = new Set(item.tags);
+      if(tset.has('sparkle') || item.name.includes('Skirt')){
+        g.fillStyle = hexToRgba(item.color, 0.64);
+        g.beginPath();
+        g.moveTo(cx-88, topY+360);
+        g.lineTo(cx+88, topY+360);
+        g.lineTo(cx+110, topY+440);
+        g.lineTo(cx-110, topY+440);
+        g.closePath();
+        g.fill();
+        g.stroke();
+      }
+    }
+
+    if(slot === 'shoes'){
+      fillWith(0.86);
+      // left shoe
+      roundRect(g, cx-78, topY+560, 78, 40, 16);
+      // right shoe
+      roundRect(g, cx+2, topY+560, 78, 40, 16);
+      g.fill();
+      g.stroke();
+      // sole highlight
+      g.fillStyle = 'rgba(255,255,255,0.18)';
+      roundRect(g, cx-72, topY+590, 66, 8, 6);
+      roundRect(g, cx+8, topY+590, 66, 8, 6);
+      g.fill();
+    }
+
+    if(slot === 'accessory'){
+      const tset = new Set(item.tags);
+      fillWith(0.70);
+      if(tset.has('neon') || item.name.includes('Visor')){
+        // visor band
+        roundRect(g, cx-72, topY+8, 144, 38, 16);
+        g.fill();
+        g.stroke();
+        // lens
+        g.fillStyle = 'rgba(0,0,0,0.22)';
+        roundRect(g, cx-56, topY+16, 112, 22, 12);
+        g.fill();
+      } else if(tset.has('warm') || item.name.includes('Scarf')){
+        // scarf
+        g.fillStyle = hexToRgba(item.color, 0.68);
+        roundRect(g, cx-70, topY+110, 140, 38, 18);
+        g.fill();
+        g.stroke();
+        roundRect(g, cx-14, topY+132, 28, 92, 14);
+        g.fillStyle = hexToRgba(item.color, 0.56);
+        g.fill();
+        g.stroke();
+      } else if(tset.has('nature')){
+        // leaf pin
+        g.fillStyle = hexToRgba(item.color, 0.74);
+        g.beginPath();
+        g.ellipse(cx+76, topY+190, 22, 14, -0.5, 0, Math.PI*2);
+        g.fill();
+        g.stroke();
+        g.beginPath();
+        g.moveTo(cx+64, topY+192);
+        g.lineTo(cx+90, topY+176);
+        g.strokeStyle = 'rgba(0,0,0,0.25)';
+        g.lineWidth = 2;
+        g.stroke();
+      } else if(tset.has('pixel') || item.name.includes('Pet')){
+        // pixel pet block
+        g.fillStyle = hexToRgba(item.color, 0.78);
+        roundRect(g, cx+74, topY+232, 78, 78, 18);
+        g.fill();
+        g.stroke();
+        g.fillStyle = 'rgba(0,0,0,0.20)';
+        g.fillRect(cx+92, topY+255, 10, 10);
+        g.fillRect(cx+128, topY+255, 10, 10);
+        g.fillRect(cx+110, topY+286, 10, 12);
+      } else {
+        // badge
+        g.fillStyle = hexToRgba(item.color, 0.72);
+        g.beginPath();
+        g.arc(cx+78, topY+200, 26, 0, Math.PI*2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.22)';
+        g.beginPath();
+        g.arc(cx+70, topY+192, 8, 0, Math.PI*2);
+        g.fill();
+      }
+    }
+
+    g.restore();
+  }
+
+  function hexToRgba(hex, a){
+    // hex like #RRGGBB
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function drawBriefPanel(g, W, H){
+    const x = 520, y = 76;
+    const w = W-580, h = 270;
+
+    g.save();
+    roundRect(g, x, y, w, h, 18);
+    g.fillStyle = 'rgba(0,0,0,0.22)';
+    g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.12)';
+    g.lineWidth = 2;
+    g.stroke();
+
+    g.fillStyle = 'rgba(234,241,255,0.92)';
+    g.font = '700 16px ui-sans-serif, system-ui';
+    g.fillText('Lookbook', x+16, y+28);
+
+    g.fillStyle = 'rgba(234,241,255,0.75)';
+    g.font = '12px ui-sans-serif, system-ui';
+    g.fillText('Match the brief tags.', x+16, y+48);
+
+    if(STATE.brief){
+      g.fillStyle = 'rgba(234,241,255,0.92)';
+      g.font = '800 15px ui-sans-serif, system-ui';
+      g.fillText(STATE.brief.name, x+16, y+76);
+
+      g.fillStyle = 'rgba(234,241,255,0.74)';
+      g.font = '12px ui-sans-serif, system-ui';
+      wrapText(g, STATE.brief.text, x+16, y+96, w-32, 14);
+
+      const have = new Set(outfitTags());
+      const chips = STATE.brief.tags;
+      let cx = x+16, cy = y+148;
+      g.font = '700 12px ui-sans-serif, system-ui';
+      for(const tag of chips){
+        const good = have.has(tag);
+        const padX = 10;
+        const tw = g.measureText(tag).width;
+        const cw = tw + padX*2;
+        if(cx + cw > x + w - 16){
+          cx = x+16;
+          cy += 34;
+        }
+        roundRect(g, cx, cy, cw, 24, 999);
+        g.fillStyle = good ? 'rgba(124,255,178,0.16)' : 'rgba(255,107,139,0.16)';
+        g.fill();
+        g.strokeStyle = good ? 'rgba(124,255,178,0.35)' : 'rgba(255,107,139,0.35)';
+        g.lineWidth = 1.5;
+        g.stroke();
+        g.fillStyle = good ? 'rgba(234,241,255,0.92)' : 'rgba(234,241,255,0.86)';
+        g.fillText(tag, cx+padX, cy+16);
+        cx += cw + 8;
+      }
+
+      // little verdict hint
+      const req = STATE.brief.tags;
+      const missing = req.filter(t => !have.has(t));
+      const ok = missing.length < 2;
+      g.fillStyle = ok ? 'rgba(124,255,178,0.85)' : 'rgba(255,107,139,0.85)';
+      g.font = '800 12px ui-sans-serif, system-ui';
+      const hint = ok ? 'Looks viable!' : 'Risky: missing 2+ tags.';
+      g.fillText(hint, x+16, y+h-18);
+    }
+
+    g.restore();
+  }
+
+  function wrapText(g, text, x, y, maxW, lineH){
+    const words = text.split(/\s+/);
+    let line = '';
+    let yy = y;
+    for(const w of words){
+      const test = line ? (line + ' ' + w) : w;
+      if(g.measureText(test).width > maxW && line){
+        g.fillText(line, x, yy);
+        yy += lineH;
+        line = w;
+      } else {
+        line = test;
+      }
+    }
+    if(line) g.fillText(line, x, yy);
+  }
+
+  function drawParticles(g){
+    const now = performance.now() / 1000;
+    // dt handled in step; here just render
+    for(const p of STATE.pops){
+      const a = 1 - (p.t / p.life);
+      g.fillStyle = hexToRgba(p.col, clamp(a,0,1)*0.65);
+      g.beginPath();
+      g.arc(p.x, p.y, 3 + a*3, 0, Math.PI*2);
+      g.fill();
+    }
+  }
+
+  function draw(){
+    const W = els.c.width;
+    const H = els.c.height;
+
+    drawBackdrop(ctx2d, W, H);
+
+    // avatar
+    drawMannequin(ctx2d, W, H);
+
+    // layers (order matters)
+    drawItemLayer(ctx2d, 'hair', ITEMS.hair[STATE.sel.hair]);
+    drawItemLayer(ctx2d, 'top', ITEMS.top[STATE.sel.top]);
+    drawItemLayer(ctx2d, 'bottom', ITEMS.bottom[STATE.sel.bottom]);
+    drawItemLayer(ctx2d, 'shoes', ITEMS.shoes[STATE.sel.shoes]);
+    drawItemLayer(ctx2d, 'accessory', ITEMS.accessory[STATE.sel.accessory]);
+
+    // right-side panel
+    drawBriefPanel(ctx2d, W, H);
+
+    // particles
+    drawParticles(ctx2d);
+
+    // top label
+    ctx2d.save();
+    ctx2d.fillStyle = 'rgba(234,241,255,0.86)';
+    ctx2d.font = '800 13px ui-sans-serif, system-ui';
+    ctx2d.fillText('Wardrobe Wizard', 52, 60);
+    ctx2d.fillStyle = 'rgba(234,241,255,0.55)';
+    ctx2d.font = '12px ui-sans-serif, system-ui';
+    ctx2d.fillText(STATE.practice ? 'Practice' : `Round ${STATE.round}/${STATE.roundsTotal}`, 52, 78);
+    ctx2d.restore();
+  }
+
+  // -------------------------
+  // Loop
+  // -------------------------
+  let last = performance.now();
+  function step(){
+    const now = performance.now();
+    const dt = Math.min(0.04, (now - last) / 1000);
+    last = now;
+
+    // timer
+    if(STATE.running && !STATE.practice){
+      STATE.t -= dt;
+      if(STATE.t < 0) STATE.t = 0;
+
+      // last 5 seconds tick
+      if(STATE.t <= 5.0){
+        const bucket = Math.floor(STATE.t * 10);
+        if(bucket !== STATE.lastTickBeep){
+          STATE.lastTickBeep = bucket;
+          if(bucket % 10 === 0){
+            AudioSys.chord('tick');
+          }
+        }
+      }
+
+      if(STATE.t <= 0){
+        endRun({win:false, reason:"Time ran out"});
+      }
+
+      refreshHud();
+    }
+
+    // particles
+    for(const p of STATE.pops){
+      p.t += dt;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vx *= 0.95;
+      p.vy *= 0.95;
+    }
+    STATE.pops = STATE.pops.filter(p => p.t < p.life);
+
+    draw();
+    requestAnimationFrame(step);
+  }
+
+  // -------------------------
+  // Input wiring
+  // -------------------------
+  document.querySelectorAll('.row button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const row = btn.closest('.row');
+      const slot = row.getAttribute('data-slot');
+      const act = btn.getAttribute('data-action');
+      cycle(slot, act === 'next' ? +1 : -1);
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if(els.overlay.classList.contains('show')){
+      // Let Enter start when overlay is open
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        els.startBtn.click();
+      }
+      return;
+    }
+
+    // Cycle currently focused slot if possible
+    // Default: A/D cycles Top, W/S cycles Hair for quick play.
+    const k = e.key.toLowerCase();
+    if(k === 'a'){ cycle('top', -1); }
+    else if(k === 'd'){ cycle('top', +1); }
+    else if(k === 'w'){ cycle('hair', -1); }
+    else if(k === 's'){ cycle('hair', +1); }
+    else if(k === 'q'){ cycle('bottom', -1); }
+    else if(k === 'e'){ cycle('bottom', +1); }
+    else if(k === 'z'){ cycle('shoes', -1); }
+    else if(k === 'c'){ cycle('shoes', +1); }
+    else if(k === 'x'){ cycle('accessory', +1); }
+    else if(k === ' '){
+      e.preventDefault();
+      submitOutfit();
+    }
+  });
+
+  els.submitBtn.addEventListener('click', submitOutfit);
+  els.shuffleBtn.addEventListener('click', shuffleOutfit);
+
+  els.restartBtn.addEventListener('click', () => {
+    // reset overlay instructions view
+    document.getElementById('modalTitle').textContent = 'Wardrobe Wizard';
+    els.startBtn.textContent = 'Start';
+    els.practiceBtn.textContent = 'Practice Round';
+    els.overlay.classList.add('show');
+    STATE.running = false;
+    STATE.practice = false;
+    STATE.round = 0;
+    STATE.score = 0;
+    STATE.brief = null;
+    STATE.t = STATE.tMax;
+    els.briefText.textContent = 'Press Start to get your first brief.';
+    els.reqChips.innerHTML = '';
+    setLog('');
+    refreshSlotDescs();
+    refreshHud();
+    AudioSys.tone(300, 0.09, 'triangle', 0.05);
+  });
+
+  els.startBtn.addEventListener('click', () => startRun({practice:false}));
+  els.practiceBtn.addEventListener('click', () => startRun({practice:true}));
+
+  els.muteBtn.addEventListener('click', () => {
+    AudioSys.setEnabled(!AudioSys.isEnabled());
+    const on = AudioSys.isEnabled();
+    els.muteBtn.textContent = `Sound: ${on ? 'On' : 'Off'}`;
+    els.muteBtn.setAttribute('aria-pressed', String(!on));
+    if(on) AudioSys.chord('start');
+  });
+
+  // initial state
+  refreshSlotDescs();
+  refreshHud();
+  setLog(`<b>Ready.</b> Click <b>Start</b>.`);
+  requestAnimationFrame(step);
+})();
+</script>
+</body>
+</html>
