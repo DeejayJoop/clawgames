@@ -473,7 +473,7 @@
       const rr = 210 + r()*60;
       const x = clamp(cx + Math.cos(a)*rr + (r()*40-20), 220, 930);
       const y = clamp(cy + Math.sin(a)*rr + (r()*40-20), 80, 560);
-      state.flowers.push({x,y, r: 18, cd: 0, blooms: 1});
+      state.flowers.push({x,y, r: 18, cd: 0, blooms: 1, locked: false});
     }
 
     // Thorns (static hazards)
@@ -672,8 +672,9 @@
     for (const fl of state.flowers){
       fl.cd = Math.max(0, fl.cd - dt);
       const dist = Math.hypot(b.x - fl.x, b.y - fl.y);
-      if (dist < 42 && fl.cd <= 0 && b.pollen < b.pollenMax){
+      if (dist < 42 && !fl.locked && fl.cd <= 0 && b.pollen < b.pollenMax){
         b.pollen += 1;
+        fl.locked = true;
         fl.cd = 0.35 + state.rand()*0.4;
         spawnPuff(fl.x + (Math.random()*10-5), fl.y + (Math.random()*10-5), 7);
         beep({freq: 520 + b.pollen*30, dur:0.06, type:'triangle', gain:0.05});
@@ -688,6 +689,8 @@
       if (hive.deliverFill >= 1){
         hive.deliverFill = 0;
         b.pollen -= 1;
+        // Unlock harvested flowers once you bring pollen back to the hive
+        for (const f of state.flowers){ f.locked = false; f.cd = 0; }
         state.delivered += 1;
         b.invuln = Math.max(b.invuln, 0.55);
         sparkle(hive.x + 12, hive.y - 4, 'rgba(255,216,90,0.95)', 10);
