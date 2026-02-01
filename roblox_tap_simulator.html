@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tap Simulator Remix</title>
+  <style>
+    :root{
+      --bg0:#070912;
+      --bg1:#0f1733;
+      --panel:#0f1b3a;
+      --panel2:#0b1430;
+      --ink:#e9f0ff;
+      --muted:#a9b7e6;
+      --good:#3af5a9;
+      --warn:#ffd166;
+      --bad:#ff4d6d;
+      --accent:#6ea8fe;
+      --accent2:#b57dff;
+      --shadow: rgba(0,0,0,.35);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 700px at 20% 15%, rgba(110,168,254,.25), transparent 60%),
+        radial-gradient(900px 600px at 85% 70%, rgba(181,125,255,.18), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px;
+      position:sticky; top:0;
+      background: linear-gradient(180deg, rgba(7,9,18,.92), rgba(7,9,18,.62));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(233,240,255,.08);
+      z-index:10;
+    }
+    .topbar .left{display:flex; gap:12px; align-items:center}
+    .pill{
+      font-family:var(--mono);
+      font-size:12px;
+      color:rgba(233,240,255,.85);
+      background:rgba(233,240,255,.08);
+      border:1px solid rgba(233,240,255,.10);
+      border-radius:999px;
+      padding:6px 10px;
+      box-shadow: 0 12px 30px var(--shadow);
+    }
+
+    .wrap{max-width:1050px; margin:0 auto; padding:18px 16px 28px}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:16px;
+    }
+    @media (max-width: 900px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(15,27,58,.9), rgba(11,20,48,.9));
+      border:1px solid rgba(233,240,255,.12);
+      border-radius: var(--radius);
+      box-shadow: 0 22px 60px var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .card .hd{
+      padding:14px 14px 10px;
+      border-bottom: 1px solid rgba(233,240,255,.10);
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+    }
+    .card .hd h2{margin:0; font-size:15px; letter-spacing:.2px}
+    .card .bd{padding:14px}
+
+    .bigTitle{
+      font-size:42px;
+      line-height:1.05;
+      margin:6px 0 8px;
+      letter-spacing:.2px;
+      text-shadow: 0 18px 44px rgba(0,0,0,.40);
+    }
+    .sub{color:var(--muted); margin:0 0 10px; font-size:14px}
+
+    .screen{
+      min-height: 420px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+    .panel{
+      width:100%;
+      max-width: 660px;
+      border-radius: 20px;
+      border: 1px solid rgba(233,240,255,.14);
+      background:
+        radial-gradient(900px 400px at 50% 0%, rgba(110,168,254,.16), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      box-shadow: 0 26px 80px rgba(0,0,0,.35);
+      padding: 18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .panel:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(500px 200px at 20% 10%, rgba(58,245,169,.10), transparent 60%),
+        radial-gradient(480px 220px at 80% 30%, rgba(255,209,102,.09), transparent 60%);
+      pointer-events:none;
+    }
+    .panel > *{position:relative}
+
+    .btnRow{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    .btn{
+      border:1px solid rgba(233,240,255,.16);
+      background: rgba(233,240,255,.06);
+      color:var(--ink);
+      border-radius: 14px;
+      padding:10px 12px;
+      font-weight:700;
+      letter-spacing:.2px;
+      cursor:pointer;
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    .btn:hover{background: rgba(233,240,255,.10); border-color: rgba(233,240,255,.22)}
+    .btn:active{transform: translateY(1px) scale(.99)}
+    .btn.primary{background: linear-gradient(180deg, rgba(110,168,254,.24), rgba(110,168,254,.10)); border-color: rgba(110,168,254,.40)}
+    .btn.danger{background: linear-gradient(180deg, rgba(255,77,109,.20), rgba(255,77,109,.06)); border-color: rgba(255,77,109,.35)}
+    .btn.small{padding:8px 10px; font-size:13px}
+
+    .hud{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+    @media (max-width: 520px){
+      .hud{grid-template-columns:1fr}
+    }
+    .stat{
+      border-radius: 16px;
+      border:1px solid rgba(233,240,255,.12);
+      background: rgba(0,0,0,.14);
+      padding:10px 12px;
+    }
+    .label{color:var(--muted); font-size:12px; font-family:var(--mono)}
+    .value{font-size:22px; font-weight:800; letter-spacing:.2px; margin-top:4px}
+
+    .meter{
+      height:12px;
+      border-radius: 999px;
+      background: rgba(233,240,255,.10);
+      overflow:hidden;
+      border: 1px solid rgba(233,240,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .fill{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(58,245,169,.95), rgba(255,209,102,.95) 55%, rgba(255,77,109,.95));
+      border-radius: 999px;
+      transition: width .08s linear;
+    }
+
+    .tapZone{
+      margin-top:14px;
+      display:flex;
+      gap:12px;
+      align-items:stretch;
+      flex-wrap:wrap;
+    }
+    .tapBtn{
+      flex:1 1 280px;
+      min-height: 120px;
+      border-radius: 22px;
+      border:1px solid rgba(233,240,255,.18);
+      background:
+        radial-gradient(900px 260px at 50% 0%, rgba(181,125,255,.22), transparent 65%),
+        radial-gradient(700px 200px at 50% 100%, rgba(110,168,254,.22), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      cursor:pointer;
+      position:relative;
+      overflow:hidden;
+      box-shadow: 0 18px 50px rgba(0,0,0,.32);
+    }
+    .tapBtn:before{
+      content:"";
+      position:absolute;
+      inset:-80px;
+      background: conic-gradient(from 140deg, rgba(58,245,169,.0), rgba(58,245,169,.22), rgba(110,168,254,.0), rgba(181,125,255,.22), rgba(255,209,102,.0));
+      filter: blur(10px);
+      opacity:.55;
+      transform: rotate(0deg);
+      animation: spin 4.5s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .tapBtn .inner{
+      position:relative;
+      height:100%;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      gap:6px;
+      text-align:center;
+    }
+    .tapBtn .big{font-size:22px; font-weight:900; letter-spacing:.3px}
+    .tapBtn .hint{font-size:12px; color:rgba(233,240,255,.84); font-family:var(--mono)}
+
+    .sideCol{display:flex; flex-direction:column; gap:16px}
+
+    .shopItem{
+      display:flex; gap:10px; align-items:flex-start;
+      padding:10px;
+      border-radius: 16px;
+      border:1px solid rgba(233,240,255,.10);
+      background: rgba(0,0,0,.14);
+      margin-bottom:10px;
+    }
+    .shopItem:last-child{margin-bottom:0}
+    .shopItem .name{font-weight:900; letter-spacing:.2px}
+    .shopItem .desc{color:var(--muted); font-size:12px; margin-top:2px}
+    .shopItem .meta{margin-top:6px; display:flex; gap:8px; flex-wrap:wrap}
+    .tag{
+      font-family:var(--mono);
+      font-size:12px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(233,240,255,.14);
+      background: rgba(233,240,255,.06);
+      color: rgba(233,240,255,.88);
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:16px;
+      transform: translateX(-50%);
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(233,240,255,.16);
+      background: rgba(7,9,18,.78);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+      color: rgba(233,240,255,.92);
+      font-size:13px;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+      max-width: 92vw;
+      z-index:100;
+    }
+    .toast.show{opacity:1; transform: translateX(-50%) translateY(-2px)}
+
+    .overlay{
+      position:absolute; inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:14px;
+      background: rgba(7,9,18,.62);
+      backdrop-filter: blur(8px);
+      z-index:5;
+    }
+    .overlay.show{display:flex}
+
+    .ventBox{
+      width:100%;
+      max-width: 520px;
+      border-radius: 20px;
+      border:1px solid rgba(233,240,255,.14);
+      background:
+        radial-gradient(900px 400px at 50% 0%, rgba(255,209,102,.12), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+      box-shadow: 0 26px 80px rgba(0,0,0,.40);
+      padding:16px;
+    }
+    .ventTitle{font-weight:950; letter-spacing:.2px; margin:0 0 6px}
+    .ventSub{margin:0 0 10px; color:var(--muted); font-size:13px}
+
+    .track{
+      height: 18px;
+      border-radius: 999px;
+      border:1px solid rgba(233,240,255,.14);
+      background: rgba(233,240,255,.08);
+      position:relative;
+      overflow:hidden;
+    }
+    .sweet{
+      position:absolute; top:0; bottom:0;
+      left:42%;
+      width:16%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(58,245,169,.15), rgba(58,245,169,.35));
+      border: 1px solid rgba(58,245,169,.40);
+      filter: drop-shadow(0 8px 20px rgba(58,245,169,.18));
+    }
+    .needle{
+      position:absolute; top:-3px;
+      width: 10px;
+      height: 24px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(110,168,254,.95), rgba(181,125,255,.95));
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+    }
+
+    .footerNote{margin-top:10px; color:rgba(233,240,255,.70); font-size:12px}
+    .kbd{font-family:var(--mono); font-size:12px; padding:2px 6px; border-radius:8px; border:1px solid rgba(233,240,255,.16); background: rgba(233,240,255,.06)}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="left">
+      <a href="./index.html">&larr; Back to Claw Games</a>
+      <span class="pill">PG • single-file</span>
+    </div>
+    <div class="pill" id="statusPill">Ready</div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+      <div class="card" id="mainCard">
+        <div class="hd">
+          <h2>Tap Reactor</h2>
+          <div class="pill" style="background:rgba(233,240,255,.06)">Inspired by Tap Simulator ✨</div>
+        </div>
+        <div class="bd">
+          <!-- TITLE SCREEN -->
+          <div class="screen" id="titleScreen">
+            <div class="panel">
+              <div class="bigTitle">Tap Reactor</div>
+              <p class="sub">Build power by tapping… but keep your reactor from overheating.</p>
+              <div class="hud" style="margin-top:14px">
+                <div class="stat">
+                  <div class="label">Goal</div>
+                  <div class="value" style="font-size:18px">Reach <span style="color:var(--good)">6,000</span> Power</div>
+                </div>
+                <div class="stat">
+                  <div class="label">Fail</div>
+                  <div class="value" style="font-size:18px">Overheat hits <span style="color:var(--bad)">100%</span></div>
+                </div>
+              </div>
+              <div class="btnRow">
+                <button class="btn primary" id="startBtn">Start</button>
+                <button class="btn" id="howBtn">How to play</button>
+                <button class="btn" id="muteBtn">Sound: On</button>
+              </div>
+              <div class="footerNote">
+                Controls: <span class="kbd">Click</span> or <span class="kbd">Space</span> to tap • Hold <span class="kbd">V</span> to Vent • <span class="kbd">R</span> to restart
+              </div>
+            </div>
+          </div>
+
+          <!-- GAMEPLAY -->
+          <div class="screen" id="gameScreen" style="display:none">
+            <div class="panel" style="max-width: 760px">
+              <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end">
+                <div style="min-width: 220px">
+                  <div class="label">Power</div>
+                  <div class="value" id="powerVal">0</div>
+                </div>
+                <div style="min-width: 220px">
+                  <div class="label">Overheat</div>
+                  <div class="meter" aria-label="Overheat meter"><div class="fill" id="heatFill"></div></div>
+                  <div style="display:flex; justify-content:space-between; margin-top:6px; color:var(--muted); font-size:12px; font-family:var(--mono)">
+                    <span id="heatText">0%</span>
+                    <span id="dpsText">+0.0/s</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tapZone">
+                <button class="tapBtn" id="tapBtn" aria-label="Tap">
+                  <div class="inner">
+                    <div class="big">TAP</div>
+                    <div class="hint">Click or press Space</div>
+                  </div>
+                </button>
+                <div style="flex:1 1 220px; display:flex; flex-direction:column; gap:10px">
+                  <div class="stat" style="flex:1">
+                    <div class="label">Tap value</div>
+                    <div class="value" id="tapVal">+1</div>
+                    <div class="footerNote" style="margin-top:6px">Venting pauses tapping, but drops heat fast if you keep the needle in the green zone.</div>
+                  </div>
+                  <div class="btnRow" style="margin-top:0">
+                    <button class="btn small" id="ventBtn" title="Hold V to vent">Vent (V)</button>
+                    <button class="btn small" id="pauseBtn">Pause</button>
+                    <button class="btn small danger" id="restartBtn">Restart</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hud" style="margin-top:14px">
+                <div class="stat">
+                  <div class="label">Multiplier</div>
+                  <div class="value" id="multVal">x1.00</div>
+                </div>
+                <div class="stat">
+                  <div class="label">Auto taps</div>
+                  <div class="value" id="autoVal">0.0/s</div>
+                </div>
+              </div>
+
+              <div class="footerNote">Tip: Buying a <b>Stabilizer</b> makes taps safer when you’re running hot.</div>
+
+              <div class="overlay" id="ventOverlay" aria-hidden="true">
+                <div class="ventBox">
+                  <p class="ventTitle">Vent Sequence</p>
+                  <p class="ventSub">Hold <span class="kbd">V</span> and keep the needle inside the green zone to dump heat quickly.</p>
+                  <div class="track" id="track">
+                    <div class="sweet" id="sweet"></div>
+                    <div class="needle" id="needle" style="left:0px"></div>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; margin-top:10px; color:var(--muted); font-size:12px; font-family:var(--mono)">
+                    <span>Dump rate: <span id="dumpRate">0</span>%/s</span>
+                    <span>Release V to stop</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- END SCREEN -->
+          <div class="screen" id="endScreen" style="display:none">
+            <div class="panel">
+              <div class="bigTitle" id="endTitle">You win!</div>
+              <p class="sub" id="endSub">Nice tapping.</p>
+              <div class="hud" style="margin-top:14px">
+                <div class="stat">
+                  <div class="label">Final Power</div>
+                  <div class="value" id="finalPower">0</div>
+                </div>
+                <div class="stat">
+                  <div class="label">Best (this session)</div>
+                  <div class="value" id="bestPower">0</div>
+                </div>
+              </div>
+              <div class="btnRow">
+                <button class="btn primary" id="playAgainBtn">Play again</button>
+                <button class="btn" id="backTitleBtn">Back to title</button>
+              </div>
+              <div class="footerNote">Inspired by Tap Simulator ✨ (no affiliation).</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="sideCol">
+        <div class="card">
+          <div class="hd"><h2>Shop</h2><div class="pill" id="shopHint">Spend power to upgrade</div></div>
+          <div class="bd" id="shop">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="hd"><h2>Quick rules</h2><div class="pill">No external assets</div></div>
+          <div class="bd" style="color:var(--muted); font-size:13px; line-height:1.45">
+            <ul style="margin:0; padding-left:18px">
+              <li>Tap to gain <b>Power</b>.</li>
+              <li>Each tap adds <b>Heat</b>. Heat falls slowly over time.</li>
+              <li>If Heat reaches <b>100%</b>, the reactor melts down (lose).</li>
+              <li>Hold <b>V</b> to vent and dump heat faster (mini skill check).</li>
+              <li>Buy upgrades to tap harder, tap safer, and earn while venting.</li>
+            </ul>
+            <div class="footerNote">This is a tiny original remix inspired by the idea of a tapping progression game.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const picked = "Tap Simulator ✨";
+  const GOAL = 6000;
+
+  const els = {
+    statusPill: document.getElementById('statusPill'),
+    titleScreen: document.getElementById('titleScreen'),
+    gameScreen: document.getElementById('gameScreen'),
+    endScreen: document.getElementById('endScreen'),
+    startBtn: document.getElementById('startBtn'),
+    howBtn: document.getElementById('howBtn'),
+    muteBtn: document.getElementById('muteBtn'),
+    tapBtn: document.getElementById('tapBtn'),
+    ventBtn: document.getElementById('ventBtn'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    restartBtn: document.getElementById('restartBtn'),
+
+    powerVal: document.getElementById('powerVal'),
+    heatFill: document.getElementById('heatFill'),
+    heatText: document.getElementById('heatText'),
+    dpsText: document.getElementById('dpsText'),
+    tapVal: document.getElementById('tapVal'),
+    multVal: document.getElementById('multVal'),
+    autoVal: document.getElementById('autoVal'),
+
+    ventOverlay: document.getElementById('ventOverlay'),
+    track: document.getElementById('track'),
+    sweet: document.getElementById('sweet'),
+    needle: document.getElementById('needle'),
+    dumpRate: document.getElementById('dumpRate'),
+
+    endTitle: document.getElementById('endTitle'),
+    endSub: document.getElementById('endSub'),
+    finalPower: document.getElementById('finalPower'),
+    bestPower: document.getElementById('bestPower'),
+    playAgainBtn: document.getElementById('playAgainBtn'),
+    backTitleBtn: document.getElementById('backTitleBtn'),
+
+    shop: document.getElementById('shop'),
+    shopHint: document.getElementById('shopHint'),
+
+    toast: document.getElementById('toast')
+  };
+
+  // --- Tiny audio (no external files) ---
+  let audioCtx = null;
+  let soundOn = true;
+  function ensureAudio(){
+    if(!soundOn) return;
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+  function beep(freq=440, dur=0.045, type='sine', vol=0.04){
+    if(!soundOn) return;
+    ensureAudio();
+    if(!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    o.start(t0);
+    o.stop(t0+dur+0.02);
+  }
+  function chord(){
+    beep(523.25, 0.06, 'triangle', 0.05);
+    setTimeout(() => beep(659.25, 0.07, 'triangle', 0.05), 45);
+    setTimeout(() => beep(783.99, 0.08, 'triangle', 0.05), 90);
+  }
+
+  // --- Game state ---
+  const S = {
+    mode: 'title', // title | play | end
+    paused: false,
+    power: 0,
+    best: 0,
+    heat: 0, // 0..100
+    baseTap: 1,
+    mult: 1,
+    autoPerSec: 0,
+    heatPerTap: 2.4,
+    passiveCoolPerSec: 4.0,
+
+    // Vent minigame
+    venting: false,
+    needleX: 0, // px
+    needleV: 0,
+    sweetCenter: 0.5, // 0..1
+    sweetWidth: 0.16,
+
+    // Upgrades owned
+    owned: {
+      gloves: 0,
+      drone: 0,
+      stabilizer: 0,
+      coolant: 0,
+      capacitor: 0
+    }
+  };
+
+  function fmt(n){
+    if(n >= 1000000) return (n/1000000).toFixed(2)+"M";
+    if(n >= 10000) return Math.round(n).toLocaleString();
+    return (Math.round(n*10)/10).toLocaleString();
+  }
+
+  function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
+
+  function showToast(msg){
+    els.toast.textContent = msg;
+    els.toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => els.toast.classList.remove('show'), 1600);
+  }
+
+  function setMode(mode){
+    S.mode = mode;
+    els.titleScreen.style.display = (mode==='title') ? '' : 'none';
+    els.gameScreen.style.display  = (mode==='play')  ? '' : 'none';
+    els.endScreen.style.display   = (mode==='end')   ? '' : 'none';
+    els.statusPill.textContent =
+      mode==='title' ? 'Title' :
+      mode==='play'  ? (S.paused ? 'Paused' : 'Running') :
+      'Finished';
+  }
+
+  function recalc(){
+    S.baseTap = 1 + S.owned.gloves * 1;
+    S.mult = 1 + S.owned.capacitor * 0.20;
+    S.autoPerSec = S.owned.drone * 1.4;
+
+    // Stabilizer reduces heat per tap (especially at high heat)
+    // Coolant improves passive cooling
+    S.passiveCoolPerSec = 4.0 + S.owned.coolant * 1.8;
+
+    els.tapVal.textContent = "+" + fmt(S.baseTap * S.mult);
+    els.multVal.textContent = "x" + (S.mult).toFixed(2);
+    els.autoVal.textContent = (S.autoPerSec).toFixed(1) + "/s";
+  }
+
+  function tap(){
+    if(S.mode!=='play' || S.paused) return;
+    if(S.venting) return;
+
+    const gain = S.baseTap * S.mult;
+    S.power += gain;
+
+    const hotFactor = 0.75 + (S.heat/100) * 0.55; // tapping while hot is riskier
+    const stabil = 1 - Math.min(0.45, S.owned.stabilizer * 0.10);
+    const heatGain = S.heatPerTap * hotFactor * stabil;
+    S.heat = clamp(S.heat + heatGain, 0, 120);
+
+    // small juicy feedback
+    const f = 320 + Math.min(600, S.power/25);
+    beep(f, 0.03, 'square', 0.03);
+
+    if(S.power >= GOAL){
+      end(true, "You stabilized the reactor and hit the power target!");
+    }
+    if(S.heat >= 100){
+      end(false, "Meltdown! You pushed it too hard.");
+    }
+  }
+
+  function startGame(){
+    S.paused = false;
+    S.power = 0;
+    S.heat = 0;
+    S.owned = { gloves:0, drone:0, stabilizer:0, coolant:0, capacitor:0 };
+    S.venting = false;
+    S.needleX = 0;
+    S.needleV = 0;
+    S.sweetCenter = 0.5;
+    S.sweetWidth = 0.16;
+    recalc();
+    buildShop();
+    setMode('play');
+    showToast("Tap to build power. Don't hit 100% heat.");
+  }
+
+  function end(won, reason){
+    if(S.mode !== 'play') return;
+    S.paused = true;
+    S.venting = false;
+    hideVent();
+
+    S.best = Math.max(S.best, Math.floor(S.power));
+    els.finalPower.textContent = fmt(Math.floor(S.power));
+    els.bestPower.textContent = fmt(S.best);
+
+    if(won){
+      els.endTitle.textContent = "You win!";
+      els.endSub.textContent = reason;
+      chord();
+    } else {
+      els.endTitle.textContent = "You lose!";
+      els.endSub.textContent = reason;
+      beep(196,0.12,'sawtooth',0.05);
+      setTimeout(()=>beep(147,0.14,'sawtooth',0.045),110);
+    }
+    setMode('end');
+  }
+
+  // --- Shop ---
+  const upgrades = [
+    {
+      key:'gloves',
+      name:'Ion Gloves',
+      desc:'+1 power per tap. (Simple, reliable.)',
+      baseCost: 60,
+      costMult: 1.55,
+      cap: 9,
+      tags: () => [`Tap +1`, `Owned ${S.owned.gloves}/${9}`]
+    },
+    {
+      key:'capacitor',
+      name:'Capacitor Stack',
+      desc:'+20% multiplier. Makes everything scale.',
+      baseCost: 140,
+      costMult: 1.70,
+      cap: 7,
+      tags: () => [`Mult +0.20`, `Owned ${S.owned.capacitor}/${7}`]
+    },
+    {
+      key:'drone',
+      name:'Auto-Tap Drone',
+      desc:'+1.4 taps per second. Works while you vent.',
+      baseCost: 220,
+      costMult: 1.75,
+      cap: 8,
+      tags: () => [`Auto +1.4/s`, `Owned ${S.owned.drone}/${8}`]
+    },
+    {
+      key:'coolant',
+      name:'Coolant Loop',
+      desc:'+1.8% heat cooling per second. (Passive.)',
+      baseCost: 180,
+      costMult: 1.60,
+      cap: 7,
+      tags: () => [`Cool +1.8/s`, `Owned ${S.owned.coolant}/${7}`]
+    },
+    {
+      key:'stabilizer',
+      name:'Phase Stabilizer',
+      desc:'Reduces heat gained per tap. Stronger when you are hot.',
+      baseCost: 260,
+      costMult: 1.85,
+      cap: 6,
+      tags: () => [`Heat ↓`, `Owned ${S.owned.stabilizer}/${6}`]
+    }
+  ];
+
+  function costFor(u){
+    const n = S.owned[u.key];
+    return Math.floor(u.baseCost * Math.pow(u.costMult, n));
+  }
+
+  function buy(key){
+    if(S.mode!=='play' || S.paused) return;
+    const u = upgrades.find(x=>x.key===key);
+    if(!u) return;
+    if(S.owned[key] >= u.cap){ showToast("Already maxed."); beep(220,0.06,'sine',0.03); return; }
+    const c = costFor(u);
+    if(S.power < c){ showToast("Not enough power."); beep(180,0.06,'sine',0.03); return; }
+    S.power -= c;
+    S.owned[key] += 1;
+    recalc();
+    buildShop();
+    showToast("Purchased: " + u.name);
+    beep(740,0.05,'triangle',0.05);
+    setTimeout(()=>beep(980,0.05,'triangle',0.04),55);
+  }
+
+  function buildShop(){
+    els.shop.innerHTML = '';
+    for(const u of upgrades){
+      const c = costFor(u);
+      const maxed = S.owned[u.key] >= u.cap;
+      const row = document.createElement('div');
+      row.className = 'shopItem';
+      row.innerHTML = `
+        <div style="flex:1">
+          <div class="name">${u.name}</div>
+          <div class="desc">${u.desc}</div>
+          <div class="meta">
+            <span class="tag">Cost ${fmt(c)}</span>
+            ${u.tags().map(t=>`<span class="tag">${t}</span>`).join('')}
+          </div>
+        </div>
+        <div>
+          <button class="btn small ${maxed?'':'primary'}" ${maxed?'disabled':''} style="opacity:${maxed?0.55:1}; cursor:${maxed?'not-allowed':'pointer'}" data-buy="${u.key}">
+            ${maxed?'Max':'Buy'}
+          </button>
+        </div>
+      `;
+      els.shop.appendChild(row);
+    }
+
+    // Attach once per rebuild
+    els.shop.querySelectorAll('[data-buy]').forEach(btn => {
+      btn.addEventListener('click', () => buy(btn.getAttribute('data-buy')));
+    });
+
+    els.shopHint.textContent = "Power: " + fmt(Math.floor(S.power));
+  }
+
+  // --- Vent minigame ---
+  function showVent(){
+    els.ventOverlay.classList.add('show');
+    els.ventOverlay.setAttribute('aria-hidden','false');
+  }
+  function hideVent(){
+    els.ventOverlay.classList.remove('show');
+    els.ventOverlay.setAttribute('aria-hidden','true');
+  }
+
+  function ventStart(){
+    if(S.mode!=='play' || S.paused) return;
+    if(S.venting) return;
+    S.venting = true;
+
+    // Randomize sweet spot a bit
+    S.sweetCenter = 0.28 + Math.random()*0.44;
+    S.sweetWidth = 0.14 + Math.random()*0.06;
+
+    const w = els.track.clientWidth;
+    const sweetLeft = (S.sweetCenter - S.sweetWidth/2) * w;
+    const sweetW = (S.sweetWidth) * w;
+    els.sweet.style.left = sweetLeft + 'px';
+    els.sweet.style.width = sweetW + 'px';
+
+    // Needle motion
+    S.needleX = w * (0.1 + Math.random()*0.8);
+    S.needleV = (Math.random()<0.5 ? -1 : 1) * (w * (0.7 + Math.random()*0.6));
+
+    showVent();
+    beep(330,0.06,'triangle',0.04);
+  }
+
+  function ventStop(){
+    if(!S.venting) return;
+    S.venting = false;
+    hideVent();
+    beep(260,0.05,'triangle',0.03);
+  }
+
+  function ventDumpPerSec(){
+    // How well aligned is needle with sweet spot?
+    const w = els.track.clientWidth;
+    const nx = S.needleX;
+    const left = (S.sweetCenter - S.sweetWidth/2) * w;
+    const right = (S.sweetCenter + S.sweetWidth/2) * w;
+
+    const inZone = (nx >= left && nx <= right);
+
+    // Base dump depends on heat (hotter -> more vent potential)
+    const heatFactor = 0.7 + (S.heat/100) * 1.2;
+
+    // If in zone: big dump. If not: small dump + heat friction penalty.
+    if(inZone){
+      return 18 * heatFactor; // %/s
+    } else {
+      return 4.5 * heatFactor; // still helps a bit
+    }
+  }
+
+  // --- Loop ---
+  let lastT = performance.now();
+  function loop(now){
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+
+    if(S.mode==='play' && !S.paused){
+      // Auto power gain
+      if(S.autoPerSec > 0){
+        S.power += (S.autoPerSec * S.baseTap * S.mult) * dt;
+      }
+
+      // Passive cooling
+      const cool = S.passiveCoolPerSec * dt;
+      S.heat = Math.max(0, S.heat - cool);
+
+      // Venting
+      if(S.venting){
+        const w = els.track.clientWidth;
+        // Move needle with bounce
+        S.needleX += S.needleV * dt;
+        if(S.needleX < 0){ S.needleX = 0; S.needleV *= -1; }
+        if(S.needleX > w-10){ S.needleX = w-10; S.needleV *= -1; }
+        els.needle.style.left = S.needleX + 'px';
+
+        const dump = ventDumpPerSec();
+        els.dumpRate.textContent = dump.toFixed(0);
+        S.heat = Math.max(0, S.heat - dump * dt);
+
+        // tiny vent hiss
+        if(Math.random() < dt*2.2){ beep(120 + Math.random()*40, 0.02, 'sawtooth', 0.01); }
+      }
+
+      // Win/lose checks
+      if(S.power >= GOAL){
+        end(true, "You stabilized the reactor and hit the power target!");
+      } else if(S.heat >= 100){
+        end(false, "Meltdown! You pushed it too hard.");
+      }
+
+      // UI
+      els.powerVal.textContent = fmt(Math.floor(S.power));
+      els.shopHint.textContent = "Power: " + fmt(Math.floor(S.power));
+
+      const heatPct = clamp(S.heat, 0, 100);
+      els.heatFill.style.width = heatPct.toFixed(1) + '%';
+      els.heatText.textContent = heatPct.toFixed(0) + '%';
+
+      // Display approximate DPS
+      const dps = (S.autoPerSec * S.baseTap * S.mult);
+      els.dpsText.textContent = "+" + dps.toFixed(1) + "/s";
+
+      // Warnings
+      if(heatPct >= 85) els.statusPill.textContent = "Danger: Heat";
+      else if(heatPct >= 60) els.statusPill.textContent = "Hot";
+      else els.statusPill.textContent = S.paused ? "Paused" : "Running";
+    }
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // --- Controls ---
+  function togglePause(){
+    if(S.mode!=='play') return;
+    S.paused = !S.paused;
+    els.pauseBtn.textContent = S.paused ? 'Resume' : 'Pause';
+    els.statusPill.textContent = S.paused ? 'Paused' : 'Running';
+    if(S.paused) showToast("Paused");
+  }
+
+  function showHow(){
+    showToast("Tap for Power. Heat rises per tap. Hold V to Vent. Buy upgrades. Reach 6,000 to win.");
+  }
+
+  els.startBtn.addEventListener('click', () => { ensureAudio(); startGame(); });
+  els.howBtn.addEventListener('click', showHow);
+
+  els.muteBtn.addEventListener('click', () => {
+    soundOn = !soundOn;
+    els.muteBtn.textContent = "Sound: " + (soundOn ? "On" : "Off");
+    showToast(soundOn ? "Sound enabled" : "Sound muted");
+    if(soundOn) { ensureAudio(); beep(523,0.05,'triangle',0.04); }
+  });
+
+  els.tapBtn.addEventListener('click', () => tap());
+  els.restartBtn.addEventListener('click', () => startGame());
+  els.playAgainBtn.addEventListener('click', () => startGame());
+  els.backTitleBtn.addEventListener('click', () => setMode('title'));
+  els.pauseBtn.addEventListener('click', () => togglePause());
+
+  // Vent via button behaves like hold key: press starts, release stops
+  els.ventBtn.addEventListener('mousedown', (e) => { e.preventDefault(); ventStart(); });
+  window.addEventListener('mouseup', () => ventStop());
+  els.ventBtn.addEventListener('touchstart', (e) => { e.preventDefault(); ventStart(); }, {passive:false});
+  els.ventBtn.addEventListener('touchend', () => ventStop());
+
+  window.addEventListener('keydown', (e) => {
+    if(e.repeat) return;
+    if(e.code === 'Space'){
+      e.preventDefault();
+      ensureAudio();
+      tap();
+    }
+    if(e.key === 'v' || e.key === 'V'){
+      ventStart();
+    }
+    if(e.key === 'r' || e.key === 'R'){
+      if(S.mode==='play' || S.mode==='end') startGame();
+    }
+    if(e.key === 'p' || e.key === 'P'){
+      togglePause();
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    if(e.key === 'v' || e.key === 'V') ventStop();
+  });
+
+  // Start at title
+  setMode('title');
+  buildShop();
+
+})();
+</script>
+</body>
+</html>
