@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Microgame: Forsaken Remix</title>
+  <style>
+    :root{
+      --bg:#070a12;
+      --panel:rgba(10,14,24,.86);
+      --ink:#e9eefc;
+      --muted:#aab3d6;
+      --accent:#7cf7c7;
+      --danger:#ff5c7a;
+      --warn:#ffd166;
+      --shadow:rgba(0,0,0,.55);
+    }
+    html,body{height:100%;margin:0;background:radial-gradient(1200px 700px at 50% 35%, #141b33 0%, var(--bg) 55%, #040611 100%);color:var(--ink);font:14px/1.25 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;}
+    #wrap{height:100%;display:grid;place-items:center;}
+    #frame{width:min(980px, 96vw);}
+    canvas{width:100%;height:auto;aspect-ratio: 16/9;display:block;background:#050814;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.06);}
+    #hud{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    .pill{background:var(--panel);backdrop-filter: blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:8px 12px;box-shadow:0 10px 25px var(--shadow);display:flex;align-items:center;gap:8px;}
+    .pill b{font-weight:700;letter-spacing:.2px;}
+    .bar{width:170px;height:10px;border-radius:999px;background:rgba(255,255,255,.09);overflow:hidden;box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);}
+    .bar > i{display:block;height:100%;width:50%;background:linear-gradient(90deg, #6ee7ff, #7cf7c7);}
+    .bar.sanity > i{background:linear-gradient(90deg, #7cf7c7, #ffd166);}
+    .bar.battery > i{background:linear-gradient(90deg, #ffd166, #ff9f1c);}
+    .bar.danger > i{background:linear-gradient(90deg, #ff5c7a, #ff2e63);}
+    #note{margin-top:10px;color:var(--muted);font-size:12px;opacity:.95}
+    #note kbd{font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:1px 6px;border-radius:6px;}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+<div id="wrap">
+  <div id="frame">
+    <canvas id="c" width="960" height="540" aria-label="Forsaken Remix game canvas" role="img"></canvas>
+    <div id="hud">
+      <div class="pill"><b>Runes</b> <span id="runes">0/7</span></div>
+      <div class="pill"><b>Score</b> <span id="score">0</span></div>
+      <div class="pill"><b>Time</b> <span id="time">0:00</span></div>
+      <div class="pill"><b>Sanity</b><span class="bar sanity"><i id="sanityBar"></i></span><span id="sanityTxt">100%</span></div>
+      <div class="pill"><b>Flashlight</b><span class="bar battery"><i id="batteryBar"></i></span><span id="batteryTxt">100%</span></div>
+      <div class="pill"><b>Wraith</b><span class="bar danger"><i id="dangerBar"></i></span><span id="dangerTxt">CALM</span></div>
+    </div>
+    <div id="note">
+      <div><b>Inspired by Forsaken</b> (note only; no Roblox branding). Single-file microgame.</div>
+      <div>Controls: <kbd>WASD</kbd>/<kbd>Arrows</kbd> move • <kbd>Shift</kbd> sneak • <kbd>F</kbd> toggle flashlight • <kbd>Space</kbd> interact • <kbd>R</kbd> restart • <kbd>M</kbd> mute</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // --- Canvas ---
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  // --- HUD ---
+  const elRunes = document.getElementById('runes');
+  const elScore = document.getElementById('score');
+  const elTime = document.getElementById('time');
+  const sanityBar = document.getElementById('sanityBar');
+  const batteryBar = document.getElementById('batteryBar');
+  const dangerBar = document.getElementById('dangerBar');
+  const sanityTxt = document.getElementById('sanityTxt');
+  const batteryTxt = document.getElementById('batteryTxt');
+  const dangerTxt = document.getElementById('dangerTxt');
+
+  // --- Utilities ---
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+  const dist = (ax,ay,bx,by)=>Math.hypot(ax-bx, ay-by);
+  const rand = (a,b)=>a+Math.random()*(b-a);
+  const chance = p => Math.random()<p;
+
+  function formatTime(sec){
+    sec = Math.max(0, Math.floor(sec));
+    const m = Math.floor(sec/60);
+    const s = String(sec%60).padStart(2,'0');
+    return `${m}:${s}`;
+  }
+
+  // --- Tiny synth (WebAudio) ---
+  let audio = { ctx:null, master:null, muted:false };
+  function initAudio(){
+    if (audio.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    audio.ctx = new AC();
+    audio.master = audio.ctx.createGain();
+    audio.master.gain.value = 0.25;
+    audio.master.connect(audio.ctx.destination);
+  }
+  function beep(type, freq, dur=0.08, gain=0.25){
+    if (!audio.ctx || audio.muted) return;
+    const t0 = audio.ctx.currentTime;
+    const o = audio.ctx.createOscillator();
+    const g = audio.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(gain, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    o.connect(g); g.connect(audio.master);
+    o.start(t0); o.stop(t0+dur);
+  }
+  function noiseBurst(dur=0.14, gain=0.20){
+    if (!audio.ctx || audio.muted) return;
+    const t0 = audio.ctx.currentTime;
+    const sr = audio.ctx.sampleRate;
+    const n = Math.floor(sr*dur);
+    const buf = audio.ctx.createBuffer(1,n,sr);
+    const data = buf.getChannelData(0);
+    for(let i=0;i<n;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/n, 2);
+    const src = audio.ctx.createBufferSource();
+    src.buffer = buf;
+    const f = audio.ctx.createBiquadFilter();
+    f.type='highpass';
+    f.frequency.value=900;
+    const g = audio.ctx.createGain();
+    g.gain.value = gain;
+    src.connect(f); f.connect(g); g.connect(audio.master);
+    src.start(t0);
+  }
+
+  // --- Input ---
+  const keys = new Set();
+  let lastKeyTime = 0;
+  let pointer = { x: canvas.width/2, y: canvas.height/2, down:false };
+
+  function onKey(e, down){
+    const k = e.key.toLowerCase();
+    if (['arrowup','arrowdown','arrowleft','arrowright',' ','shift','w','a','s','d','f','r','m','escape'].includes(k)) e.preventDefault();
+    if (down){
+      keys.add(k);
+      lastKeyTime = performance.now();
+      if (!audio.ctx) initAudio();
+      if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume().catch(()=>{});
+    } else {
+      keys.delete(k);
+    }
+
+    if (down){
+      if (k==='m'){
+        audio.muted = !audio.muted;
+        beep('square', audio.muted ? 120 : 280, 0.07, 0.18);
+      }
+      if (k==='r'){
+        startNewRun();
+      }
+      if (k==='f'){
+        if (state.mode==='play'){
+          player.flashOn = !player.flashOn;
+          beep('triangle', player.flashOn ? 420 : 210, 0.07, 0.20);
+        }
+      }
+      if (k==='escape'){
+        if (state.mode==='play') state.mode='pause';
+        else if (state.mode==='pause') state.mode='play';
+      }
+    }
+  }
+  window.addEventListener('keydown', e => onKey(e,true), {passive:false});
+  window.addEventListener('keyup', e => onKey(e,false), {passive:false});
+  canvas.addEventListener('pointermove', e => {
+    const r = canvas.getBoundingClientRect();
+    pointer.x = (e.clientX - r.left) * (canvas.width / r.width);
+    pointer.y = (e.clientY - r.top) * (canvas.height / r.height);
+  });
+  canvas.addEventListener('pointerdown', e => {
+    pointer.down = true;
+    if (!audio.ctx) initAudio();
+    if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume().catch(()=>{});
+    if (state.mode==='title'){
+      startNewRun();
+    } else if (state.mode==='end'){
+      startNewRun();
+    } else if (state.mode==='play'){
+      // Tap to interact when near
+      tryInteract();
+    }
+  });
+  window.addEventListener('pointerup', ()=> pointer.down=false);
+
+  // --- World ---
+  const W = canvas.width, H = canvas.height;
+  const TILE = 36;
+  const COLS = Math.floor(W / TILE);
+  const ROWS = Math.floor(H / TILE);
+
+  // Map generation: a ruined labyrinth with rooms and corridors.
+  function makeMap(seed){
+    // Deterministic-ish with seed; simple PRNG
+    let s = seed >>> 0;
+    const rnd = () => (s = (s*1664525 + 1013904223)>>>0, (s&0xffffff)/0x1000000);
+
+    // Start solid walls
+    const grid = Array.from({length:ROWS}, ()=>Array.from({length:COLS}, ()=>1)); // 1 wall, 0 floor
+
+    // Carve rooms
+    const rooms = [];
+    const roomCount = 10;
+    for(let i=0;i<roomCount;i++){
+      const rw = 4 + Math.floor(rnd()*7);
+      const rh = 3 + Math.floor(rnd()*6);
+      const rx = 1 + Math.floor(rnd()*(COLS-rw-2));
+      const ry = 1 + Math.floor(rnd()*(ROWS-rh-2));
+      rooms.push({x:rx,y:ry,w:rw,h:rh});
+      for(let y=ry;y<ry+rh;y++) for(let x=rx;x<rx+rw;x++) grid[y][x]=0;
+    }
+
+    // Connect rooms via corridors
+    function center(r){ return {x:Math.floor(r.x+r.w/2), y:Math.floor(r.y+r.h/2)}; }
+    for(let i=1;i<rooms.length;i++){
+      const a = center(rooms[i-1]);
+      const b = center(rooms[i]);
+      let x=a.x, y=a.y;
+      while(x!==b.x){ grid[y][x]=0; x += Math.sign(b.x-x); }
+      while(y!==b.y){ grid[y][x]=0; y += Math.sign(b.y-y); }
+    }
+
+    // Add some rubble (pillars) as soft obstacles on floors
+    const rubble = [];
+    for(let y=1;y<ROWS-1;y++){
+      for(let x=1;x<COLS-1;x++){
+        if(grid[y][x]===0 && rnd()<0.06) rubble.push({x,y});
+      }
+    }
+
+    // Pick start (first room) and exit (last room)
+    const start = center(rooms[0]);
+    const exit = center(rooms[rooms.length-1]);
+
+    // Ensure exit tile is floor
+    grid[exit.y][exit.x]=0;
+
+    return {grid, rooms, rubble, start, exit};
+  }
+
+  function tileToWorld(tx,ty){
+    return {x: tx*TILE + TILE/2, y: ty*TILE + TILE/2};
+  }
+
+  function isWall(tx,ty){
+    if(tx<0||ty<0||tx>=COLS||ty>=ROWS) return true;
+    return world.grid[ty][tx]===1;
+  }
+
+  function circleCollidesWalls(x,y,r){
+    // sample nearby tiles
+    const minX = Math.floor((x-r)/TILE);
+    const maxX = Math.floor((x+r)/TILE);
+    const minY = Math.floor((y-r)/TILE);
+    const maxY = Math.floor((y+r)/TILE);
+    for(let ty=minY; ty<=maxY; ty++){
+      for(let tx=minX; tx<=maxX; tx++){
+        if(isWall(tx,ty)){
+          // axis-aligned tile bounds
+          const x0 = tx*TILE, y0 = ty*TILE;
+          const x1 = x0+TILE, y1 = y0+TILE;
+          const cx = clamp(x, x0, x1);
+          const cy = clamp(y, y0, y1);
+          if(dist(x,y,cx,cy) < r) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function nudgeOutOfWalls(ent){
+    // small push iterations
+    for(let i=0;i<6;i++){
+      if(!circleCollidesWalls(ent.x, ent.y, ent.r)) break;
+      const ang = Math.random()*Math.PI*2;
+      ent.x += Math.cos(ang)*2.2;
+      ent.y += Math.sin(ang)*2.2;
+    }
+  }
+
+  function lineOfSight(ax,ay,bx,by){
+    // grid march
+    const steps = Math.ceil(dist(ax,ay,bx,by) / (TILE/6));
+    for(let i=0;i<=steps;i++){
+      const t = i/steps;
+      const x = lerp(ax,bx,t);
+      const y = lerp(ay,by,t);
+      const tx = Math.floor(x/TILE);
+      const ty = Math.floor(y/TILE);
+      if(isWall(tx,ty)) return false;
+    }
+    return true;
+  }
+
+  // --- Entities ---
+  let world;
+  let player;
+  let wraith;
+  let runes;
+  let exitPortal;
+  let particles;
+
+  const state = {
+    mode: 'title', // title | play | pause | end
+    won: false,
+    seed: 0,
+    startTime: 0,
+    timeLimit: 120, // seconds
+    timeLeft: 120,
+    score: 0,
+    best: 0,
+    tip: '',
+    endReason: '',
+  };
+
+  function spawnRunes(count){
+    const spots = [];
+    for(let ty=1;ty<ROWS-1;ty++){
+      for(let tx=1;tx<COLS-1;tx++){
+        if(world.grid[ty][tx]===0){
+          // avoid start and exit
+          const wpos = tileToWorld(tx,ty);
+          if(dist(wpos.x,wpos.y, player.x, player.y) < 130) continue;
+          if(dist(wpos.x,wpos.y, exitPortal.x, exitPortal.y) < 130) continue;
+          spots.push({tx,ty, w: wpos});
+        }
+      }
+    }
+    // shuffle
+    for(let i=spots.length-1;i>0;i--){
+      const j = (Math.random()*(i+1))|0;
+      [spots[i],spots[j]]=[spots[j],spots[i]];
+    }
+    const out = [];
+    for(let i=0;i<count && i<spots.length;i++){
+      out.push({
+        x: spots[i].w.x,
+        y: spots[i].w.y,
+        r: 10,
+        taken: false,
+        glow: rand(0,1),
+      });
+    }
+    return out;
+  }
+
+  function spawnParticles(x,y, color){
+    for(let i=0;i<18;i++){
+      particles.push({
+        x,y,
+        vx: Math.cos(i/18*Math.PI*2)*rand(0.6,2.2) + rand(-0.4,0.4),
+        vy: Math.sin(i/18*Math.PI*2)*rand(0.6,2.2) + rand(-0.4,0.4),
+        life: rand(0.35,0.8),
+        t: 0,
+        color
+      });
+    }
+  }
+
+  function startNewRun(){
+    state.seed = (Date.now() ^ (Math.random()*1e9|0)) >>> 0;
+    world = makeMap(state.seed);
+
+    const sPos = tileToWorld(world.start.x, world.start.y);
+    const ePos = tileToWorld(world.exit.x, world.exit.y);
+
+    player = {
+      x: sPos.x,
+      y: sPos.y,
+      vx: 0,
+      vy: 0,
+      r: 11,
+      speed: 145,
+      sneakMult: 0.52,
+      flashOn: true,
+      battery: 1.0,
+      sanity: 1.0,
+      runes: 0,
+      interacted: false,
+    };
+
+    wraith = {
+      x: ePos.x,
+      y: ePos.y,
+      vx: 0,
+      vy: 0,
+      r: 13,
+      state: 'stalk', // stalk | chase | stunned
+      alert: 0, // 0..1
+      stun: 0,
+      phase: rand(0,1),
+      lastSeenX: player.x,
+      lastSeenY: player.y,
+    };
+
+    exitPortal = {
+      x: ePos.x,
+      y: ePos.y,
+      r: 18,
+      open: false,
+      pulse: 0,
+    };
+
+    particles = [];
+
+    runes = spawnRunes(7);
+
+    state.mode = 'play';
+    state.won = false;
+    state.startTime = performance.now();
+    state.timeLimit = 120;
+    state.timeLeft = 120;
+    state.score = 0;
+    state.endReason = '';
+    state.tip = 'Collect 7 runes, then escape through the portal.';
+
+    beep('triangle', 440, 0.08, 0.22);
+    beep('triangle', 660, 0.10, 0.18);
+  }
+
+  function endRun(won, reason){
+    state.mode = 'end';
+    state.won = won;
+    state.endReason = reason;
+    // final score
+    const timeBonus = Math.floor(state.timeLeft*6);
+    const sanityBonus = Math.floor(player.sanity*500);
+    const base = player.runes*250;
+    state.score = Math.max(0, base + timeBonus + sanityBonus);
+    state.best = Math.max(state.best, state.score);
+
+    if (won){
+      beep('square', 523, 0.09, 0.18);
+      beep('square', 659, 0.11, 0.16);
+      beep('triangle', 784, 0.14, 0.15);
+    } else {
+      noiseBurst(0.16, 0.22);
+      beep('sawtooth', 180, 0.18, 0.10);
+    }
+  }
+
+  function tryInteract(){
+    if (state.mode!=='play') return;
+    // Collect runes / open portal
+    let did = false;
+    for (const r of runes){
+      if (!r.taken && dist(player.x,player.y,r.x,r.y) < (player.r + r.r + 10)){
+        r.taken = true;
+        player.runes++;
+        did = true;
+        spawnParticles(r.x, r.y, 'rgba(124,247,199,0.95)');
+        beep('triangle', 740, 0.07, 0.18);
+        beep('triangle', 980, 0.06, 0.14);
+        break;
+      }
+    }
+    if (!did && exitPortal.open && dist(player.x,player.y,exitPortal.x,exitPortal.y) < (player.r + exitPortal.r + 12)){
+      did = true;
+      endRun(true, 'You escaped the ruins.');
+    }
+    if (!did){
+      beep('square', 160, 0.05, 0.10);
+    }
+  }
+
+  function inputVector(){
+    let ix = 0, iy = 0;
+    if (keys.has('w') || keys.has('arrowup')) iy -= 1;
+    if (keys.has('s') || keys.has('arrowdown')) iy += 1;
+    if (keys.has('a') || keys.has('arrowleft')) ix -= 1;
+    if (keys.has('d') || keys.has('arrowright')) ix += 1;
+    const mag = Math.hypot(ix,iy) || 1;
+    return {x: ix/mag, y: iy/mag, rawX:ix, rawY:iy};
+  }
+
+  function update(dt){
+    if (state.mode !== 'play') return;
+
+    state.timeLeft -= dt;
+    if (state.timeLeft <= 0){
+      state.timeLeft = 0;
+      endRun(false, 'The ruins consumed the last of your time.');
+      return;
+    }
+
+    // Interaction
+    if (keys.has(' ')){
+      // edge detection-ish
+      if (!player.interacted){
+        tryInteract();
+      }
+      player.interacted = true;
+    } else {
+      player.interacted = false;
+    }
+
+    // Player movement
+    const v = inputVector();
+    const sneak = keys.has('shift');
+    const speed = player.speed * (sneak ? player.sneakMult : 1);
+
+    // Aim flashlight toward pointer or movement direction
+    let aimX = pointer.x - player.x;
+    let aimY = pointer.y - player.y;
+    if (Math.hypot(aimX,aimY) < 10){
+      aimX = v.x || 1;
+      aimY = v.y;
+    }
+    const aimMag = Math.hypot(aimX,aimY) || 1;
+    const ax = aimX/aimMag, ay = aimY/aimMag;
+
+    // battery
+    if (player.flashOn){
+      player.battery -= dt * (sneak ? 0.010 : 0.016);
+      if (player.battery <= 0){
+        player.battery = 0;
+        player.flashOn = false;
+        noiseBurst(0.08, 0.15);
+      }
+    } else {
+      // trickle recharge (hand-crank vibe)
+      player.battery += dt * 0.006;
+      player.battery = clamp(player.battery, 0, 1);
+    }
+
+    // footstep noise affects wraith alert
+    const moving = (v.rawX !== 0 || v.rawY !== 0);
+    const footNoise = moving ? (sneak ? 0.28 : 1.0) : 0.0;
+
+    // Integrate velocity with simple smoothing
+    const targetVX = v.x * speed;
+    const targetVY = v.y * speed;
+    player.vx = lerp(player.vx, targetVX, 1 - Math.exp(-dt*12));
+    player.vy = lerp(player.vy, targetVY, 1 - Math.exp(-dt*12));
+
+    const nx = player.x + player.vx*dt;
+    const ny = player.y + player.vy*dt;
+
+    // Collision
+    if (!circleCollidesWalls(nx, player.y, player.r)) player.x = nx;
+    else player.vx *= 0.2;
+    if (!circleCollidesWalls(player.x, ny, player.r)) player.y = ny;
+    else player.vy *= 0.2;
+
+    // Sanity drain: darkness + proximity + being chased
+    const darkness = player.flashOn ? 0.0 : 1.0;
+    const prox = clamp(1 - (dist(player.x,player.y,wraith.x,wraith.y)/240), 0, 1);
+    let sanityDrain = dt * (0.010 + darkness*0.020 + prox*0.030 + (wraith.state==='chase'?0.018:0));
+    // A little relief if flashlight is on and aimed near the wraith
+    if (player.flashOn){
+      const toW = {x: wraith.x-player.x, y: wraith.y-player.y};
+      const dW = Math.hypot(toW.x,toW.y) || 1;
+      const nxW = toW.x/dW, nyW = toW.y/dW;
+      const dot = nxW*ax + nyW*ay;
+      const inCone = dot > 0.78; // narrow cone
+      if (inCone && dW < 260 && lineOfSight(player.x,player.y,wraith.x,wraith.y)){
+        sanityDrain *= 0.55;
+      }
+    }
+    player.sanity = clamp(player.sanity - sanityDrain, 0, 1);
+    if (player.sanity <= 0){
+      endRun(false, 'You froze—mind gone, body still.');
+      return;
+    }
+
+    // Wraith AI
+    wraith.phase += dt * 0.9;
+
+    // Sense player: sight and sound
+    const canSee = lineOfSight(wraith.x,wraith.y, player.x, player.y) && dist(wraith.x,wraith.y, player.x, player.y) < 340;
+    const heard = dist(wraith.x,wraith.y, player.x, player.y) < lerp(140, 320, footNoise);
+
+    // Flashlight can stun if in cone and close enough
+    let stunnedThisFrame = false;
+    if (player.flashOn && wraith.state !== 'stunned'){
+      const toW = {x: wraith.x-player.x, y: wraith.y-player.y};
+      const dW = Math.hypot(toW.x,toW.y) || 1;
+      const nxW = toW.x/dW, nyW = toW.y/dW;
+      const dot = nxW*ax + nyW*ay;
+      const inCone = dot > 0.80;
+      if (inCone && dW < 210 && lineOfSight(player.x,player.y,wraith.x,wraith.y)){
+        wraith.stun = Math.max(wraith.stun, 0.55);
+        wraith.state = 'stunned';
+        wraith.alert = Math.min(1, wraith.alert + dt*1.2);
+        stunnedThisFrame = true;
+        if (chance(0.10)) beep('triangle', 980, 0.04, 0.06);
+      }
+    }
+
+    // Alert logic
+    let alertDelta = 0;
+    if (canSee) alertDelta += dt * 1.2;
+    if (heard) alertDelta += dt * 0.55;
+    alertDelta -= dt * 0.25; // natural calm
+    wraith.alert = clamp(wraith.alert + alertDelta, 0, 1);
+
+    // State transitions
+    if (wraith.state === 'stunned'){
+      wraith.stun -= dt;
+      if (wraith.stun <= 0){
+        wraith.stun = 0;
+        wraith.state = (wraith.alert > 0.55) ? 'chase' : 'stalk';
+      }
+    } else {
+      if (wraith.alert > 0.62) wraith.state = 'chase';
+      if (wraith.alert < 0.30) wraith.state = 'stalk';
+    }
+
+    // Remember last seen
+    if (canSee){
+      wraith.lastSeenX = player.x;
+      wraith.lastSeenY = player.y;
+    }
+
+    // Choose target
+    let tx = wraith.lastSeenX;
+    let ty = wraith.lastSeenY;
+
+    // If stalking, drift toward exit/center occasionally
+    if (wraith.state === 'stalk'){
+      const drift = tileToWorld(world.start.x, world.start.y);
+      if (dist(wraith.x,wraith.y, player.x,player.y) > 260 && chance(dt*0.35)){
+        tx = lerp(tx, drift.x, 0.35);
+        ty = lerp(ty, drift.y, 0.35);
+      }
+    }
+
+    // Move speed
+    const baseSpeed = (wraith.state==='chase') ? 170 : 105;
+    const jitter = (Math.sin(wraith.phase*6.0)*0.6 + Math.cos(wraith.phase*3.3)*0.4);
+    const speedW = baseSpeed * (wraith.state==='stunned' ? 0.0 : 1.0) * (1 + 0.04*jitter);
+
+    // Seek
+    let dx = tx - wraith.x;
+    let dy = ty - wraith.y;
+    const d = Math.hypot(dx,dy) || 1;
+    dx /= d; dy /= d;
+
+    // Simple wall avoidance: try rotate direction if heading into wall
+    function wouldHit(nx,ny){ return circleCollidesWalls(nx,ny,wraith.r); }
+    let ddx = dx, ddy = dy;
+    const step = speedW * dt;
+    if (wouldHit(wraith.x + ddx*step, wraith.y + ddy*step)){
+      // try angles
+      const angles = [0.6, -0.6, 1.1, -1.1, 1.6, -1.6];
+      let found = false;
+      for(const a of angles){
+        const rx = ddx*Math.cos(a) - ddy*Math.sin(a);
+        const ry = ddx*Math.sin(a) + ddy*Math.cos(a);
+        if(!wouldHit(wraith.x + rx*step, wraith.y + ry*step)){
+          ddx = rx; ddy = ry; found = true; break;
+        }
+      }
+      if(!found){
+        ddx = -ddx; ddy = -ddy;
+      }
+    }
+
+    wraith.vx = ddx*speedW;
+    wraith.vy = ddy*speedW;
+    wraith.x += wraith.vx*dt;
+    wraith.y += wraith.vy*dt;
+    nudgeOutOfWalls(wraith);
+
+    // Catch
+    if (!stunnedThisFrame && dist(player.x,player.y,wraith.x,wraith.y) < (player.r + wraith.r + 4)){
+      endRun(false, 'The Wraith found you.');
+      return;
+    }
+
+    // Portal opens when all runes collected
+    if (!exitPortal.open && player.runes >= 7){
+      exitPortal.open = true;
+      spawnParticles(exitPortal.x, exitPortal.y, 'rgba(110,231,255,0.95)');
+      beep('triangle', 330, 0.10, 0.12);
+      beep('triangle', 495, 0.12, 0.12);
+      beep('triangle', 660, 0.14, 0.10);
+      state.tip = 'Portal awakened! Reach it and press SPACE.';
+    }
+
+    // Update score (live)
+    const base = player.runes*250;
+    const timeBonus = Math.floor(state.timeLeft*6);
+    const sanityBonus = Math.floor(player.sanity*500);
+    state.score = Math.max(0, base + timeBonus + sanityBonus);
+  }
+
+  function draw(){
+    // Background
+    ctx.clearRect(0,0,W,H);
+
+    // subtle star dust
+    ctx.save();
+    ctx.globalAlpha = 0.10;
+    for(let i=0;i<30;i++){
+      const x = (i*193 + (state.seed%997)) % W;
+      const y = (i*127 + ((state.seed>>>8)%733)) % H;
+      ctx.fillStyle = '#dbe7ff';
+      ctx.fillRect(x, y, 1, 1);
+    }
+    ctx.restore();
+
+    // Map
+    for(let ty=0;ty<ROWS;ty++){
+      for(let tx=0;tx<COLS;tx++){
+        const wall = world ? world.grid[ty][tx]===1 : true;
+        const x = tx*TILE, y = ty*TILE;
+        if (wall){
+          ctx.fillStyle = '#0a0f22';
+          ctx.fillRect(x,y,TILE,TILE);
+          // edges
+          ctx.fillStyle = 'rgba(255,255,255,0.03)';
+          ctx.fillRect(x,y,TILE,1);
+          ctx.fillRect(x,y,1,TILE);
+        } else {
+          const g = ctx.createLinearGradient(x,y,x+TILE,y+TILE);
+          g.addColorStop(0,'#070b18');
+          g.addColorStop(1,'#060a14');
+          ctx.fillStyle = g;
+          ctx.fillRect(x,y,TILE,TILE);
+          if ((tx+ty)%7===0){
+            ctx.fillStyle='rgba(255,255,255,0.02)';
+            ctx.fillRect(x+TILE*0.18,y+TILE*0.70,TILE*0.28,1);
+          }
+        }
+      }
+    }
+
+    // Rubble
+    if (world){
+      for(const r of world.rubble){
+        const p = tileToWorld(r.x,r.y);
+        ctx.fillStyle='rgba(255,255,255,0.04)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle='rgba(0,0,0,0.35)';
+        ctx.beginPath();
+        ctx.arc(p.x+2, p.y+2, 6, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    // Portal
+    if (exitPortal){
+      exitPortal.pulse += 0.016;
+      const open = exitPortal.open;
+      const ring = open ? 1 : 0.45;
+      const glow = open ? 0.75 : 0.25;
+      const baseR = exitPortal.r * (open ? (1 + 0.06*Math.sin(exitPortal.pulse*2.2)) : 1);
+
+      ctx.save();
+      const grad = ctx.createRadialGradient(exitPortal.x, exitPortal.y, 1, exitPortal.x, exitPortal.y, baseR*2.2);
+      grad.addColorStop(0, `rgba(110,231,255,${0.22*glow})`);
+      grad.addColorStop(0.45, `rgba(124,247,199,${0.10*glow})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(exitPortal.x, exitPortal.y, baseR*2.2, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = open ? 'rgba(110,231,255,0.95)' : 'rgba(170,179,214,0.35)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(exitPortal.x, exitPortal.y, baseR*ring, 0, Math.PI*2);
+      ctx.stroke();
+
+      // center
+      ctx.globalAlpha = open ? 0.55 : 0.18;
+      ctx.fillStyle = open ? 'rgba(124,247,199,0.9)' : 'rgba(170,179,214,0.5)';
+      ctx.beginPath();
+      ctx.arc(exitPortal.x, exitPortal.y, baseR*0.35, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+
+      // label hint
+      ctx.save();
+      ctx.font = '12px system-ui, sans-serif';
+      ctx.textAlign='center';
+      ctx.fillStyle = open ? 'rgba(124,247,199,0.9)' : 'rgba(170,179,214,0.6)';
+      ctx.fillText(open ? 'EXIT (SPACE)' : 'SEALED', exitPortal.x, exitPortal.y - baseR - 10);
+      ctx.restore();
+    }
+
+    // Runes
+    if (runes){
+      for(const r of runes){
+        if (r.taken) continue;
+        r.glow += 0.02;
+        const pulse = 0.6 + 0.4*Math.sin(r.glow*2.7);
+        ctx.save();
+        const grad = ctx.createRadialGradient(r.x, r.y, 1, r.x, r.y, 34);
+        grad.addColorStop(0, `rgba(124,247,199,${0.20*pulse})`);
+        grad.addColorStop(0.55, `rgba(110,231,255,${0.10*pulse})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, 34, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.globalAlpha = 0.95;
+        ctx.strokeStyle = `rgba(124,247,199,${0.75*pulse})`;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(r.x-10, r.y);
+        ctx.lineTo(r.x+10, r.y);
+        ctx.moveTo(r.x, r.y-10);
+        ctx.lineTo(r.x, r.y+10);
+        ctx.stroke();
+
+        ctx.fillStyle = `rgba(110,231,255,${0.85*pulse})`;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, 5.2, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Wraith
+    if (wraith && state.mode!=='title'){
+      ctx.save();
+      const a = wraith.alert;
+      const alpha = 0.40 + 0.35*a;
+      const grad = ctx.createRadialGradient(wraith.x, wraith.y, 1, wraith.x, wraith.y, 70);
+      grad.addColorStop(0, `rgba(255,92,122,${0.20*alpha})`);
+      grad.addColorStop(0.55, `rgba(150,90,255,${0.08*alpha})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(wraith.x, wraith.y, 70, 0, Math.PI*2);
+      ctx.fill();
+
+      // core
+      const coreR = wraith.r * (1 + 0.06*Math.sin(wraith.phase*6.2));
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = (wraith.state==='stunned') ? 'rgba(110,231,255,0.9)' : `rgba(255,92,122,${0.85})`;
+      ctx.beginPath();
+      ctx.arc(wraith.x, wraith.y, coreR, 0, Math.PI*2);
+      ctx.fill();
+
+      // eyes
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = (wraith.state==='stunned') ? 'rgba(5,8,20,0.9)' : 'rgba(5,8,20,0.8)';
+      ctx.beginPath();
+      ctx.arc(wraith.x-4, wraith.y-2, 2.2, 0, Math.PI*2);
+      ctx.arc(wraith.x+4, wraith.y-2, 2.2, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Flashlight cone + darkness vignette
+    if (player && state.mode!=='title'){
+      // Determine aim
+      let aimX = pointer.x - player.x;
+      let aimY = pointer.y - player.y;
+      if (Math.hypot(aimX,aimY) < 10) aimX = 1;
+      const aimMag = Math.hypot(aimX,aimY) || 1;
+      const ax = aimX/aimMag, ay = aimY/aimMag;
+
+      // Darkness layer
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.72)';
+      ctx.fillRect(0,0,W,H);
+
+      // Cut out a soft circle around player
+      const base = player.flashOn ? 170 : 95;
+      const rad = base + player.sanity*40;
+      ctx.globalCompositeOperation = 'destination-out';
+      const grad = ctx.createRadialGradient(player.x,player.y, 10, player.x,player.y, rad);
+      grad.addColorStop(0,'rgba(0,0,0,0.98)');
+      grad.addColorStop(0.7,'rgba(0,0,0,0.65)');
+      grad.addColorStop(1,'rgba(0,0,0,0.0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, rad, 0, Math.PI*2);
+      ctx.fill();
+
+      // Flashlight cone
+      if (player.flashOn && player.battery>0){
+        const len = 320;
+        const spread = 0.38;
+        const left = {x: ax*Math.cos(-spread) - ay*Math.sin(-spread), y: ax*Math.sin(-spread) + ay*Math.cos(-spread)};
+        const right= {x: ax*Math.cos(spread) - ay*Math.sin(spread), y: ax*Math.sin(spread) + ay*Math.cos(spread)};
+        ctx.beginPath();
+        ctx.moveTo(player.x, player.y);
+        ctx.lineTo(player.x + left.x*len, player.y + left.y*len);
+        ctx.lineTo(player.x + right.x*len, player.y + right.y*len);
+        ctx.closePath();
+        const g2 = ctx.createRadialGradient(player.x,player.y, 10, player.x,player.y, len);
+        g2.addColorStop(0, 'rgba(0,0,0,0.98)');
+        g2.addColorStop(0.5,'rgba(0,0,0,0.75)');
+        g2.addColorStop(1, 'rgba(0,0,0,0.0)');
+        ctx.fillStyle = g2;
+        ctx.fill();
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+      // Vignette
+      const vg = ctx.createRadialGradient(W/2,H/2, Math.min(W,H)*0.15, W/2,H/2, Math.max(W,H)*0.65);
+      vg.addColorStop(0,'rgba(0,0,0,0)');
+      vg.addColorStop(1,'rgba(0,0,0,0.55)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0,0,W,H);
+      ctx.restore();
+
+      // Player draw (after darkness for visibility)
+      ctx.save();
+      ctx.globalAlpha = 0.95;
+      ctx.fillStyle = '#e9eefc';
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(7,10,18,0.7)';
+      ctx.beginPath();
+      ctx.arc(player.x-4, player.y-2, 2.2, 0, Math.PI*2);
+      ctx.arc(player.x+4, player.y-2, 2.2, 0, Math.PI*2);
+      ctx.fill();
+
+      // small flashlight indicator
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = player.flashOn ? 'rgba(255,209,102,0.9)' : 'rgba(170,179,214,0.55)';
+      ctx.beginPath();
+      ctx.arc(player.x + 10, player.y + 9, 3.0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Particles
+    if (particles){
+      for(const p of particles){
+        p.t += 0.016;
+      }
+      particles = particles.filter(p => p.t < p.life);
+      ctx.save();
+      for(const p of particles){
+        const t = p.t / p.life;
+        p.x += p.vx * 2.0;
+        p.y += p.vy * 2.0;
+        ctx.globalAlpha = (1-t)*0.85;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 2, 2);
+      }
+      ctx.restore();
+    }
+
+    // Overlay UI
+    drawOverlay();
+  }
+
+  function drawOverlay(){
+    ctx.save();
+    ctx.textAlign = 'center';
+
+    if (state.mode === 'title'){
+      // Title screen
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(0,0,W,H);
+
+      ctx.font = '800 54px system-ui, sans-serif';
+      const grad = ctx.createLinearGradient(W*0.25,0,W*0.75,0);
+      grad.addColorStop(0,'#6ee7ff');
+      grad.addColorStop(1,'#7cf7c7');
+      ctx.fillStyle = grad;
+      ctx.fillText('FORSAKEN REMIX', W/2, H*0.36);
+
+      ctx.font = '600 18px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(233,238,252,0.9)';
+      ctx.fillText('Collect runes. Keep your sanity. Outplay the Wraith.', W/2, H*0.44);
+
+      ctx.font = '500 14px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(170,179,214,0.95)';
+      ctx.fillText('Click to start • WASD/Arrows to move • SHIFT to sneak • F flashlight • SPACE interact • R restart', W/2, H*0.52);
+
+      ctx.fillStyle = 'rgba(170,179,214,0.85)';
+      ctx.fillText('Tip: Sneaking reduces noise. Aimed flashlight can stun the Wraith (but drains battery).', W/2, H*0.57);
+
+      ctx.font = '500 12px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(170,179,214,0.75)';
+      ctx.fillText('Inspired by Forsaken (note only).', W/2, H*0.64);
+
+      ctx.restore();
+      return;
+    }
+
+    if (state.mode === 'pause'){
+      ctx.fillStyle = 'rgba(0,0,0,0.50)';
+      ctx.fillRect(0,0,W,H);
+      ctx.font = '800 44px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(233,238,252,0.95)';
+      ctx.fillText('PAUSED', W/2, H*0.45);
+      ctx.font = '500 14px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(170,179,214,0.95)';
+      ctx.fillText('Press ESC to resume • R to restart • M to mute', W/2, H*0.53);
+      ctx.restore();
+      return;
+    }
+
+    if (state.mode === 'end'){
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0,0,W,H);
+
+      ctx.font = '900 46px system-ui, sans-serif';
+      ctx.fillStyle = state.won ? 'rgba(124,247,199,0.95)' : 'rgba(255,92,122,0.95)';
+      ctx.fillText(state.won ? 'ESCAPED' : 'FORSAKEN', W/2, H*0.38);
+
+      ctx.font = '600 16px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(233,238,252,0.9)';
+      ctx.fillText(state.endReason, W/2, H*0.44);
+
+      ctx.font = '700 18px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(233,238,252,0.95)';
+      ctx.fillText(`Score: ${state.score}   •   Best: ${state.best}`, W/2, H*0.52);
+
+      ctx.font = '500 14px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(170,179,214,0.95)';
+      ctx.fillText('Click or press R to play again', W/2, H*0.60);
+
+      ctx.restore();
+      return;
+    }
+
+    // In-game tip at top
+    if (state.mode === 'play'){
+      ctx.font = '600 12px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(170,179,214,0.88)';
+      ctx.fillText(state.tip, W/2, 22);
+
+      // interact prompt
+      let nearRune = false;
+      for(const r of runes){
+        if (!r.taken && dist(player.x,player.y,r.x,r.y) < (player.r+r.r+12)) { nearRune=true; break; }
+      }
+      const nearExit = exitPortal.open && dist(player.x,player.y,exitPortal.x,exitPortal.y) < (player.r+exitPortal.r+14);
+      if (nearRune || nearExit){
+        ctx.font = '800 14px system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(233,238,252,0.95)';
+        ctx.fillText('Press SPACE', W/2, H-18);
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function updateHud(){
+    elRunes.textContent = `${player ? player.runes : 0}/7`;
+    elScore.textContent = String(state.score|0);
+    elTime.textContent = formatTime(state.timeLeft);
+
+    const s = player ? player.sanity : 1;
+    sanityBar.style.width = `${Math.round(s*100)}%`;
+    sanityTxt.textContent = `${Math.round(s*100)}%`;
+
+    const b = player ? player.battery : 1;
+    batteryBar.style.width = `${Math.round(b*100)}%`;
+    batteryTxt.textContent = `${Math.round(b*100)}%`;
+
+    const a = wraith ? wraith.alert : 0;
+    dangerBar.style.width = `${Math.round(a*100)}%`;
+    let label = 'CALM';
+    if (wraith){
+      if (wraith.state==='stunned') label = 'STUNNED';
+      else if (a>0.78) label = 'HUNTING';
+      else if (a>0.45) label = 'SUSPICIOUS';
+    }
+    dangerTxt.textContent = label;
+  }
+
+  // --- Main loop ---
+  let last = performance.now();
+  function frame(now){
+    const dt = clamp((now-last)/1000, 0, 0.05);
+    last = now;
+
+    if (state.mode==='play') update(dt);
+    if (state.mode!=='title') updateHud();
+
+    draw();
+
+    requestAnimationFrame(frame);
+  }
+
+  // Start at title
+  function boot(){
+    state.mode = 'title';
+    // prime minimal world so draw() doesn't crash
+    world = makeMap(12345);
+    const sPos = tileToWorld(world.start.x, world.start.y);
+    player = {x:sPos.x, y:sPos.y, r:11, flashOn:true, battery:1, sanity:1, runes:0, interacted:false, vx:0, vy:0, speed:145, sneakMult:0.52};
+    const ePos = tileToWorld(world.exit.x, world.exit.y);
+    exitPortal = {x:ePos.x, y:ePos.y, r:18, open:false, pulse:0};
+    wraith = {x:ePos.x, y:ePos.y, r:13, alert:0.0, state:'stalk', phase:0, stun:0, lastSeenX:player.x, lastSeenY:player.y, vx:0, vy:0};
+    runes = spawnRunes(7);
+    particles = [];
+
+    updateHud();
+    requestAnimationFrame(frame);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
