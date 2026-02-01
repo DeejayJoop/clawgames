@@ -861,14 +861,14 @@
       const aimMag = Math.hypot(aimX,aimY) || 1;
       const ax = aimX/aimMag, ay = aimY/aimMag;
 
-      // Darkness layer
+      // Darkness layer (brightened)
       ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.72)';
+      ctx.fillStyle = 'rgba(0,0,0,0.58)';
       ctx.fillRect(0,0,W,H);
 
-      // Cut out a soft circle around player
-      const base = player.flashOn ? 170 : 95;
-      const rad = base + player.sanity*40;
+      // Cut out a soft circle around player (bigger)
+      const base = player.flashOn ? 220 : 115;
+      const rad = base + player.sanity*55;
       ctx.globalCompositeOperation = 'destination-out';
       const grad = ctx.createRadialGradient(player.x,player.y, 10, player.x,player.y, rad);
       grad.addColorStop(0,'rgba(0,0,0,0.98)');
@@ -879,10 +879,10 @@
       ctx.arc(player.x, player.y, rad, 0, Math.PI*2);
       ctx.fill();
 
-      // Flashlight cone
+      // Flashlight cone (brighter + longer + wider)
       if (player.flashOn && player.battery>0){
-        const len = 320;
-        const spread = 0.38;
+        const len = 430;
+        const spread = 0.52;
         const left = {x: ax*Math.cos(-spread) - ay*Math.sin(-spread), y: ax*Math.sin(-spread) + ay*Math.cos(-spread)};
         const right= {x: ax*Math.cos(spread) - ay*Math.sin(spread), y: ax*Math.sin(spread) + ay*Math.cos(spread)};
         ctx.beginPath();
@@ -891,8 +891,9 @@
         ctx.lineTo(player.x + right.x*len, player.y + right.y*len);
         ctx.closePath();
         const g2 = ctx.createRadialGradient(player.x,player.y, 10, player.x,player.y, len);
-        g2.addColorStop(0, 'rgba(0,0,0,0.98)');
-        g2.addColorStop(0.5,'rgba(0,0,0,0.75)');
+        // In destination-out, higher alpha = more "erasing" of darkness (brighter beam)
+        g2.addColorStop(0, 'rgba(0,0,0,0.995)');
+        g2.addColorStop(0.55,'rgba(0,0,0,0.88)');
         g2.addColorStop(1, 'rgba(0,0,0,0.0)');
         ctx.fillStyle = g2;
         ctx.fill();
@@ -902,7 +903,7 @@
       // Vignette
       const vg = ctx.createRadialGradient(W/2,H/2, Math.min(W,H)*0.15, W/2,H/2, Math.max(W,H)*0.65);
       vg.addColorStop(0,'rgba(0,0,0,0)');
-      vg.addColorStop(1,'rgba(0,0,0,0.55)');
+      vg.addColorStop(1,'rgba(0,0,0,0.32)');
       ctx.fillStyle = vg;
       ctx.fillRect(0,0,W,H);
       ctx.restore();
