@@ -869,11 +869,12 @@
     // Flowers
     for (const fl of state.flowers){
       const pulse = 0.5 + 0.5*Math.sin(state.t*2.8 + fl.x*0.02);
-      const ready = fl.cd <= 0;
+      const locked = !!fl.locked;
+      const ready = (fl.cd <= 0) && !locked;
       const rr = fl.r + pulse*2;
 
-      // stem
-      ctx.strokeStyle = 'rgba(108,240,194,0.28)';
+      // stem (greyer when locked)
+      ctx.strokeStyle = locked ? 'rgba(255,255,255,0.14)' : 'rgba(108,240,194,0.28)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(fl.x, fl.y + rr);
@@ -885,15 +886,21 @@
         const a = (k/6)*Math.PI*2 + state.t*0.25;
         const px = fl.x + Math.cos(a)*rr*0.8;
         const py = fl.y + Math.sin(a)*rr*0.8;
-        ctx.fillStyle = 'rgba(255,255,255,0.10)';
+        ctx.fillStyle = locked ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.10)';
         ctx.beginPath();
         ctx.ellipse(px, py, rr*0.55, rr*0.28, a, 0, Math.PI*2);
         ctx.fill();
       }
+
       // center
       const cg = ctx.createRadialGradient(fl.x, fl.y, 2, fl.x, fl.y, rr);
-      cg.addColorStop(0, ready ? 'rgba(255,216,90,0.95)' : 'rgba(255,216,90,0.35)');
-      cg.addColorStop(1, 'rgba(255,216,90,0.05)');
+      if (locked){
+        cg.addColorStop(0, 'rgba(255,255,255,0.16)');
+        cg.addColorStop(1, 'rgba(255,255,255,0.03)');
+      } else {
+        cg.addColorStop(0, ready ? 'rgba(255,216,90,0.95)' : 'rgba(255,216,90,0.35)');
+        cg.addColorStop(1, 'rgba(255,216,90,0.05)');
+      }
       ctx.fillStyle = cg;
       ctx.beginPath();
       ctx.arc(fl.x, fl.y, rr, 0, Math.PI*2);
