@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Horse Memory Match — Clawgames</title>
+  <style>
+    :root{--bg:#070518;--fg:#f4f6ff;--muted:#c7c8ff;--cyan:#67f5ff;--pink:#ff4fd8;--gold:#ffd66b;--good:#7dffcf;}
+    html,body{height:100%;margin:0;background:radial-gradient(1200px 900px at 50% 30%, #1a0b48, var(--bg) 60%);
+      color:var(--fg);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
+    header,footer{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to bottom, rgba(255,255,255,.09), rgba(255,255,255,0))}
+    footer{border-bottom:none;border-top:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to top, rgba(255,255,255,.09), rgba(255,255,255,0));color:var(--muted)}
+    h1{margin:0;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+    .sub{margin-top:4px;color:var(--muted);font-size:12px}
+    a{color:var(--cyan)}
+
+    main{max-width:980px;margin:0 auto;padding:14px;display:grid;gap:12px;justify-items:center}
+    .card{width:min(980px,100%);border:1px solid rgba(255,255,255,.16);border-radius:16px;background:rgba(0,0,0,.22);
+      box-shadow:0 20px 60px rgba(0,0,0,.45);backdrop-filter: blur(10px);overflow:hidden}
+
+    .bar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.10)}
+    .pill{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);border-radius:999px;padding:6px 10px;display:flex;gap:10px;align-items:center;color:var(--muted);font-size:12px}
+    .pill b{color:var(--fg);font-variant-numeric:tabular-nums}
+
+    .stage{padding:12px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    @media (max-width: 720px){ .grid{grid-template-columns:repeat(3,1fr);} }
+    @media (max-width: 520px){ .grid{grid-template-columns:repeat(2,1fr);} }
+
+    .tile{position:relative;aspect-ratio:1/1;border-radius:16px;cursor:pointer;
+      transform-style:preserve-3d;transition:transform 220ms ease;}
+    .tile.flipped{transform:rotateY(180deg)}
+    .face{position:absolute;inset:0;border-radius:16px;backface-visibility:hidden;
+      border:1px solid rgba(255,255,255,.14);overflow:hidden}
+
+    .back{background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.22));display:grid;place-items:center}
+    .back .mark{font-size:28px;color:rgba(244,246,255,.80)}
+
+    .front{transform:rotateY(180deg);background:#0b1220;display:grid;place-items:center}
+    .front svg{width:88%;height:88%}
+
+    .tile.matched{cursor:default;filter:saturate(1.05) brightness(1.02)}
+    .tile.matched .face{border-color:rgba(125,255,207,.35)}
+
+    button{appearance:none;border:1px solid rgba(255,255,255,.18);background:linear-gradient(180deg, rgba(103,245,255,.20), rgba(103,245,255,.06));
+      color:var(--fg);border-radius:12px;padding:10px 12px;cursor:pointer;font:inherit;font-weight:850;box-shadow:0 10px 28px rgba(103,245,255,.08)}
+    button.secondary{background:rgba(0,0,0,.22);box-shadow:none;font-weight:650}
+
+    .msg{padding:0 12px 12px;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Horse Memory Match</h1>
+    <div class="sub">Match pairs of horses (original vector art). Back to <a href="./index.html">games shelf</a>.</div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="bar">
+        <div class="pill">Moves <b id="moves">0</b></div>
+        <div class="pill">Matches <b id="matches">0</b>/<b id="total">8</b></div>
+        <div class="pill">Time <b id="time">0.0</b>s</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button id="new">New game</button>
+          <button id="peek" class="secondary">Peek</button>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="grid" id="grid"></div>
+      </div>
+      <div class="msg" id="msg">Match all pairs.</div>
+    </div>
+  </main>
+
+  <footer>
+    Tip: Peek shows everything for 0.8s.
+  </footer>
+
+<script>
+(() => {
+  const gridEl = document.getElementById('grid');
+  const msgEl = document.getElementById('msg');
+  const movesEl = document.getElementById('moves');
+  const matchesEl = document.getElementById('matches');
+  const totalEl = document.getElementById('total');
+  const timeEl = document.getElementById('time');
+  const btnNew = document.getElementById('new');
+  const btnPeek = document.getElementById('peek');
+
+  const PAIRS = 8;
+  totalEl.textContent = String(PAIRS);
+
+  let tiles = [];
+  let first = null;
+  let lock = false;
+  let moves = 0;
+  let matches = 0;
+  let t0 = null;
+  let raf = null;
+
+  const palette = [
+    {coat:'#7b4b2a', mane:'#20140b', accent:'#ffd66b'},
+    {coat:'#caa57a', mane:'#3b2617', accent:'#67f5ff'},
+    {coat:'#2f2a2a', mane:'#050505', accent:'#ff4fd8'},
+    {coat:'#f2f2f2', mane:'#2f2a2a', accent:'#7dffcf'},
+    {coat:'#8f6f5a', mane:'#2a1a10', accent:'#b7c0ff'},
+    {coat:'#a56b2c', mane:'#2b0b3a', accent:'#ffd66b'},
+    {coat:'#5a3b2a', mane:'#101016', accent:'#67f5ff'},
+    {coat:'#cfc7bf', mane:'#2b2b33', accent:'#ff4fd8'},
+  ];
+
+  function setMsg(t){ msgEl.textContent = t; }
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+  function startTimer(){
+    t0 = performance.now();
+    if(raf) cancelAnimationFrame(raf);
+    const tick = () => {
+      if(t0==null) return;
+      timeEl.textContent = ((performance.now()-t0)/1000).toFixed(1);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+  function stopTimer(){ if(raf) cancelAnimationFrame(raf); raf=null; t0=null; }
+
+  function resetUI(){
+    moves=0; matches=0; first=null; lock=false;
+    movesEl.textContent='0';
+    matchesEl.textContent='0';
+    timeEl.textContent='0.0';
+    stopTimer();
+  }
+
+  function horseSVG(p){
+    const {coat, mane, accent} = p;
+    // simple horse head + neck + mane + bridle highlight
+    return `
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${accent}" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#0b1220" stop-opacity="0.0"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.8" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="100" height="100" rx="16" fill="url(#g)"/>
+
+  <!-- neck -->
+  <path d="M35 92 C28 75, 28 60, 40 52 C50 46, 62 52, 64 62 C66 74, 60 86, 54 92" fill="${coat}" opacity="0.95"/>
+
+  <!-- head -->
+  <path d="M44 18 C52 12, 68 14, 76 26 C83 36, 84 50, 78 60 C73 68, 60 70, 52 64 C45 58, 44 52, 40 46 C35 39, 34 24, 44 18" fill="${coat}"/>
+
+  <!-- mane -->
+  <path d="M52 16 C44 22, 40 34, 41 44 C34 38, 32 28, 34 20 C36 12, 46 10, 52 16" fill="${mane}" opacity="0.95"/>
+  <path d="M58 20 C55 28, 55 38, 60 48 C52 44, 48 34, 49 26 C50 18, 54 16, 58 20" fill="${mane}" opacity="0.90"/>
+
+  <!-- bridle -->
+  <path d="M68 26 C60 34, 58 44, 60 58" stroke="${accent}" stroke-width="3.2" stroke-linecap="round" opacity="0.8" filter="url(#glow)" fill="none"/>
+  <path d="M58 48 C66 48, 72 46, 78 42" stroke="${accent}" stroke-width="3" stroke-linecap="round" opacity="0.75" fill="none"/>
+
+  <!-- eye -->
+  <circle cx="66" cy="36" r="3" fill="rgba(0,0,0,0.6)"/>
+  <circle cx="65" cy="35" r="1" fill="rgba(255,255,255,0.7)"/>
+</svg>`;
+  }
+
+  function makeTile(t){
+    const el = document.createElement('div');
+    el.className = 'tile';
+
+    const back = document.createElement('div');
+    back.className = 'face back';
+    back.innerHTML = `<div class="mark">🐴</div>`;
+
+    const front = document.createElement('div');
+    front.className = 'face front';
+    front.innerHTML = horseSVG(t.p);
+
+    el.appendChild(back);
+    el.appendChild(front);
+
+    el.addEventListener('click', () => onFlip(t));
+    t.el = el;
+    return el;
+  }
+
+  function flip(t,on){
+    if(on) t.el.classList.add('flipped');
+    else t.el.classList.remove('flipped');
+  }
+
+  function onFlip(t){
+    if(lock || t.matched) return;
+    if(!t0) startTimer();
+    if(t.el.classList.contains('flipped')) return;
+
+    flip(t,true);
+
+    if(!first){ first=t; return; }
+
+    moves++;
+    movesEl.textContent = String(moves);
+
+    if(first.id === t.id){
+      first.matched = true;
+      t.matched = true;
+      first.el.classList.add('matched');
+      t.el.classList.add('matched');
+      matches++;
+      matchesEl.textContent = String(matches);
+      first = null;
+      if(matches >= PAIRS){
+        lock = true;
+        setMsg(`You win! ${moves} moves in ${timeEl.textContent}s.`);
+      }
+    } else {
+      lock = true;
+      const a = first;
+      first = null;
+      setTimeout(() => {
+        flip(a,false);
+        flip(t,false);
+        lock = false;
+      }, 520);
+    }
+  }
+
+  function newGame(){
+    resetUI();
+    gridEl.innerHTML = '';
+
+    const base = [];
+    for(let i=0;i<PAIRS;i++){
+      base.push({id:i, p: palette[i]});
+    }
+    const all = [];
+    for(const t of base){ all.push({id:t.id,p:t.p,matched:false,el:null}); all.push({id:t.id,p:t.p,matched:false,el:null}); }
+
+    shuffle(all);
+    tiles = all;
+
+    for(const t of tiles){ gridEl.appendChild(makeTile(t)); }
+
+    setMsg('Match all pairs.');
+  }
+
+  function peek(){
+    if(lock || tiles.length===0) return;
+    lock = true;
+    tiles.forEach(t=>{ if(!t.matched) flip(t,true); });
+    setMsg('Peek…');
+    setTimeout(() => {
+      tiles.forEach(t=>{ if(!t.matched) flip(t,false); });
+      setMsg('Go.');
+      lock = false;
+    }, 800);
+  }
+
+  btnNew.onclick = newGame;
+  btnPeek.onclick = peek;
+
+  newGame();
+})();
+</script>
+</body>
+</html>
