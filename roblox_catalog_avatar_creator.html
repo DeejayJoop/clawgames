@@ -288,6 +288,17 @@
 
     .modal h2{margin:0 0 8px;font-size:22px}
     .modal p{margin:8px 0;color:rgba(234,241,255,.82);line-height:1.5}
+
+    /* Visual goal example (no text): brief tags → outfit tags → score */
+    .goalViz{
+      margin-top:10px;
+      border-radius: 18px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      padding:10px;
+    }
+    .goalViz svg{width:100%;height:auto;display:block}
+
     .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; padding:2px 8px; border-radius: 999px; background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.12)}
 
     .modal .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-top:12px}
@@ -356,6 +367,78 @@
               You are the stylist. Every round gives you a <b>style brief</b> (tags). Pick one item per slot to match.
               Click <b>Submit Outfit</b> before time runs out.
             </p>
+
+            <!-- Visual goal example (no explanatory text) -->
+            <div class="goalViz" aria-hidden="true">
+              <svg viewBox="0 0 680 128" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="gv_bg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#7DB6FF" stop-opacity="0.20"/>
+                    <stop offset="1" stop-color="#7CFFB2" stop-opacity="0.18"/>
+                  </linearGradient>
+                  <filter id="gv_glow" x="-40%" y="-60%" width="180%" height="220%">
+                    <feGaussianBlur stdDeviation="6" result="b"/>
+                    <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.55 0" result="g"/>
+                    <feMerge>
+                      <feMergeNode in="g"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                <rect x="0" y="0" width="680" height="128" rx="18" fill="url(#gv_bg)"/>
+                <rect x="0" y="0" width="680" height="128" rx="18" fill="rgba(0,0,0,0.18)"/>
+
+                <!-- Left: brief chips (icons only) -->
+                <g transform="translate(18,18)">
+                  <rect x="0" y="0" width="190" height="92" rx="16" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+                  <g transform="translate(16,16)">
+                    <rect x="0" y="0" width="74" height="26" rx="13" fill="rgba(125,182,255,0.22)" stroke="rgba(125,182,255,0.45)"/>
+                    <circle cx="14" cy="13" r="6" fill="rgba(234,241,255,0.85)"/>
+                    <rect x="84" y="0" width="74" height="26" rx="13" fill="rgba(124,255,178,0.18)" stroke="rgba(124,255,178,0.42)"/>
+                    <path d="M99 14 l6 6 l10-14" fill="none" stroke="rgba(234,241,255,0.85)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <rect x="0" y="34" width="74" height="26" rx="13" fill="rgba(255,211,110,0.16)" stroke="rgba(255,211,110,0.42)"/>
+                    <path d="M16 39 l4 8 l10-14" fill="none" stroke="rgba(234,241,255,0.80)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <rect x="84" y="34" width="74" height="26" rx="13" fill="rgba(255,107,139,0.14)" stroke="rgba(255,107,139,0.38)"/>
+                    <path d="M102 42 l12 12 M114 42 l-12 12" stroke="rgba(234,241,255,0.80)" stroke-width="3" stroke-linecap="round"/>
+                  </g>
+                </g>
+
+                <!-- Middle: mannequin + tags -->
+                <g transform="translate(260,10)" filter="url(#gv_glow)">
+                  <path d="M70 25c0-10 8-18 18-18s18 8 18 18-8 18-18 18-18-8-18-18z" fill="rgba(234,241,255,0.18)" stroke="rgba(255,255,255,0.16)"/>
+                  <path d="M88 43c-12 0-22 10-22 22v10c0 7 6 13 13 13h18c7 0 13-6 13-13V65c0-12-10-22-22-22z" fill="rgba(234,241,255,0.12)" stroke="rgba(255,255,255,0.14)"/>
+                  <path d="M64 62c-10 6-16 17-16 28v18c0 6 5 11 11 11h6" fill="none" stroke="rgba(234,241,255,0.16)" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M112 62c10 6 16 17 16 28v18c0 6-5 11-11 11h-6" fill="none" stroke="rgba(234,241,255,0.16)" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M78 90v26c0 8 6 14 14 14s14-6 14-14V90" fill="none" stroke="rgba(234,241,255,0.14)" stroke-width="12" stroke-linecap="round"/>
+                </g>
+
+                <!-- Right: outcome icons -->
+                <g transform="translate(482,18)">
+                  <rect x="0" y="0" width="180" height="92" rx="16" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+                  <g transform="translate(20,22)">
+                    <circle cx="16" cy="16" r="14" fill="rgba(124,255,178,0.18)" stroke="rgba(124,255,178,0.45)"/>
+                    <path d="M10 16 l5 6 l10-14" fill="none" stroke="rgba(234,241,255,0.86)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+                    <circle cx="72" cy="16" r="14" fill="rgba(255,107,139,0.14)" stroke="rgba(255,107,139,0.40)"/>
+                    <path d="M64 8 l16 16 M80 8 l-16 16" stroke="rgba(234,241,255,0.82)" stroke-width="3" stroke-linecap="round"/>
+
+                    <circle cx="128" cy="16" r="14" fill="rgba(255,211,110,0.16)" stroke="rgba(255,211,110,0.42)"/>
+                    <path d="M128 6 l4 10 l10 1 l-8 6 l3 10 l-9-6 l-9 6 l3-10 l-8-6 l10-1z" fill="rgba(234,241,255,0.82)"/>
+
+                    <rect x="2" y="46" width="156" height="14" rx="7" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.10)"/>
+                    <rect x="2" y="46" width="118" height="14" rx="7" fill="rgba(125,182,255,0.18)"/>
+                  </g>
+                </g>
+
+                <!-- Arrows -->
+                <g opacity="0.65" stroke="rgba(234,241,255,0.55)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M226 64h18l-8-8m8 8l-8 8"/>
+                  <path d="M444 64h18l-8-8m8 8l-8 8"/>
+                </g>
+              </svg>
+            </div>
+
             <div class="cols">
               <div class="how">
                 <div><b>How scoring works</b></div>
@@ -980,57 +1063,163 @@
   }
 
   function drawMannequin(g, W, H){
+    // A nicer, more human silhouette (still stylized / “Roblox-ish”)
     const cx = 300;
     const topY = 140;
 
-    // shadow
     g.save();
+
+    // ground shadow
     g.fillStyle = 'rgba(0,0,0,0.35)';
     g.beginPath();
-    g.ellipse(cx, H-135, 150, 36, 0, 0, Math.PI*2);
+    g.ellipse(cx, H-135, 155, 38, 0, 0, Math.PI*2);
     g.fill();
 
-    // base body
-    const bodyGrad = g.createLinearGradient(cx-80, topY, cx+80, topY+480);
-    bodyGrad.addColorStop(0, 'rgba(255,255,255,0.20)');
+    // subtle body gradient
+    const bodyGrad = g.createLinearGradient(cx-120, topY-10, cx+120, topY+620);
+    bodyGrad.addColorStop(0, 'rgba(255,255,255,0.18)');
+    bodyGrad.addColorStop(0.55, 'rgba(255,255,255,0.10)');
     bodyGrad.addColorStop(1, 'rgba(255,255,255,0.06)');
 
+    const outline = 'rgba(255,255,255,0.14)';
+
     // head
-    g.fillStyle = 'rgba(255,255,255,0.14)';
-    g.beginPath();
-    g.ellipse(cx, topY, 58, 62, 0, 0, Math.PI*2);
-    g.fill();
-    g.strokeStyle = 'rgba(255,255,255,0.18)';
-    g.lineWidth = 2;
-    g.stroke();
+    {
+      const headGrad = g.createRadialGradient(cx-16, topY-10, 6, cx, topY+6, 74);
+      headGrad.addColorStop(0, 'rgba(255,255,255,0.22)');
+      headGrad.addColorStop(1, 'rgba(255,255,255,0.10)');
+      g.fillStyle = headGrad;
+      g.beginPath();
+      g.ellipse(cx, topY, 54, 60, 0, 0, Math.PI*2);
+      g.fill();
+      g.strokeStyle = 'rgba(255,255,255,0.18)';
+      g.lineWidth = 2;
+      g.stroke();
 
-    // torso
-    roundRect(g, cx-82, topY+78, 164, 210, 48);
-    g.fillStyle = 'rgba(255,255,255,0.11)';
-    g.fill();
-    g.strokeStyle = 'rgba(255,255,255,0.14)';
-    g.stroke();
+      // tiny face notch (just to feel less like an egg)
+      g.strokeStyle = 'rgba(0,0,0,0.10)';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.arc(cx+10, topY+10, 16, -0.15*Math.PI, 0.55*Math.PI);
+      g.stroke();
+    }
 
-    // hips
-    roundRect(g, cx-74, topY+280, 148, 130, 42);
-    g.fillStyle = 'rgba(255,255,255,0.10)';
-    g.fill();
-    g.stroke();
+    // neck
+    {
+      g.fillStyle = 'rgba(255,255,255,0.10)';
+      roundRect(g, cx-16, topY+52, 32, 26, 12);
+      g.fill();
+      g.strokeStyle = outline;
+      g.lineWidth = 2;
+      g.stroke();
+    }
 
-    // legs
-    roundRect(g, cx-70, topY+392, 62, 190, 30);
-    roundRect(g, cx+8, topY+392, 62, 190, 30);
-    g.fillStyle = 'rgba(255,255,255,0.09)';
-    g.fill();
-    g.strokeStyle = 'rgba(255,255,255,0.12)';
-    g.stroke();
+    // torso + hips as one smooth path
+    {
+      g.fillStyle = bodyGrad;
+      g.strokeStyle = outline;
+      g.lineWidth = 2;
 
-    // arms
-    roundRect(g, cx-150, topY+116, 70, 230, 32);
-    roundRect(g, cx+80, topY+116, 70, 230, 32);
-    g.fillStyle = 'rgba(255,255,255,0.08)';
-    g.fill();
-    g.stroke();
+      const y0 = topY + 76;
+      g.beginPath();
+      g.moveTo(cx-92, y0+44);
+      // left shoulder → waist
+      g.bezierCurveTo(cx-128, y0+60, cx-126, y0+132, cx-92, y0+166);
+      // left waist → left hip
+      g.bezierCurveTo(cx-76, y0+188, cx-78, y0+222, cx-102, y0+250);
+      // bottom of hips
+      g.bezierCurveTo(cx-126, y0+282, cx-96, y0+320, cx-62, y0+330);
+      // inner left hip
+      g.bezierCurveTo(cx-34, y0+338, cx-22, y0+318, cx-18, y0+300);
+      // inner right hip
+      g.bezierCurveTo(cx-8, y0+258, cx+8, y0+258, cx+18, y0+300);
+      g.bezierCurveTo(cx+22, y0+318, cx+34, y0+338, cx+62, y0+330);
+      // right hip bottom
+      g.bezierCurveTo(cx+96, y0+320, cx+126, y0+282, cx+102, y0+250);
+      // right hip → waist
+      g.bezierCurveTo(cx+78, y0+222, cx+76, y0+188, cx+92, y0+166);
+      // waist → right shoulder
+      g.bezierCurveTo(cx+126, y0+132, cx+128, y0+60, cx+92, y0+44);
+      // shoulder line back to start
+      g.bezierCurveTo(cx+60, y0+18, cx-60, y0+18, cx-92, y0+44);
+      g.closePath();
+      g.fill();
+      g.stroke();
+
+      // center “spine” highlight
+      g.strokeStyle = 'rgba(255,255,255,0.08)';
+      g.lineWidth = 4;
+      g.beginPath();
+      g.moveTo(cx, y0+48);
+      g.bezierCurveTo(cx-6, y0+120, cx+6, y0+190, cx, y0+292);
+      g.stroke();
+    }
+
+    // arms (rounded thick strokes with a slight bend)
+    {
+      g.strokeStyle = 'rgba(255,255,255,0.12)';
+      g.lineWidth = 26;
+      g.lineCap = 'round';
+      g.lineJoin = 'round';
+
+      // left arm
+      g.beginPath();
+      g.moveTo(cx-96, topY+132);
+      g.quadraticCurveTo(cx-162, topY+190, cx-150, topY+300);
+      g.quadraticCurveTo(cx-144, topY+352, cx-120, topY+388);
+      g.stroke();
+
+      // right arm
+      g.beginPath();
+      g.moveTo(cx+96, topY+132);
+      g.quadraticCurveTo(cx+162, topY+190, cx+150, topY+300);
+      g.quadraticCurveTo(cx+144, topY+352, cx+120, topY+388);
+      g.stroke();
+
+      // arm edge
+      g.strokeStyle = outline;
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(cx-96, topY+132);
+      g.quadraticCurveTo(cx-162, topY+190, cx-150, topY+300);
+      g.quadraticCurveTo(cx-144, topY+352, cx-120, topY+388);
+      g.moveTo(cx+96, topY+132);
+      g.quadraticCurveTo(cx+162, topY+190, cx+150, topY+300);
+      g.quadraticCurveTo(cx+144, topY+352, cx+120, topY+388);
+      g.stroke();
+    }
+
+    // legs (tapered, more human than rectangles)
+    {
+      const hipY = topY + 380;
+
+      function leg(side){
+        const s = side; // -1 left, +1 right
+        const x0 = cx + s*34;
+        g.fillStyle = 'rgba(255,255,255,0.085)';
+        g.strokeStyle = outline;
+        g.lineWidth = 2;
+
+        g.beginPath();
+        g.moveTo(x0 - 34, hipY);
+        g.bezierCurveTo(x0 - 46, hipY+90, x0 - 36, hipY+210, x0 - 18, hipY+290);
+        g.bezierCurveTo(x0 - 8, hipY+330, x0 + 8, hipY+330, x0 + 18, hipY+290);
+        g.bezierCurveTo(x0 + 36, hipY+210, x0 + 46, hipY+90, x0 + 34, hipY);
+        g.bezierCurveTo(x0 + 18, hipY-16, x0 - 18, hipY-16, x0 - 34, hipY);
+        g.closePath();
+        g.fill();
+        g.stroke();
+      }
+
+      leg(-1);
+      leg(+1);
+
+      // tiny “ankle” shine
+      g.fillStyle = 'rgba(255,255,255,0.08)';
+      roundRect(g, cx-68, hipY+292, 46, 10, 6);
+      roundRect(g, cx+22, hipY+292, 46, 10, 6);
+      g.fill();
+    }
 
     g.restore();
   }
