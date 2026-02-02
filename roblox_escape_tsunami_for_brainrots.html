@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Escape Tsunami For Brainrots! Remix</title>
+  <style>
+    :root{
+      --bg0:#070814;
+      --bg1:#0b1230;
+      --ink:#eaf0ff;
+      --muted:#a9b5dd;
+      --a:#6ef3ff;
+      --b:#ff6ef3;
+      --good:#5dff9a;
+      --bad:#ff5d6a;
+      --panel:rgba(10,14,40,.72);
+      --panel2:rgba(255,255,255,.06);
+      --shadow:rgba(0,0,0,.45);
+    }
+    html,body{height:100%;margin:0;background:radial-gradient(1200px 700px at 70% 10%, #19245a 0%, var(--bg0) 55%, #03030a 100%);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+    a{color:var(--a);text-decoration:none} a:hover{text-decoration:underline}
+    #topbar{position:fixed;left:12px;top:10px;z-index:20;font-size:14px;opacity:.95}
+    #wrap{min-height:100%;display:grid;place-items:center;padding:56px 14px 16px;box-sizing:border-box}
+    #card{width:min(980px, 96vw);background:linear-gradient(180deg,var(--panel),rgba(6,8,20,.55));border:1px solid rgba(255,255,255,.10);box-shadow:0 24px 70px var(--shadow);border-radius:16px;overflow:hidden}
+    #hdr{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(90deg, rgba(110,243,255,.10), rgba(255,110,243,.08));border-bottom:1px solid rgba(255,255,255,.10)}
+    #hdr h1{font-size:18px;margin:0;letter-spacing:.2px}
+    #hdr .sub{font-size:12px;color:var(--muted)}
+    #hud{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .pill{font-size:12px;color:var(--ink);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);padding:7px 10px;border-radius:999px;display:flex;gap:8px;align-items:center}
+    .pill b{font-variant-numeric:tabular-nums}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--a);box-shadow:0 0 0 3px rgba(110,243,255,.12)}
+    .dot.bad{background:var(--bad);box-shadow:0 0 0 3px rgba(255,93,106,.12)}
+    #main{display:grid;grid-template-columns: 1fr;gap:0}
+    #stage{display:grid;grid-template-columns: 1.4fr .6fr;gap:0}
+    #canvasWrap{position:relative;background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));}
+    canvas{display:block;width:100%;height:560px;background:
+      radial-gradient(900px 520px at 40% 20%, rgba(110,243,255,.10) 0%, transparent 55%),
+      radial-gradient(900px 520px at 90% 30%, rgba(255,110,243,.10) 0%, transparent 55%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.00));
+    }
+    #side{padding:14px 16px;border-left:1px solid rgba(255,255,255,.10);background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));}
+    #side h2{font-size:13px;margin:0 0 8px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase}
+    #side p{margin:8px 0;color:var(--ink);line-height:1.35}
+    #side ul{margin:10px 0 0;padding-left:18px;color:var(--ink)}
+    #side li{margin:6px 0;color:var(--ink)}
+    #side .kbd{display:inline-block;min-width:18px;padding:2px 6px;margin:0 2px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:12px;color:var(--ink)}
+    #side .hint{color:var(--muted);font-size:12px;margin-top:10px}
+
+    #overlay{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+    .panel{
+      pointer-events:auto;
+      width:min(560px, 92%);
+      background:linear-gradient(180deg, rgba(9,12,34,.92), rgba(6,8,20,.88));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.55);
+      padding:18px 18px 16px;
+    }
+    .panel h3{margin:0 0 8px;font-size:20px}
+    .panel .small{color:var(--muted);font-size:13px;line-height:1.35}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+    button{
+      appearance:none;border:1px solid rgba(255,255,255,.16);
+      background:linear-gradient(180deg, rgba(110,243,255,.18), rgba(110,243,255,.10));
+      color:var(--ink);border-radius:12px;padding:10px 12px;font-weight:650;cursor:pointer;
+    }
+    button:hover{filter:brightness(1.06)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.06)}
+    .badge{display:inline-flex;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);padding:6px 10px;border-radius:999px;font-size:12px;color:var(--muted)}
+    .badge i{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;box-shadow:0 0 0 3px rgba(93,255,154,.12)}
+
+    #footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.10);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px;background:rgba(255,255,255,.02)}
+
+    @media (max-width: 860px){
+      #stage{grid-template-columns:1fr}
+      #side{border-left:none;border-top:1px solid rgba(255,255,255,.10)}
+      canvas{height:520px}
+    }
+  </style>
+</head>
+<body>
+  <div id="topbar"><a href="./index.html">&larr; Back to Claw Games</a></div>
+
+  <div id="wrap">
+    <div id="card">
+      <div id="hdr">
+        <div>
+          <h1>Escape Tsunami For Brainrots! <span style="color:var(--muted);font-weight:600">Remix</span></h1>
+          <div class="sub">A tiny survival climber. <span style="opacity:.9">Inspired by <b>Escape Tsunami For Brainrots!</b></span></div>
+        </div>
+        <div id="hud" aria-live="polite">
+          <div class="pill"><span class="dot" id="dot"></span> <span id="state">Ready</span></div>
+          <div class="pill">Height: <b id="height">0</b></div>
+          <div class="pill">Brainrots: <b id="rots">0</b></div>
+          <div class="pill">Time: <b id="time">0.0</b>s</div>
+        </div>
+      </div>
+
+      <div id="main">
+        <div id="stage">
+          <div id="canvasWrap">
+            <canvas id="game" width="980" height="560" aria-label="Game canvas" role="img"></canvas>
+            <div id="overlay"></div>
+          </div>
+          <aside id="side">
+            <h2>How to play</h2>
+            <p>
+              The water keeps rising. Jump, climb, and grab shiny <b>brainrot bubbles</b> for points.
+              Survive until the <b>evac timer</b> hits <b>60 seconds</b>.
+            </p>
+            <ul>
+              <li>Move: <span class="kbd">A</span> <span class="kbd">D</span> or <span class="kbd">&larr;</span> <span class="kbd">&rarr;</span></li>
+              <li>Jump: <span class="kbd">W</span> or <span class="kbd">Space</span> or <span class="kbd">&uarr;</span></li>
+              <li>Drop through soft platforms: hold <span class="kbd">S</span> / <span class="kbd">&darr;</span> while jumping</li>
+              <li>Restart anytime: <span class="kbd">R</span></li>
+            </ul>
+            <p class="hint">Tip: The safest place is <b>above</b> the foam line. Don’t get greedy.</p>
+          </aside>
+        </div>
+
+        <div id="footer">
+          <div>Self-contained HTML microgame. No external assets.</div>
+          <div>Controls: WASD/Arrows + Space, R to restart.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Canvas helpers ----------
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+
+  const ui = {
+    state: document.getElementById('state'),
+    dot: document.getElementById('dot'),
+    height: document.getElementById('height'),
+    rots: document.getElementById('rots'),
+    time: document.getElementById('time'),
+  };
+
+  const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  function resizeCanvas() {
+    // Keep the CSS size fixed; scale internal buffer for crispness.
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.round(rect.width * DPR);
+    const h = Math.round(rect.height * DPR);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+  }
+  window.addEventListener('resize', resizeCanvas, { passive: true });
+
+  // ---------- RNG (seeded-ish for determinism per run) ----------
+  // Use a tiny LCG seeded from current page load time, but keep it stable.
+  let seed = (Date.now() ^ (performance.now()*1000|0)) >>> 0;
+  function rand() {
+    seed = (1664525 * seed + 1013904223) >>> 0;
+    return seed / 4294967296;
+  }
+  function rrange(a,b){ return a + (b-a)*rand(); }
+
+  // ---------- Input ----------
+  const keys = new Set();
+  const keyMap = {
+    ArrowLeft:'left', ArrowRight:'right', ArrowUp:'jump', ArrowDown:'down',
+    a:'left', d:'right', w:'jump', s:'down',
+    ' ':'jump',
+    r:'restart',
+    Enter:'start',
+  };
+  window.addEventListener('keydown', (e)=>{
+    const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
+    const action = keyMap[k];
+    if (action) {
+      if (['left','right','jump','down'].includes(action)) keys.add(action);
+      if (action==='restart') requestRestart();
+      if (action==='start') requestStart();
+      // prevent scrolling
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+    }
+  }, { passive:false });
+  window.addEventListener('keyup', (e)=>{
+    const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
+    const action = keyMap[k];
+    if (action && ['left','right','jump','down'].includes(action)) keys.delete(action);
+  });
+
+  // ---------- Audio (tiny synth, optional) ----------
+  let audioCtx = null;
+  function beep(type, freq, dur=0.09, vol=0.06) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.02);
+    } catch (_) {}
+  }
+
+  // ---------- Game world ----------
+  const W = () => canvas.width;
+  const H = () => canvas.height;
+
+  const config = {
+    gravity: 2400,
+    moveAccel: 5200,
+    airAccel: 3400,
+    maxSpeed: 520,
+    jumpVel: 820,
+    jumpCoyote: 0.10,
+    jumpBuffer: 0.10,
+    friction: 10,
+    waterRiseBase: 34,      // px per second
+    waterRiseGain: 1.2,     // increases over time
+    winTime: 60,
+    bubbleBase: 4,
+  };
+
+  const world = {
+    t: 0,
+    dt: 0,
+    cameraY: 0,
+    waterY: 0, // y position of water surface in world coords
+    state: 'title', // title|playing|won|lost
+    message: '',
+    rots: 0,
+    best: 0,
+    startTime: 0,
+  };
+
+  // World coordinates: y increases downward. We'll simulate a tall vertical column.
+  // We'll place the player near bottom and generate platforms above.
+
+  const player = {
+    x: 0, y: 0,
+    vx: 0, vy: 0,
+    w: 42, h: 54,
+    onGround: false,
+    coyote: 0,
+    jumpBuf: 0,
+    face: 1,
+    invuln: 0,
+  };
+
+  const platforms = [];
+  const bubbles = [];
+
+  function resetWorld() {
+    resizeCanvas();
+    world.t = 0;
+    world.cameraY = 0;
+    world.waterY = 0;
+    world.rots = 0;
+    world.startTime = 0;
+
+    // Start near bottom.
+    player.x = W()*0.5;
+    player.y = H()*0.80;
+    player.vx = 0; player.vy = 0;
+    player.onGround = false;
+    player.coyote = 0;
+    player.jumpBuf = 0;
+    player.face = 1;
+    player.invuln = 0;
+
+    platforms.length = 0;
+    bubbles.length = 0;
+
+    // Ground platform.
+    platforms.push(makePlatform(W()*0.5, H()*0.90, W()*0.86, 18, 'solid'));
+
+    // A few initial platforms.
+    let y = H()*0.76;
+    let x = W()*0.5;
+    for (let i=0;i<14;i++) {
+      y -= rrange(65, 110);
+      x = clamp(x + rrange(-240,240), 120, W()-120);
+      const w = rrange(120, 240);
+      const kind = (rand() < 0.22 && i>2) ? 'soft' : 'solid';
+      platforms.push(makePlatform(x, y, w, 16, kind));
+      if (rand() < 0.55) spawnBubbleNear(x, y - 26);
+    }
+
+    // Start water below player.
+    world.waterY = (H()*0.98) + 280;
+
+    // Set camera so player is visible.
+    world.cameraY = player.y - H()*0.62;
+  }
+
+  function makePlatform(cx, cy, w, h, kind) {
+    return {
+      x: cx - w/2,
+      y: cy - h/2,
+      w, h,
+      kind, // solid|soft
+      wobble: rrange(0, Math.PI*2),
+      id: Math.floor(rand()*1e9)
+    };
+  }
+
+  function spawnBubbleNear(cx, cy) {
+    const r = rrange(12, 16);
+    bubbles.push({
+      x: cx + rrange(-36, 36),
+      y: cy + rrange(-14, 14),
+      r,
+      taken: false,
+      phase: rrange(0, Math.PI*2)
+    });
+  }
+
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+  // Generate more platforms above as you climb.
+  function ensurePlatforms() {
+    // Find current highest platform y (smallest y).
+    let topY = Infinity;
+    for (const p of platforms) topY = Math.min(topY, p.y);
+
+    const targetTop = world.cameraY - 900; // keep ahead of camera
+    while (topY > targetTop) {
+      const prev = platforms.reduce((acc,p)=> (p.y < acc.y ? p : acc), platforms[0]);
+      // Add new platform above the highest.
+      const newY = topY - rrange(70, 125);
+      const baseX = prev.x + prev.w/2;
+      const newX = clamp(baseX + rrange(-280, 280), 110, W()-110);
+      const w = rrange(110, 260);
+      const kindRoll = rand();
+      let kind = 'solid';
+      if (kindRoll < 0.18) kind = 'soft';
+      if (kindRoll > 0.94) kind = 'tiny';
+      let pw = w;
+      let ph = 16;
+      if (kind === 'tiny') { kind = 'solid'; pw = rrange(80, 120); ph = 14; }
+      const p = makePlatform(newX, newY, pw, ph, kind);
+      platforms.push(p);
+      topY = newY;
+
+      // Bubbles: sometimes cluster.
+      if (rand() < 0.66) spawnBubbleNear(newX, newY - 28);
+      if (rand() < 0.18) spawnBubbleNear(newX + rrange(-60,60), newY - 64);
+    }
+
+    // Trim old platforms far below camera to keep things light.
+    const cutoff = world.cameraY + H()*1.2;
+    for (let i=platforms.length-1;i>=0;i--) {
+      if (platforms[i].y > cutoff) platforms.splice(i,1);
+    }
+    for (let i=bubbles.length-1;i>=0;i--) {
+      if (bubbles[i].y > cutoff) bubbles.splice(i,1);
+    }
+  }
+
+  function requestStart(){
+    if (world.state === 'title') startGame();
+  }
+  function requestRestart(){
+    if (world.state !== 'playing') startGame();
+    else {
+      // restart during play
+      startGame();
+    }
+  }
+
+  function setState(s, msg='') {
+    world.state = s;
+    world.message = msg;
+    ui.dot.classList.toggle('bad', s==='lost');
+    ui.state.textContent = (s==='title') ? 'Title' : (s==='playing' ? 'Playing' : (s==='won' ? 'Safe!' : 'Soaked'));
+  }
+
+  function startGame() {
+    resetWorld();
+    setState('playing');
+    world.startTime = performance.now()/1000;
+    clearOverlay();
+    beep('sine', 440, 0.07, 0.05);
+    beep('triangle', 660, 0.09, 0.04);
+  }
+
+  function lose(reason) {
+    if (world.state !== 'playing') return;
+    setState('lost', reason);
+    showEndOverlay(false, reason);
+    beep('square', 180, 0.18, 0.06);
+  }
+
+  function win() {
+    if (world.state !== 'playing') return;
+    setState('won', 'Evac chopper arrived!');
+    showEndOverlay(true, 'Evac chopper arrived!');
+    beep('sine', 784, 0.09, 0.06);
+    beep('sine', 988, 0.10, 0.05);
+    beep('triangle', 1175, 0.12, 0.045);
+  }
+
+  function scoreHeight() {
+    // Height climbed above the ground reference.
+    const groundY = H()*0.90;
+    const climbed = Math.max(0, groundY - player.y);
+    return Math.floor(climbed);
+  }
+
+  function elapsed() {
+    if (world.state === 'playing') return Math.max(0, world.t);
+    return Math.max(0, world.t);
+  }
+
+  // ---------- Physics & collisions ----------
+  function aabbIntersect(ax,ay,aw,ah, bx,by,bw,bh){
+    return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+  }
+
+  function step(dt) {
+    world.dt = dt;
+    if (world.state !== 'playing') return;
+
+    world.t += dt;
+
+    // Inputs
+    const left = keys.has('left');
+    const right = keys.has('right');
+    const jump = keys.has('jump');
+    const down = keys.has('down');
+
+    // Jump buffering
+    if (jump) player.jumpBuf = config.jumpBuffer; else player.jumpBuf = Math.max(0, player.jumpBuf - dt);
+
+    // Horizontal acceleration
+    const accel = player.onGround ? config.moveAccel : config.airAccel;
+    if (left && !right) { player.vx -= accel * dt; player.face = -1; }
+    if (right && !left) { player.vx += accel * dt; player.face = 1; }
+
+    // Friction when no input
+    if (player.onGround && !left && !right) {
+      player.vx *= Math.exp(-config.friction*dt);
+    }
+
+    player.vx = clamp(player.vx, -config.maxSpeed, config.maxSpeed);
+
+    // Gravity
+    player.vy += config.gravity * dt;
+
+    // Coyote time
+    if (player.onGround) player.coyote = config.jumpCoyote;
+    else player.coyote = Math.max(0, player.coyote - dt);
+
+    // Jump: if buffered and coyote
+    if (player.jumpBuf > 0 && player.coyote > 0) {
+      player.vy = -config.jumpVel;
+      player.onGround = false;
+      player.coyote = 0;
+      player.jumpBuf = 0;
+      beep('triangle', 520 + Math.random()*50, 0.06, 0.035);
+
+      // Drop-through if holding down: allow passing through soft platforms for a short time.
+      if (down) player.invuln = 0.20;
+    }
+
+    // Integrate
+    let nx = player.x + player.vx * dt;
+    let ny = player.y + player.vy * dt;
+
+    // World bounds (x)
+    const pad = 28;
+    if (nx < pad) { nx = pad; player.vx *= -0.20; }
+    if (nx > W()-pad) { nx = W()-pad; player.vx *= -0.20; }
+
+    // Collisions with platforms: only from above (platforms) to keep it jumpy.
+    player.onGround = false;
+
+    // Broadphase: check platforms near player.
+    const pw = player.w, ph = player.h;
+    const ax = nx - pw/2, ay = ny - ph/2;
+
+    const prevY = player.y;
+
+    for (const p of platforms) {
+      const bx = p.x, by = p.y, bw = p.w, bh = p.h;
+
+      // if drop invuln, ignore soft platforms
+      if (player.invuln > 0 && p.kind === 'soft') continue;
+
+      // Only collide if falling
+      if (player.vy >= 0) {
+        // was above, will cross top
+        const prevBottom = prevY + ph/2;
+        const nextBottom = ny + ph/2;
+        const top = by;
+        if (prevBottom <= top && nextBottom >= top) {
+          // x overlap
+          const nextLeft = nx - pw/2;
+          const nextRight = nx + pw/2;
+          if (nextRight > bx && nextLeft < bx + bw) {
+            // collide
+            ny = top - ph/2;
+            player.vy = 0;
+            player.onGround = true;
+          }
+        }
+      }
+    }
+
+    player.invuln = Math.max(0, player.invuln - dt);
+
+    player.x = nx;
+    player.y = ny;
+
+    // Water rises (surface y moves upward: decreasing y in world coords)
+    const rise = config.waterRiseBase + config.waterRiseGain * Math.min(120, world.t);
+    world.waterY -= rise * dt;
+
+    // Bubble collection
+    for (const b of bubbles) {
+      if (b.taken) continue;
+      const dx = player.x - b.x;
+      const dy = player.y - b.y;
+      const d2 = dx*dx + dy*dy;
+      const rr = (b.r + 26);
+      if (d2 < rr*rr) {
+        b.taken = true;
+        world.rots += 1;
+        beep('sine', 740 + rrange(-40,40), 0.06, 0.045);
+      }
+    }
+
+    // Camera follows player upward, but not too jerky.
+    const targetCam = player.y - H()*0.62;
+    world.cameraY += (targetCam - world.cameraY) * (1 - Math.exp(-8*dt));
+
+    ensurePlatforms();
+
+    // Lose if water reaches player.
+    const playerFeet = player.y + ph/2;
+    if (world.waterY <= playerFeet - 6) {
+      lose('The tsunami caught you.');
+    }
+
+    // Win by surviving time.
+    if (world.t >= config.winTime) {
+      win();
+    }
+  }
+
+  // ---------- Rendering ----------
+  function clear() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+
+  function drawBackground() {
+    const w = W(), h = H();
+
+    // Stars
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    for (let i=0;i<90;i++){
+      const x = (i*97 % 997) / 997 * w;
+      const y = (i*271 % 941) / 941 * h;
+      const tw = 0.7 + ((i*13)%10)/10;
+      const a = 0.2 + 0.8*Math.abs(Math.sin(world.t*0.7 + i));
+      ctx.fillStyle = `rgba(234,240,255,${0.15*a})`;
+      ctx.fillRect(x, y, tw*DPR, tw*DPR);
+    }
+    ctx.restore();
+
+    // Neon skyline bands
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(110,243,255,0.09)');
+    grad.addColorStop(0.45, 'rgba(255,110,243,0.06)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,w,h);
+    ctx.restore();
+
+    // Distant drifting clouds
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    for (let i=0;i<10;i++){
+      const cx = ((i*151 + world.t*20) % (w+300)) - 150;
+      const cy = 90 + i*38;
+      drawCloud(cx, cy, 90 + i*6, 'rgba(255,255,255,0.22)');
+    }
+    ctx.restore();
+  }
+
+  function drawCloud(cx, cy, s, col){
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, s*0.62, s*0.34, 0, 0, Math.PI*2);
+    ctx.ellipse(cx - s*0.35, cy + s*0.02, s*0.42, s*0.28, 0, 0, Math.PI*2);
+    ctx.ellipse(cx + s*0.30, cy + s*0.05, s*0.44, s*0.26, 0, 0, Math.PI*2);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function worldToScreen(x,y){
+    return { x: x, y: y - world.cameraY };
+  }
+
+  function drawPlatforms() {
+    for (const p of platforms) {
+      const s = worldToScreen(0, p.y);
+      if (s.y < -120 || s.y > H()+120) continue;
+
+      const wob = Math.sin(world.t*1.2 + p.wobble) * (p.kind==='soft' ? 2.2 : 1.0);
+      const px = p.x;
+      const py = p.y + wob;
+      const sp = worldToScreen(px, py);
+
+      // body
+      const base = (p.kind==='soft') ? 'rgba(110,243,255,0.12)' : 'rgba(255,255,255,0.10)';
+      const edge = (p.kind==='soft') ? 'rgba(110,243,255,0.55)' : 'rgba(255,255,255,0.35)';
+      ctx.save();
+      ctx.translate(0,0);
+      roundRect(sp.x, sp.y, p.w, p.h, 8);
+      ctx.fillStyle = base;
+      ctx.fill();
+      ctx.strokeStyle = edge;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // top highlight
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = (p.kind==='soft') ? 'rgba(110,243,255,0.20)' : 'rgba(255,110,243,0.10)';
+      ctx.fillRect(sp.x+6, sp.y+3, p.w-12, 2);
+
+      // soft platform "dotted" hint
+      if (p.kind==='soft') {
+        ctx.globalAlpha = 0.75;
+        ctx.fillStyle = 'rgba(110,243,255,0.38)';
+        for (let i=0;i<Math.floor(p.w/22);i++){
+          ctx.fillRect(sp.x + 10 + i*22, sp.y + p.h - 6, 10, 2);
+        }
+      }
+      ctx.restore();
+    }
+  }
+
+  function roundRect(x,y,w,h,r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+  }
+
+  function drawBubbles() {
+    for (const b of bubbles) {
+      if (b.taken) continue;
+      const sp = worldToScreen(b.x, b.y);
+      if (sp.y < -80 || sp.y > H()+80) continue;
+      const float = Math.sin(world.t*2.4 + b.phase) * 4;
+      const r = b.r + 1.3*Math.sin(world.t*3.1 + b.phase);
+
+      // glow
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const g = ctx.createRadialGradient(sp.x, sp.y+float, 0, sp.x, sp.y+float, r*3.2);
+      g.addColorStop(0, 'rgba(255,110,243,0.30)');
+      g.addColorStop(0.4, 'rgba(110,243,255,0.16)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y+float, r*3.2, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+
+      // bubble
+      ctx.save();
+      ctx.globalAlpha = 0.92;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y+float, r, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(234,240,255,0.10)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(234,240,255,0.35)';
+      ctx.stroke();
+
+      // "brainrot" squiggle
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = 'rgba(255,110,243,0.85)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const s = r*0.55;
+      ctx.moveTo(sp.x - s, sp.y + float);
+      ctx.bezierCurveTo(sp.x - s*0.2, sp.y + float - s, sp.x + s*0.2, sp.y + float + s, sp.x + s, sp.y + float - s*0.1);
+      ctx.stroke();
+
+      // highlight
+      ctx.globalAlpha = 0.55;
+      ctx.beginPath();
+      ctx.arc(sp.x - r*0.35, sp.y + float - r*0.35, r*0.25, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fill();
+
+      ctx.restore();
+    }
+  }
+
+  function drawWater() {
+    const surfaceY = worldToScreen(0, world.waterY).y;
+
+    // Ocean body
+    ctx.save();
+    const w = W(), h = H();
+
+    // If water is far below, keep subtle.
+    const y = surfaceY;
+
+    // body gradient
+    const g = ctx.createLinearGradient(0, y, 0, h);
+    g.addColorStop(0, 'rgba(40,160,255,0.22)');
+    g.addColorStop(0.25, 'rgba(20,110,210,0.36)');
+    g.addColorStop(1, 'rgba(10,30,90,0.60)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, y, w, h-y);
+
+    // Foam line
+    ctx.globalAlpha = 0.95;
+    ctx.strokeStyle = 'rgba(234,240,255,0.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const amp = 10;
+    const freq = 0.018;
+    for (let x=0;x<=w;x+=14) {
+      const wave = Math.sin(world.t*3.2 + x*freq) * amp;
+      const wave2 = Math.sin(world.t*1.9 + x*freq*1.9) * (amp*0.55);
+      const yy = y + wave + wave2;
+      if (x===0) ctx.moveTo(x, yy);
+      else ctx.lineTo(x, yy);
+    }
+    ctx.stroke();
+
+    // Threat tint when close
+    const playerFeetScreen = worldToScreen(0, player.y + player.h/2).y;
+    const dist = playerFeetScreen - y;
+    if (dist < 120) {
+      const panic = clamp(1 - dist/120, 0, 1);
+      ctx.globalAlpha = 0.28 * panic;
+      ctx.fillStyle = 'rgba(255,93,106,0.55)';
+      ctx.fillRect(0,0,w,h);
+    }
+
+    ctx.restore();
+  }
+
+  function drawPlayer() {
+    const sp = worldToScreen(player.x, player.y);
+    const x = sp.x, y = sp.y;
+    const w = player.w, h = player.h;
+
+    // Shadow
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + h*0.43, w*0.45, 8, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // Body (little robot diver)
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(player.face, 1);
+
+    // legs
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = 'rgba(234,240,255,0.22)';
+    roundRect(-w*0.28, h*0.14, w*0.20, h*0.28, 8);
+    ctx.fill();
+    roundRect(w*0.08, h*0.14, w*0.20, h*0.28, 8);
+    ctx.fill();
+
+    // torso
+    const torsoGrad = ctx.createLinearGradient(0, -h*0.20, 0, h*0.20);
+    torsoGrad.addColorStop(0, 'rgba(110,243,255,0.28)');
+    torsoGrad.addColorStop(1, 'rgba(255,110,243,0.18)');
+    ctx.fillStyle = torsoGrad;
+    roundRect(-w*0.34, -h*0.02, w*0.68, h*0.52, 14);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(234,240,255,0.30)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // visor
+    ctx.fillStyle = 'rgba(234,240,255,0.10)';
+    roundRect(-w*0.22, -h*0.14, w*0.44, h*0.22, 12);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(110,243,255,0.55)';
+    ctx.stroke();
+
+    // eyes
+    const blink = 0.15 + 0.85*Math.abs(Math.sin(world.t*2.2));
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = 'rgba(110,243,255,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(-w*0.09, -h*0.04, 3.6, 3.6*blink, 0, 0, Math.PI*2);
+    ctx.ellipse(w*0.09, -h*0.04, 3.6, 3.6*blink, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // antenna
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = 'rgba(234,240,255,0.25)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w*0.20, -h*0.15);
+    ctx.lineTo(w*0.28, -h*0.30);
+    ctx.stroke();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(255,110,243,0.65)';
+    ctx.beginPath();
+    ctx.arc(w*0.29, -h*0.32, 4.6, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // Splash particles when near water
+    const surfaceY = worldToScreen(0, world.waterY).y;
+    const feetY = sp.y + h/2;
+    const d = feetY - surfaceY;
+    if (d < 42) {
+      const panic = clamp(1 - d/42, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = 0.25 + 0.55*panic;
+      ctx.globalCompositeOperation = 'lighter';
+      for (let i=0;i<10;i++) {
+        const px = x + rrange(-18,18);
+        const py = surfaceY + rrange(-8,8);
+        const rr = rrange(1.2, 2.4);
+        ctx.fillStyle = 'rgba(234,240,255,0.6)';
+        ctx.beginPath();
+        ctx.arc(px, py, rr, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawUI() {
+    // Update HUD
+    ui.rots.textContent = String(world.rots);
+    ui.height.textContent = String(scoreHeight());
+    ui.time.textContent = (Math.min(config.winTime, world.t)).toFixed(1);
+
+    // Top-center evac meter
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    const w = W();
+    const barW = Math.min(420*DPR, w*0.52);
+    const barH = 12*DPR;
+    const x = (w - barW)/2;
+    const y = 16*DPR;
+    roundRect(x, y, barW, barH, 999);
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const p = clamp(world.t / config.winTime, 0, 1);
+    const g = ctx.createLinearGradient(x, 0, x+barW, 0);
+    g.addColorStop(0, 'rgba(255,110,243,0.70)');
+    g.addColorStop(0.5, 'rgba(110,243,255,0.75)');
+    g.addColorStop(1, 'rgba(93,255,154,0.75)');
+    roundRect(x+2, y+2, (barW-4)*p, barH-4, 999);
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(234,240,255,0.70)';
+    ctx.font = `${12*DPR}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`EVAC IN ${Math.max(0, (config.winTime - world.t)).toFixed(1)}s`, w/2, y + barH/2 + 0.5);
+    ctx.restore();
+  }
+
+  function render() {
+    clear();
+    drawBackground();
+    drawPlatforms();
+    drawBubbles();
+    drawWater();
+    drawPlayer();
+    drawUI();
+  }
+
+  // ---------- Overlay panels ----------
+  function clearOverlay(){ overlay.innerHTML = ''; }
+
+  function showTitleOverlay(){
+    clearOverlay();
+    const el = document.createElement('div');
+    el.className = 'panel';
+    el.innerHTML = `
+      <h3>Escape the Tsunami. Collect the Brainrots.</h3>
+      <div class="small">
+        The water rises faster over time. Jump upward, land on platforms, and snag brainrot bubbles.
+        <br><br>
+        Win by surviving <b>${config.winTime}s</b>. Lose if the foam line reaches your feet.
+      </div>
+      <div class="row">
+        <button id="btnPlay">Play</button>
+        <button class="secondary" id="btnPractice">Practice (slow water)</button>
+        <span class="badge"><i></i> PG, no external assets</span>
+      </div>
+      <div class="small" style="margin-top:10px;color:var(--muted)">
+        Tip: Soft platforms let you drop through (hold Down while jumping).
+      </div>
+    `;
+    overlay.appendChild(el);
+    document.getElementById('btnPlay').onclick = () => startGame();
+    document.getElementById('btnPractice').onclick = () => {
+      resetWorld();
+      config.waterRiseBase = 22;
+      config.waterRiseGain = 0.65;
+      setState('playing');
+      world.startTime = performance.now()/1000;
+      clearOverlay();
+    };
+  }
+
+  function showEndOverlay(won, reason){
+    clearOverlay();
+    const el = document.createElement('div');
+    el.className = 'panel';
+    const height = scoreHeight();
+    const rots = world.rots;
+    const score = height + rots*140;
+    el.innerHTML = `
+      <h3>${won ? 'You made it!' : 'Wiped out!'}</h3>
+      <div class="small">${escapeHtml(reason || '')}</div>
+      <div class="row" style="margin-top:12px">
+        <span class="pill" style="background:rgba(255,255,255,.06)">Final height: <b>${height}</b></span>
+        <span class="pill" style="background:rgba(255,255,255,.06)">Brainrots: <b>${rots}</b></span>
+        <span class="pill" style="background:rgba(255,255,255,.06)">Score: <b>${score}</b></span>
+      </div>
+      <div class="row">
+        <button id="btnAgain">Play again</button>
+        <button class="secondary" id="btnTitle">Title</button>
+      </div>
+      <div class="small" style="margin-top:10px;color:var(--muted)">
+        Keyboard shortcut: <b>R</b> to restart.
+      </div>
+    `;
+    overlay.appendChild(el);
+    document.getElementById('btnAgain').onclick = () => startGame();
+    document.getElementById('btnTitle').onclick = () => { setState('title'); showTitleOverlay(); };
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+  }
+
+  // ---------- Main loop ----------
+  let last = performance.now();
+  function frame(now){
+    resizeCanvas();
+    const dt = Math.min(0.033, Math.max(0.001, (now - last)/1000));
+    last = now;
+
+    if (world.state === 'playing') step(dt);
+    render();
+
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- Init ----------
+  setState('title');
+  resetWorld();
+  showTitleOverlay();
+  requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>
