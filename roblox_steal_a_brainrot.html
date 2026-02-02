@@ -1,0 +1,1148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Steal a Brainrot Remix</title>
+  <style>
+    :root{
+      --bg:#070812;
+      --panel:#0f1230;
+      --panel2:#11163d;
+      --text:#eaf0ff;
+      --muted:#a9b4d6;
+      --accent:#7c5cff;
+      --good:#46e6a6;
+      --bad:#ff5577;
+      --warn:#ffd166;
+      --grid:#1b2157;
+      --shadow: 0 18px 40px rgba(0,0,0,.55);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 800px at 30% 20%, rgba(124,92,255,.20), transparent 60%),
+                  radial-gradient(900px 700px at 70% 60%, rgba(70,230,166,.12), transparent 55%),
+                  linear-gradient(180deg, #050615, #070812 35%, #070812);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      overflow:hidden;
+    }
+
+    a{color:var(--text)}
+    .topbar{
+      position:fixed;
+      left:0; right:0; top:0;
+      padding:10px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background: linear-gradient(180deg, rgba(7,8,18,.92), rgba(7,8,18,.65));
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      z-index:10;
+    }
+    .topbar a{ text-decoration:none; font-weight:650; }
+    .topbar a:hover{ text-decoration:underline; }
+    .note{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 70vw;
+    }
+
+    .wrap{
+      height:100%;
+      display:grid;
+      place-items:center;
+      padding:64px 16px 18px;
+    }
+
+    .card{
+      width:min(980px, 96vw);
+      background: linear-gradient(180deg, rgba(15,18,48,.9), rgba(9,10,25,.85));
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .hud{
+      display:flex;
+      align-items:stretch;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 12px 0;
+      flex-wrap:wrap;
+    }
+    .pill{
+      background: linear-gradient(180deg, rgba(17,22,61,.85), rgba(10,12,31,.75));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      padding:10px 12px;
+      min-width: 160px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .pill .label{
+      font-size:12px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .pill .value{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size:14px;
+    }
+    .bar{
+      height:10px;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 999px;
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block;
+      height:100%;
+      width:40%;
+      background: linear-gradient(90deg, var(--good), var(--accent));
+    }
+    .bar.bad > i{ background: linear-gradient(90deg, var(--warn), var(--bad)); }
+
+    .stage{
+      display:grid;
+      grid-template-columns: 1fr 260px;
+      gap:12px;
+      padding:12px;
+    }
+    @media (max-width: 860px){
+      .stage{ grid-template-columns: 1fr; }
+    }
+
+    canvas{
+      width:100%;
+      aspect-ratio: 16/10;
+      background: radial-gradient(900px 550px at 40% 30%, rgba(124,92,255,.15), transparent 60%),
+                  radial-gradient(800px 500px at 70% 65%, rgba(70,230,166,.10), transparent 55%),
+                  linear-gradient(180deg, #07081a, #050515);
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      image-rendering: pixelated;
+    }
+
+    .side{
+      background: linear-gradient(180deg, rgba(17,22,61,.70), rgba(10,12,31,.62));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .title h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.01em;
+    }
+    .kbd{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:2px 7px;
+      border-radius: 8px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      font-weight:650;
+      font-size:12px;
+      color:var(--text);
+    }
+    .help{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+      margin:0;
+    }
+
+    .btnrow{ display:flex; gap:10px; flex-wrap:wrap; }
+    button{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      color:var(--text);
+      font-weight:750;
+      border-radius: 12px;
+      padding:10px 12px;
+      background: linear-gradient(180deg, rgba(124,92,255,.95), rgba(92,64,255,.80));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: 0 10px 22px rgba(124,92,255,.22);
+      transition: transform .08s ease, filter .08s ease;
+    }
+    button.secondary{
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      box-shadow:none;
+    }
+    button:active{ transform: translateY(1px); filter:saturate(1.1); }
+
+    .toast{
+      font-size:13px;
+      color:var(--muted);
+      padding:10px 12px;
+      border-radius: 12px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+    }
+    .panel{
+      width:min(620px, 92vw);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(17,22,61,.92), rgba(7,8,18,.88));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: var(--shadow);
+      padding: 18px 18px 14px;
+      pointer-events:auto;
+    }
+    .panel h2{ margin:0 0 8px; font-size:22px; }
+    .panel p{ margin: 8px 0; color:var(--muted); line-height:1.5; }
+    .panel .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+    @media (max-width: 560px){
+      .panel .grid{ grid-template-columns: 1fr; }
+    }
+    .tiny{ font-size:12px; color: rgba(234,240,255,.72); }
+    .tag{
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(124,92,255,.10);
+      color: rgba(234,240,255,.88);
+      font-size:12px;
+      margin-left:8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="./index.html">&larr; Back to Claw Games</a>
+    <div class="note">Inspired by <strong>Steal a Brainrot</strong> (fan-made microgame; no affiliation)</div>
+  </div>
+
+  <div class="wrap">
+    <div class="card" id="card">
+      <div class="hud">
+        <div class="pill">
+          <div class="label">Heist</div>
+          <div class="value"><span>Loot</span><strong id="lootText">0 / 7</strong></div>
+          <div class="bar"><i id="lootBar" style="width:0%"></i></div>
+        </div>
+        <div class="pill">
+          <div class="label">Heat</div>
+          <div class="value"><span>Suspicion</span><strong id="heatText">0%</strong></div>
+          <div class="bar bad"><i id="heatBar" style="width:0%"></i></div>
+        </div>
+        <div class="pill">
+          <div class="label">Clock</div>
+          <div class="value"><span>Time left</span><strong id="timeText">60.0s</strong></div>
+          <div class="bar"><i id="timeBar" style="width:100%"></i></div>
+        </div>
+        <div class="pill">
+          <div class="label">Score</div>
+          <div class="value"><span>Total</span><strong id="scoreText">0</strong></div>
+          <div class="tiny">Bonus for clean escapes</div>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div style="position:relative;">
+          <canvas id="c" width="960" height="600" aria-label="game canvas"></canvas>
+          <div class="overlay" id="overlay" hidden>
+            <div class="panel" role="dialog" aria-modal="true">
+              <h2 id="ovTitle">Steal a Brainrot Remix <span class="tag">Arcade Heist</span></h2>
+              <p id="ovBody">
+                Sneak through the neon vault, swipe <strong>Brainrot Orbs</strong>, then escape.
+                Patrol drones don't like sticky fingers.
+              </p>
+              <p class="tiny" id="ovHint"></p>
+              <div class="grid">
+                <div class="toast">
+                  <div style="font-weight:750; color:var(--text); margin-bottom:6px;">Controls</div>
+                  <div><span class="kbd">WASD</span> / <span class="kbd">Arrow Keys</span> Move</div>
+                  <div><span class="kbd">Shift</span> Sneak (slower, less heat)</div>
+                  <div><span class="kbd">Space</span> Pulse (brief stun, adds heat)</div>
+                  <div><span class="kbd">R</span> Restart</div>
+                </div>
+                <div class="toast">
+                  <div style="font-weight:750; color:var(--text); margin-bottom:6px;">How to win</div>
+                  <div>Collect <strong>7</strong> orbs.</div>
+                  <div>Reach the <strong>Exit Gate</strong>.</div>
+                  <div>Avoid getting caught or timing out.</div>
+                </div>
+              </div>
+              <div class="btnrow" style="margin-top:12px;">
+                <button id="startBtn">Start Heist</button>
+                <button class="secondary" id="practiceBtn" title="A calmer round to learn the map">Practice</button>
+              </div>
+              <p class="tiny" style="margin-top:10px;">Tip: Sneaking near drones slows heat gain. The Pulse can save you — but spamming it is loud.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="side">
+          <div class="title">
+            <h1>Neon Vault</h1>
+            <div class="kbd" id="statePill">TITLE</div>
+          </div>
+          <p class="help">
+            Grab orbs to increase loot. Your <strong>Heat</strong> rises when a drone has line-of-sight.
+            At <strong>100%</strong> you're caught.
+          </p>
+          <div class="toast" id="statusToast">Press <strong>Start Heist</strong> to begin.</div>
+          <div class="btnrow">
+            <button class="secondary" id="restartBtn">Restart</button>
+            <button class="secondary" id="muteBtn" title="Toggle sound">Sound: On</button>
+          </div>
+          <div class="toast">
+            <div style="font-weight:750; margin-bottom:6px;">Legend</div>
+            <div>• You</div>
+            <div>• Brainrot Orb</div>
+            <div>• Drone</div>
+            <div>• Exit Gate</div>
+          </div>
+          <p class="tiny">PG microgame. Single-file HTML (no external assets).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  // -------------------- utilities
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+  const rand = (a,b)=>a + Math.random()*(b-a);
+  const irand = (a,b)=>Math.floor(rand(a,b+1));
+
+  // -------------------- DOM
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const lootText = document.getElementById('lootText');
+  const lootBar  = document.getElementById('lootBar');
+  const heatText = document.getElementById('heatText');
+  const heatBar  = document.getElementById('heatBar');
+  const timeText = document.getElementById('timeText');
+  const timeBar  = document.getElementById('timeBar');
+  const scoreText= document.getElementById('scoreText');
+
+  const overlay  = document.getElementById('overlay');
+  const ovTitle  = document.getElementById('ovTitle');
+  const ovBody   = document.getElementById('ovBody');
+  const ovHint   = document.getElementById('ovHint');
+  const startBtn = document.getElementById('startBtn');
+  const practiceBtn = document.getElementById('practiceBtn');
+
+  const statusToast = document.getElementById('statusToast');
+  const restartBtn = document.getElementById('restartBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  const statePill = document.getElementById('statePill');
+
+  // -------------------- audio (tiny synth)
+  let soundOn = true;
+  let audioCtx = null;
+  function beep(freq=440, dur=0.08, type='sine', vol=0.08){
+    if(!soundOn) return;
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(vol, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0); o.stop(t0 + dur);
+    }catch{ /* ignore */ }
+  }
+  function chord(){
+    beep(392,0.10,'triangle',0.06);
+    setTimeout(()=>beep(523.25,0.10,'triangle',0.05), 20);
+    setTimeout(()=>beep(659.25,0.12,'triangle',0.045), 40);
+  }
+
+  // -------------------- game config
+  const GRID_W = 24;
+  const GRID_H = 15;
+  const TILE = 40; // on 960x600
+
+  const GAME_TIME = 60; // seconds
+  const ORBS_TO_WIN = 7;
+
+  const COLORS = {
+    wall: '#141a4a',
+    wall2: '#10143a',
+    floor: '#07081a',
+    floor2: '#090b20',
+    glow: 'rgba(124,92,255,.25)',
+    good: '#46e6a6',
+    bad: '#ff5577',
+    warn: '#ffd166',
+    accent:'#7c5cff',
+    text:'#eaf0ff'
+  };
+
+  // -------------------- map generation (deterministic-ish per session)
+  // A simple maze-like vault with rooms and corridors.
+  function makeMap(seed){
+    // LCG for reproducibility within a run
+    let s = (seed>>>0) || 0xC0FFEE;
+    const rnd = () => (s = (s*1664525 + 1013904223)>>>0, (s/4294967296));
+    const map = Array.from({length:GRID_H}, ()=>Array.from({length:GRID_W}, ()=>1)); // 1=wall,0=floor
+
+    // carve big open area then add walls
+    for(let y=1;y<GRID_H-1;y++){
+      for(let x=1;x<GRID_W-1;x++) map[y][x]=0;
+    }
+
+    // sprinkle wall blocks
+    const blocks = 44;
+    for(let i=0;i<blocks;i++){
+      const w = (rnd()<0.6)? 2:3;
+      const h = (rnd()<0.55)? 2:3;
+      const x0 = 1 + Math.floor(rnd()*(GRID_W-1-w));
+      const y0 = 1 + Math.floor(rnd()*(GRID_H-1-h));
+      // keep a central corridor more open
+      if(Math.abs(x0 - GRID_W/2) < 2 && Math.abs(y0 - GRID_H/2) < 2) continue;
+      for(let y=y0;y<y0+h;y++) for(let x=x0;x<x0+w;x++) map[y][x]=1;
+    }
+
+    // border walls
+    for(let x=0;x<GRID_W;x++){ map[0][x]=1; map[GRID_H-1][x]=1; }
+    for(let y=0;y<GRID_H;y++){ map[y][0]=1; map[y][GRID_W-1]=1; }
+
+    // ensure connectivity by carving random tunnels
+    const digs = 36;
+    let cx = 2 + Math.floor(rnd()*(GRID_W-4));
+    let cy = 2 + Math.floor(rnd()*(GRID_H-4));
+    for(let i=0;i<digs;i++){
+      const dir = Math.floor(rnd()*4);
+      const len = 3 + Math.floor(rnd()*6);
+      for(let j=0;j<len;j++){
+        map[cy][cx]=0;
+        if(dir===0) cx++; if(dir===1) cx--; if(dir===2) cy++; if(dir===3) cy--;
+        cx = clamp(cx,1,GRID_W-2);
+        cy = clamp(cy,1,GRID_H-2);
+      }
+    }
+
+    // add some "glass" pillars (still walls) for cover
+    for(let i=0;i<18;i++){
+      const x = 2 + Math.floor(rnd()*(GRID_W-4));
+      const y = 2 + Math.floor(rnd()*(GRID_H-4));
+      if(map[y][x]===0 && rnd()<0.55) map[y][x]=1;
+    }
+
+    // clean tiny enclosed pockets (basic smoothing)
+    for(let pass=0; pass<2; pass++){
+      for(let y=1;y<GRID_H-1;y++){
+        for(let x=1;x<GRID_W-1;x++){
+          const n = map[y-1][x]+map[y+1][x]+map[y][x-1]+map[y][x+1];
+          if(map[y][x]===0 && n>=4 && rnd()<0.55) map[y][x]=1;
+          if(map[y][x]===1 && n<=1 && rnd()<0.35) map[y][x]=0;
+        }
+      }
+    }
+
+    return map;
+  }
+
+  function isWall(map, x, y){
+    const xi = Math.floor(x), yi = Math.floor(y);
+    if(xi<0||yi<0||xi>=GRID_W||yi>=GRID_H) return true;
+    return map[yi][xi]===1;
+  }
+
+  function canStand(map, x, y){
+    // x,y in grid coords (center)
+    const r = 0.28;
+    return !(
+      isWall(map, x-r, y-r) || isWall(map, x+r, y-r) ||
+      isWall(map, x-r, y+r) || isWall(map, x+r, y+r)
+    );
+  }
+
+  function rayClear(map, ax, ay, bx, by){
+    // grid coords; simple DDA
+    const dx = bx-ax, dy = by-ay;
+    const steps = Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / 0.10);
+    for(let i=0;i<=steps;i++){
+      const t=i/steps;
+      const x= ax + dx*t;
+      const y= ay + dy*t;
+      if(isWall(map, x, y)) return false;
+    }
+    return true;
+  }
+
+  function pickFreeCell(map, tries=500){
+    for(let i=0;i<tries;i++){
+      const x = 1.5 + Math.random()*(GRID_W-3);
+      const y = 1.5 + Math.random()*(GRID_H-3);
+      if(canStand(map, x, y)) return {x,y};
+    }
+    return {x:2,y:2};
+  }
+
+  // -------------------- state
+  const keys = new Set();
+  window.addEventListener('keydown', (e)=>{
+    const k = e.key;
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k)) e.preventDefault();
+    keys.add(k.toLowerCase());
+    if(k.toLowerCase()==='r') restart();
+    if(k===' ' && state.mode==='play') pulse();
+  }, {passive:false});
+  window.addEventListener('keyup', (e)=> keys.delete(e.key.toLowerCase()));
+
+  let state;
+
+  function newGame(opts={practice:false}){
+    const seed = (Date.now() ^ (Math.random()*1e9))|0;
+    const map = makeMap(seed);
+
+    const player = {
+      x: 2.2,
+      y: GRID_H-2.2,
+      vx:0, vy:0,
+      r: 0.28,
+      heat:0,
+      loot:0,
+      score:0,
+      alive:true,
+      escaped:false,
+      pulseCooldown:0,
+      pulseWave:0,
+    };
+
+    // place player on free spot near bottom-left
+    {
+      const p = pickFreeCell(map);
+      player.x = clamp(p.x, 1.5, GRID_W-1.5);
+      player.y = clamp(p.y, 1.5, GRID_H-1.5);
+    }
+
+    // exit near top-right-ish
+    let exit = {x: GRID_W-2.3, y: 2.3};
+    {
+      const tries = 250;
+      for(let i=0;i<tries;i++){
+        const x = 1.5 + Math.random()*(GRID_W-3);
+        const y = 1.5 + Math.random()*(GRID_H-3);
+        if(canStand(map,x,y) && (x+y) < (GRID_W+GRID_H)*0.55 && Math.hypot(x-player.x,y-player.y)>9) { exit={x,y}; break; }
+      }
+    }
+
+    // orbs
+    const orbs = [];
+    const orbCount = ORBS_TO_WIN;
+    let safeCount = 0;
+    for(let i=0;i<orbCount;i++){
+      let o;
+      for(let t=0;t<500;t++){
+        const p = pickFreeCell(map);
+        if(Math.hypot(p.x-player.x,p.y-player.y)<4) continue;
+        if(Math.hypot(p.x, p.y, exit.x, exit.y)<3) { /* ignore */ }
+        // keep some clustered, some spread
+        if(i<3 && p.x>GRID_W*0.55 && p.y<GRID_H*0.65) { o=p; break; }
+        if(i>=3 && Math.random()<0.7) { o=p; break; }
+        o=p;
+      }
+      if(!o) o = pickFreeCell(map);
+      orbs.push({x:o.x, y:o.y, taken:false, wobble:Math.random()*Math.PI*2});
+      safeCount++;
+    }
+
+    // drones
+    const drones = [];
+    const droneCount = opts.practice ? 2 : 4;
+    for(let i=0;i<droneCount;i++){
+      const p = pickFreeCell(map);
+      drones.push({
+        x:p.x, y:p.y,
+        vx:0, vy:0,
+        dir: Math.random()*Math.PI*2,
+        speed: opts.practice ? 0.65 : 0.85,
+        fov: opts.practice ? 7.0 : 8.5,
+        alert:0,
+        jitter: Math.random()*1000,
+      });
+    }
+
+    const timeLimit = opts.practice ? 90 : GAME_TIME;
+
+    return {
+      mode:'title',
+      map,
+      player,
+      drones,
+      orbs,
+      exit,
+      time: timeLimit,
+      timeLimit,
+      message:'',
+      practice: !!opts.practice,
+      shake:0,
+      vignette:0,
+      lastTick: performance.now(),
+    };
+  }
+
+  function setOverlay(show, title, body, hint){
+    overlay.hidden = !show;
+    if(show){
+      ovTitle.textContent = title;
+      ovBody.innerHTML = body;
+      ovHint.textContent = hint || '';
+    }
+  }
+
+  function setStatePill(txt){ statePill.textContent = txt; }
+
+  function start(opts={practice:false}){
+    state = newGame(opts);
+    state.mode = 'play';
+    state.lastTick = performance.now();
+    setOverlay(false);
+    statusToast.innerHTML = 'Steal <strong>'+ORBS_TO_WIN+'</strong> orbs and reach the <strong>Exit</strong>. Stay cool.';
+    setStatePill(opts.practice ? 'PRACTICE' : 'HEIST');
+    beep(523.25,0.06,'square',0.05);
+    beep(659.25,0.08,'square',0.04);
+  }
+
+  function restart(){
+    // back to title overlay but keep fresh map
+    state = newGame({practice:false});
+    state.mode = 'title';
+    setStatePill('TITLE');
+    setOverlay(true,
+      'Steal a Brainrot Remix',
+      'Sneak through the neon vault, swipe <strong>Brainrot Orbs</strong>, then escape. Patrol drones are fast, but you are clever.',
+      'Press Start. You can also press R anytime to restart.'
+    );
+    statusToast.innerHTML = 'Press <strong>Start Heist</strong> to begin.';
+    updateHUD();
+    render(0);
+  }
+
+  // pulse ability: short stun wave that slows drones, adds heat
+  function pulse(){
+    const p = state.player;
+    if(p.pulseCooldown>0) return;
+    p.pulseCooldown = 1.25;
+    p.pulseWave = 0.001;
+    p.heat = clamp(p.heat + 12, 0, 100);
+    state.shake = 10;
+    beep(110,0.11,'sawtooth',0.07);
+    setTimeout(()=>beep(220,0.08,'sawtooth',0.05), 40);
+  }
+
+  function endGame(win, reason){
+    state.mode = 'over';
+    const p = state.player;
+    // scoring
+    const orbScore = p.loot * 120;
+    const timeBonus = Math.floor((state.time / state.timeLimit) * 400);
+    const stealthBonus = Math.floor((1 - p.heat/100) * 350);
+    const clean = win ? (orbScore + timeBonus + stealthBonus) : Math.floor(orbScore * 0.4);
+    p.score = Math.max(p.score, clean);
+
+    let title = win ? 'Clean Getaway!' : 'Busted.';
+    let body = win
+      ? `You got out with the Brainrot.\n\n<strong>Score</strong>: ${p.score} (Loot ${orbScore} + Time ${timeBonus} + Chill ${stealthBonus})`
+      : `The vault didn\'t agree with your vibe.\n\n<strong>Reason</strong>: ${reason}<br><strong>Score</strong>: ${p.score}`;
+
+    setOverlay(true,
+      title,
+      body.replace(/\n/g,'<br>'),
+      'Press R to restart. Try practicing routes: cover blocks line-of-sight.'
+    );
+    setStatePill(win ? 'WIN' : 'LOSE');
+    statusToast.innerHTML = win
+      ? 'You escaped. Want a higher score? Go faster with lower heat.'
+      : 'Try again: break line-of-sight and use Sneak near drones.';
+
+    if(win) chord();
+    else beep(196,0.18,'triangle',0.06);
+
+    updateHUD();
+  }
+
+  // -------------------- simulation
+  function step(dt){
+    if(state.mode!=='play') return;
+
+    const map = state.map;
+    const p = state.player;
+
+    state.time -= dt;
+    if(state.time <= 0){
+      state.time = 0;
+      endGame(false, 'Time ran out');
+      return;
+    }
+
+    // inputs
+    const sneak = keys.has('shift');
+    const baseSpeed = sneak ? 2.0 : 3.15; // tiles per second-ish
+
+    let ax=0, ay=0;
+    if(keys.has('arrowup')||keys.has('w')) ay -= 1;
+    if(keys.has('arrowdown')||keys.has('s')) ay += 1;
+    if(keys.has('arrowleft')||keys.has('a')) ax -= 1;
+    if(keys.has('arrowright')||keys.has('d')) ax += 1;
+    const mag = Math.hypot(ax,ay) || 1;
+    ax/=mag; ay/=mag;
+
+    // acceleration / friction
+    const accel = baseSpeed * 7.2;
+    const friction = 14.5;
+    p.vx += ax*accel*dt;
+    p.vy += ay*accel*dt;
+    p.vx *= Math.exp(-friction*dt);
+    p.vy *= Math.exp(-friction*dt);
+
+    // cap
+    const vmax = baseSpeed;
+    const vmag = Math.hypot(p.vx,p.vy);
+    if(vmag>vmax){
+      const s = vmax/vmag; p.vx*=s; p.vy*=s;
+    }
+
+    // move with collision
+    let nx = p.x + p.vx*dt;
+    let ny = p.y + p.vy*dt;
+
+    // separate axis resolution
+    if(canStand(map, nx, p.y)) p.x = nx; else p.vx=0;
+    if(canStand(map, p.x, ny)) p.y = ny; else p.vy=0;
+
+    // cooldowns
+    p.pulseCooldown = Math.max(0, p.pulseCooldown - dt);
+    if(p.pulseWave>0){
+      p.pulseWave += dt*7;
+      if(p.pulseWave>1.6) p.pulseWave = 0;
+    }
+
+    // loot pickup
+    for(const o of state.orbs){
+      if(o.taken) continue;
+      const d = Math.hypot(o.x - p.x, o.y - p.y);
+      if(d < 0.55){
+        o.taken = true;
+        p.loot++;
+        // slight score tick
+        p.score += 25;
+        beep(880,0.07,'square',0.05);
+        beep(1175,0.06,'square',0.035);
+        state.vignette = Math.min(1, state.vignette + 0.25);
+      }
+    }
+
+    // drone AI
+    let seenCount = 0;
+    for(const d of state.drones){
+      // base wandering
+      d.jitter += dt* (0.8 + Math.random()*0.6);
+      const wob = Math.sin(d.jitter*0.7) * 0.45;
+
+      // chase if player seen
+      const dist = Math.hypot(p.x-d.x, p.y-d.y);
+      const hasLOS = dist < d.fov && rayClear(map, d.x, d.y, p.x, p.y);
+      if(hasLOS){
+        seenCount++;
+        d.alert = clamp(d.alert + dt*1.8, 0, 1);
+        const ang = Math.atan2(p.y-d.y, p.x-d.x);
+        d.dir = lerp(d.dir, ang, 0.22);
+      } else {
+        d.alert = clamp(d.alert - dt*0.9, 0, 1);
+        // random gentle steering
+        d.dir += (Math.sin(d.jitter*1.3)+wob)*dt*0.8;
+      }
+
+      // pulse effect
+      let pulseSlow = 1;
+      if(p.pulseWave>0){
+        const waveR = p.pulseWave*4.4; // tiles
+        const edge = Math.abs(dist - waveR);
+        if(edge < 0.6){
+          // stunned near ring
+          pulseSlow = 0.12;
+          d.alert = clamp(d.alert - dt*2.0, 0, 1);
+        }
+      }
+
+      const sp = d.speed * (0.65 + 0.55*d.alert) * pulseSlow;
+      const tx = Math.cos(d.dir) * sp;
+      const ty = Math.sin(d.dir) * sp;
+
+      // attempt move; if hit wall, bounce
+      const ndx = d.x + tx*dt;
+      const ndy = d.y + ty*dt;
+      if(canStand(map, ndx, d.y)) d.x = ndx; else d.dir += Math.PI*(0.4 + Math.random()*0.3);
+      if(canStand(map, d.x, ndy)) d.y = ndy; else d.dir += Math.PI*(0.4 + Math.random()*0.3);
+
+      // catch condition
+      if(dist < 0.55){
+        endGame(false, 'A drone grabbed you');
+        return;
+      }
+    }
+
+    // heat system
+    const sneakFactor = sneak ? 0.55 : 1.0;
+    const heatGain = (seenCount>0)
+      ? (dt * (seenCount * 18) * sneakFactor)
+      : (-dt * 9);
+
+    p.heat = clamp(p.heat + heatGain, 0, 100);
+
+    if(p.heat >= 100){
+      endGame(false, 'Heat hit 100%');
+      return;
+    }
+
+    // win condition: have loot and stand on exit
+    const allLoot = (p.loot >= ORBS_TO_WIN);
+    const onExit = Math.hypot(p.x - state.exit.x, p.y - state.exit.y) < 0.9;
+    if(allLoot && onExit){
+      endGame(true, 'Escaped');
+      return;
+    }
+
+    // small screen effects
+    state.shake = Math.max(0, state.shake - dt*22);
+    state.vignette = Math.max(0, state.vignette - dt*0.8);
+
+    updateHUD();
+  }
+
+  function updateHUD(){
+    const p = state.player;
+    const lootPct = (p.loot / ORBS_TO_WIN) * 100;
+    lootText.textContent = `${p.loot} / ${ORBS_TO_WIN}`;
+    lootBar.style.width = `${clamp(lootPct,0,100)}%`;
+
+    heatText.textContent = `${Math.round(p.heat)}%`;
+    heatBar.style.width = `${clamp(p.heat,0,100)}%`;
+
+    timeText.textContent = `${state.time.toFixed(1)}s`;
+    timeBar.style.width = `${clamp((state.time/state.timeLimit)*100,0,100)}%`;
+
+    scoreText.textContent = `${Math.floor(p.score)}`;
+  }
+
+  // -------------------- rendering
+  function drawTile(x,y,fill,stroke){
+    const px = x*TILE;
+    const py = y*TILE;
+    ctx.fillStyle = fill;
+    ctx.fillRect(px,py,TILE,TILE);
+    if(stroke){
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px+0.5,py+0.5,TILE-1,TILE-1);
+    }
+  }
+
+  function render(t){
+    // background
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // shake
+    const sh = state.shake;
+    const sx = sh ? (rand(-1,1) * sh) : 0;
+    const sy = sh ? (rand(-1,1) * sh) : 0;
+
+    ctx.save();
+    ctx.translate(sx,sy);
+
+    // map
+    const map = state.map;
+    for(let y=0;y<GRID_H;y++){
+      for(let x=0;x<GRID_W;x++){
+        const w = map[y][x]===1;
+        const alt = ((x+y)&1);
+        if(w){
+          drawTile(x,y, alt ? COLORS.wall : COLORS.wall2, 'rgba(255,255,255,.04)');
+          // subtle inner glow
+          ctx.fillStyle = 'rgba(124,92,255,.05)';
+          ctx.fillRect(x*TILE+2,y*TILE+2,TILE-4,TILE-4);
+        } else {
+          drawTile(x,y, alt ? COLORS.floor : COLORS.floor2, 'rgba(255,255,255,.03)');
+        }
+      }
+    }
+
+    // exit gate
+    {
+      const ex = state.exit.x*TILE;
+      const ey = state.exit.y*TILE;
+      ctx.save();
+      ctx.translate(ex, ey);
+      const pulse = 0.5 + 0.5*Math.sin(t*0.002);
+      ctx.shadowColor = 'rgba(70,230,166,.55)';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = 'rgba(70,230,166,.14)';
+      ctx.beginPath();
+      ctx.roundRect(-18,-18,36,36,10);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(70,230,166,${0.55+0.35*pulse})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-20,-20,40,40,12);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(234,240,255,.92)';
+      ctx.font = '700 16px ui-sans-serif, system-ui';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('EXIT', 0, 0);
+      ctx.restore();
+    }
+
+    // orbs
+    for(const o of state.orbs){
+      if(o.taken) continue;
+      o.wobble += 0.02;
+      const ox = o.x*TILE;
+      const oy = o.y*TILE + Math.sin(o.wobble)*4;
+      const glow = 0.45 + 0.35*Math.sin(o.wobble*1.4);
+      ctx.save();
+      ctx.translate(ox, oy);
+      ctx.shadowColor = 'rgba(255,209,102,.65)';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = `rgba(255,209,102,${0.18+0.10*glow})`;
+      ctx.beginPath();
+      ctx.arc(0,0,16,0,Math.PI*2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(255,209,102,${0.75})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0,0,12,0,Math.PI*2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(234,240,255,.92)';
+      ctx.font = '700 14px ui-sans-serif, system-ui';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('\u2605', 0, 1);
+      ctx.restore();
+    }
+
+    // drones
+    for(const d of state.drones){
+      const dx = d.x*TILE;
+      const dy = d.y*TILE;
+      const pulse = 0.5 + 0.5*Math.sin((t*0.003) + d.jitter);
+      ctx.save();
+      ctx.translate(dx,dy);
+      // body
+      ctx.shadowColor = 'rgba(255,85,119,.55)';
+      ctx.shadowBlur = 16 * (0.3 + 0.8*d.alert);
+      ctx.fillStyle = `rgba(255,85,119,${0.14 + 0.12*d.alert})`;
+      ctx.beginPath();
+      ctx.roundRect(-16,-14,32,28,10);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(255,85,119,${0.65 + 0.25*d.alert})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-16,-14,32,28,10);
+      ctx.stroke();
+      // eye
+      ctx.fillStyle = `rgba(234,240,255,${0.70 + 0.30*pulse})`;
+      ctx.beginPath();
+      ctx.arc(6*Math.cos(d.dir), 6*Math.sin(d.dir), 3.5, 0, Math.PI*2);
+      ctx.fill();
+
+      // FOV hint when alert
+      if(d.alert>0.1){
+        ctx.save();
+        ctx.rotate(d.dir);
+        ctx.fillStyle = `rgba(255,85,119,${0.05 + 0.08*d.alert})`;
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.arc(0,0, d.fov*TILE*0.55, -0.35, 0.35);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    // pulse wave
+    const p = state.player;
+    if(p.pulseWave>0){
+      const r = p.pulseWave*4.4*TILE;
+      ctx.save();
+      ctx.translate(p.x*TILE, p.y*TILE);
+      ctx.strokeStyle = `rgba(124,92,255,${0.35})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0,0,r,0,Math.PI*2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(234,240,255,${0.14})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0,0,r-6,0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // player
+    {
+      const px = p.x*TILE;
+      const py = p.y*TILE;
+      const speed = Math.hypot(p.vx,p.vy);
+      const bob = Math.sin(t*0.02)* (speed>0.2 ? 1.7 : 0.6);
+      ctx.save();
+      ctx.translate(px, py + bob);
+      const cool = 1 - (p.heat/100);
+      ctx.shadowColor = `rgba(70,230,166,${0.55*cool + 0.15})`;
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = `rgba(70,230,166,${0.12 + 0.10*cool})`;
+      ctx.beginPath();
+      ctx.arc(0,0,18,0,Math.PI*2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(70,230,166,${0.85})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0,0,14,0,Math.PI*2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(234,240,255,.92)';
+      ctx.font = '700 14px ui-sans-serif, system-ui';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('YOU', 0, 1);
+      ctx.restore();
+    }
+
+    ctx.restore();
+
+    // vignette + UI cues
+    const heat = state.player.heat/100;
+    const v = clamp(0.20 + heat*0.55 + state.vignette*0.25, 0, 0.82);
+    ctx.save();
+    ctx.fillStyle = `rgba(0,0,0,${v})`;
+    ctx.globalCompositeOperation = 'source-over';
+    // vignette via radial gradient
+    const g = ctx.createRadialGradient(canvas.width*0.5, canvas.height*0.5, canvas.height*0.08, canvas.width*0.5, canvas.height*0.5, canvas.height*0.65);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(0,0,0,${v})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+
+    // top-left hint
+    ctx.save();
+    ctx.fillStyle = 'rgba(234,240,255,.80)';
+    ctx.font = '650 12px ui-sans-serif, system-ui';
+    ctx.textBaseline='top';
+    const allLoot = state.player.loot >= ORBS_TO_WIN;
+    const msg = (state.mode==='play')
+      ? (allLoot ? 'All orbs collected: head to EXIT!' : 'Steal orbs. Break line-of-sight to cool down.')
+      : '';
+    if(msg){
+      const pad=8;
+      const w = ctx.measureText(msg).width + pad*2;
+      ctx.fillStyle = 'rgba(0,0,0,.26)';
+      ctx.strokeStyle = 'rgba(255,255,255,.08)';
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.roundRect(12, 12, w, 26, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(234,240,255,.86)';
+      ctx.fillText(msg, 12+pad, 12+7);
+    }
+    ctx.restore();
+  }
+
+  // Polyfill for roundRect for older browsers
+  if(!CanvasRenderingContext2D.prototype.roundRect){
+    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+      r = Math.min(r, w/2, h/2);
+      this.beginPath();
+      this.moveTo(x+r, y);
+      this.arcTo(x+w, y, x+w, y+h, r);
+      this.arcTo(x+w, y+h, x, y+h, r);
+      this.arcTo(x, y+h, x, y, r);
+      this.arcTo(x, y, x+w, y, r);
+      this.closePath();
+      return this;
+    };
+  }
+
+  // -------------------- loop
+  function loop(now){
+    const dt = Math.min(0.033, (now - state.lastTick)/1000);
+    state.lastTick = now;
+    step(dt);
+    render(now);
+    requestAnimationFrame(loop);
+  }
+
+  // -------------------- buttons
+  startBtn.addEventListener('click', ()=> start({practice:false}));
+  practiceBtn.addEventListener('click', ()=> start({practice:true}));
+  restartBtn.addEventListener('click', ()=> restart());
+  muteBtn.addEventListener('click', ()=>{
+    soundOn = !soundOn;
+    muteBtn.textContent = `Sound: ${soundOn?'On':'Off'}`;
+    if(soundOn) beep(660,0.06,'square',0.04);
+  });
+
+  // init
+  state = newGame({practice:false});
+  setOverlay(true,
+    'Steal a Brainrot Remix',
+    'Sneak through the neon vault, swipe <strong>Brainrot Orbs</strong>, then escape. Patrol drones can see through open corridors use cover.',
+    'Start the heist when ready.'
+  );
+  setStatePill('TITLE');
+  updateHUD();
+  render(0);
+  requestAnimationFrame((t)=>{ state.lastTick = t; loop(t); });
+})();
+</script>
+</body>
+</html>
