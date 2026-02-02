@@ -1,0 +1,1390 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Berry Avenue RP Remix</title>
+  <style>
+    :root{
+      --bg0:#0b1020;
+      --bg1:#101a33;
+      --panel:rgba(16,26,51,.78);
+      --line:rgba(255,255,255,.12);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.7);
+      --good:#3dff9b;
+      --bad:#ff4d6d;
+      --accent:#7cc7ff;
+      --gold:#ffd166;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    html,body{height:100%;}
+    body{
+      margin:0;
+      background: radial-gradient(1400px 900px at 20% 10%, #1a2a55 0%, var(--bg0) 45%, #070a14 100%);
+      color:var(--text);
+      font-family:var(--sans);
+      overflow:hidden;
+    }
+    a{color:var(--accent); text-decoration:none;}
+    a:hover{text-decoration:underline;}
+
+    .topbar{
+      position:fixed;
+      left:14px; right:14px; top:12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      z-index:50;
+      pointer-events:none;
+    }
+    .topbar > *{pointer-events:auto;}
+    .back{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      background:rgba(0,0,0,.25);
+      border:1px solid var(--line);
+      border-radius:12px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 34px rgba(0,0,0,.25);
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:9px 12px;
+      background:rgba(0,0,0,.25);
+      border:1px solid var(--line);
+      border-radius:999px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 34px rgba(0,0,0,.2);
+      font-size:13px;
+      color:var(--muted);
+    }
+    .chip b{color:var(--text); font-weight:650;}
+
+    .wrap{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      padding: 76px 14px 14px;
+    }
+
+    .stage{
+      width:min(940px, calc(100vw - 28px));
+      height:min(620px, calc(100vh - 120px));
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+
+    canvas{
+      display:block;
+      width:100%;
+      height:100%;
+      background: linear-gradient(180deg, rgba(6,10,22,.4), rgba(6,10,22,.65));
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      background: radial-gradient(1100px 700px at 50% 35%, rgba(20,32,66,.88) 0%, rgba(9,12,24,.90) 55%, rgba(3,4,8,.94) 100%);
+      z-index:20;
+    }
+
+    .card{
+      width:min(720px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(12,18,35,.62);
+      box-shadow: 0 22px 80px rgba(0,0,0,.55);
+      backdrop-filter: blur(14px);
+      padding: 18px 18px 16px;
+    }
+
+    .titleRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 14px;
+      flex-wrap:wrap;
+      margin-bottom: 10px;
+    }
+    h1{
+      font-size: 26px;
+      line-height:1.15;
+      margin:0;
+      letter-spacing:.2px;
+    }
+    .subtitle{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size: 14px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .panel{
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      background: rgba(0,0,0,.18);
+      padding: 12px 12px;
+    }
+    .panel h2{
+      font-size: 13px;
+      margin: 0 0 8px;
+      color: rgba(255,255,255,.85);
+      letter-spacing:.2px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .panel ul{margin:0; padding-left:18px; color:var(--muted); font-size: 14px;}
+    .panel li{margin:6px 0;}
+    .kbd{font-family:var(--mono); font-size:12px; padding:2px 7px; border-radius: 8px; border:1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); color: rgba(255,255,255,.9)}
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    button{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(124,199,255,.22), rgba(124,199,255,.06));
+      color: var(--text);
+      padding: 11px 14px;
+      border-radius: 14px;
+      font-weight: 750;
+      letter-spacing:.2px;
+      cursor:pointer;
+      box-shadow: 0 10px 28px rgba(0,0,0,.25);
+    }
+    button:hover{filter:brightness(1.08);}
+    button:active{transform: translateY(1px);}
+
+    .secondary{
+      background: linear-gradient(180deg, rgba(255,209,102,.22), rgba(255,209,102,.06));
+    }
+
+    .note{
+      margin-top: 10px;
+      color: rgba(255,255,255,.65);
+      font-size: 12px;
+    }
+
+    .hudHelp{
+      position:absolute;
+      left:12px;
+      bottom:12px;
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      z-index:10;
+      pointer-events:none;
+    }
+    .hudHelp .chip{pointer-events:auto;}
+
+    .toast{
+      position:absolute;
+      right:12px;
+      bottom:12px;
+      z-index:12;
+      min-width: 220px;
+      max-width: 360px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+      color: rgba(255,255,255,.86);
+      font-size: 13px;
+      line-height: 1.25;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .25s ease, transform .25s ease;
+      pointer-events:none;
+    }
+    .toast.show{opacity: 1; transform: translateY(0);}
+
+    @media (max-width:720px){
+      .grid{grid-template-columns:1fr;}
+      h1{font-size:22px;}
+      .stage{height:min(660px, calc(100vh - 120px));}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="./index.html" aria-label="Back to Claw Games">← Back to Claw Games</a>
+    <div class="chip" title="Score, timer, and streak update while you play"><b>Goal:</b> deliver vibes, avoid drama</div>
+  </div>
+
+  <div class="wrap">
+    <div class="stage" role="application" aria-label="Berry Avenue RP Remix game">
+      <canvas id="c" width="940" height="620"></canvas>
+
+      <div class="hudHelp" aria-hidden="true">
+        <div class="chip"><span class="kbd">WASD</span>/<span class="kbd">Arrows</span> move</div>
+        <div class="chip"><span class="kbd">Space</span> interact</div>
+        <div class="chip"><span class="kbd">P</span> pause</div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+
+      <div id="overlay" class="overlay">
+        <div class="card">
+          <div class="titleRow">
+            <div>
+              <h1>Berry Avenue RP Remix</h1>
+              <p class="subtitle">A tiny neighborhood roleplay… turned into a speedy errand-run.</p>
+            </div>
+            <div class="chip"><b>Inspired by</b> Berry Avenue 🏠 RP</div>
+          </div>
+
+          <div class="grid">
+            <div class="panel">
+              <h2>How to play</h2>
+              <ul>
+                <li>Run errands for neighbors by picking up requests and delivering them to the right house.</li>
+                <li>Cross streets carefully—traffic is fast and <i>doesn’t</i> roleplay.</li>
+                <li>Chain deliveries for a <b>streak</b> to earn bonus points.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h2>Win / Lose</h2>
+              <ul>
+                <li><b>Win</b> by completing <b>6 deliveries</b> before the timer hits zero.</li>
+                <li><b>Lose</b> if time runs out or you take <b>3 hits</b> from traffic.</li>
+                <li>Optional: snag “tips” (sparkles) for extra seconds.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="startBtn">Start</button>
+            <button id="howBtn" class="secondary">Practice Round</button>
+            <div class="chip" style="margin-left:auto"><span class="kbd">R</span> restart anytime</div>
+          </div>
+
+          <div class="note">PG, single-file game. No external assets. Tip: deliver in a straight line for streak bonuses.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  // --- Canvas & scaling ---
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const toastEl = document.getElementById('toast');
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('startBtn');
+  const howBtn = document.getElementById('howBtn');
+
+  const W = () => canvas.width;
+  const H = () => canvas.height;
+
+  function fitCanvasCSS() {
+    // Keep pixel-perfect internal resolution and use CSS for scaling.
+    // (The canvas element already has fixed width/height, CSS stretches to container.)
+  }
+  window.addEventListener('resize', fitCanvasCSS);
+  fitCanvasCSS();
+
+  // --- RNG helpers (deterministic-ish per run) ---
+  function rand(a=1, b=null){
+    if (b === null) { b = a; a = 0; }
+    return a + Math.random()*(b-a);
+  }
+  function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+  function lerp(a,b,t){ return a+(b-a)*t; }
+  function easeOutCubic(t){ return 1 - Math.pow(1-t, 3); }
+
+  // --- Input ---
+  const keys = new Set();
+  const pressed = new Set();
+
+  function keyDown(e){
+    const k = normalizeKey(e.key);
+    if (!k) return;
+    if (!keys.has(k)) pressed.add(k);
+    keys.add(k);
+    if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
+  }
+  function keyUp(e){
+    const k = normalizeKey(e.key);
+    if (!k) return;
+    keys.delete(k);
+  }
+  function normalizeKey(k){
+    if (!k) return null;
+    if (k === ' ') return 'Space';
+    if (k.length === 1) return k.toLowerCase();
+    return k;
+  }
+
+  window.addEventListener('keydown', keyDown, { passive:false });
+  window.addEventListener('keyup', keyUp);
+
+  // --- Game world layout ---
+  // Neighborhood: sidewalks, road lanes, houses, request board, delivery targets.
+  const world = {
+    margin: 28,
+    sidewalkW: 84,
+    lanes: 3,
+    laneH: 70,
+    roadTop: 0,
+    roadBottom: 0,
+    leftWalkX: 0,
+    rightWalkX: 0,
+    board: { x: 0, y: 0, w: 0, h: 0 },
+    houses: [],
+    crossings: [],
+  };
+
+  function layoutWorld(){
+    world.roadTop = 150;
+    world.roadBottom = world.roadTop + world.lanes * world.laneH;
+    world.leftWalkX = world.margin;
+    world.rightWalkX = W() - world.margin - world.sidewalkW;
+
+    world.board = {
+      x: world.leftWalkX + 8,
+      y: 28,
+      w: world.sidewalkW - 16,
+      h: 90,
+    };
+
+    // Houses on the right side (destinations).
+    const hx = world.rightWalkX + 8;
+    const hw = world.sidewalkW - 16;
+    const startY = 30;
+    const gap = 10;
+    const hh = 62;
+    const names = [
+      {name:'Cafe', color:'#ffb4c7'},
+      {name:'Salon', color:'#c7a7ff'},
+      {name:'Gym', color:'#a7ffe3'},
+      {name:'School', color:'#ffd78a'},
+      {name:'Park', color:'#9dff7c'},
+      {name:'Home', color:'#7cc7ff'},
+    ];
+    world.houses = names.map((n, i) => ({
+      id: i,
+      label: n.name,
+      x: hx,
+      y: startY + i*(hh+gap) + (i>=3 ? 32 : 0),
+      w: hw,
+      h: hh,
+      tint: n.color,
+    }));
+
+    // Crosswalk zones spanning the road (safer = slow traffic + score bonus).
+    world.crossings = [
+      { x: W()*0.32, w: 96 },
+      { x: W()*0.58, w: 96 },
+    ].map(c => ({
+      x: clamp(c.x, world.leftWalkX + world.sidewalkW + 24, world.rightWalkX - 120),
+      w: c.w,
+      y: world.roadTop,
+      h: world.roadBottom - world.roadTop,
+    }));
+  }
+  layoutWorld();
+
+  // --- Entities ---
+  const state = {
+    mode: 'title', // title, play, pause, win, lose
+    practice: false,
+    t: 0,
+    dt: 0,
+    shake: 0,
+    msg: '',
+    deliveriesNeeded: 6,
+    delivered: 0,
+    score: 0,
+    streak: 0,
+    livesMax: 3,
+    lives: 3,
+    timeMax: 70,
+    timeLeft: 70,
+    request: null,
+    carrying: false,
+    lastDeliverAt: -999,
+    lastRequestAt: -999,
+    tipOrbs: [],
+    cars: [],
+    particles: [],
+    announcer: {
+      text: '',
+      showUntil: 0,
+      color: 'rgba(255,255,255,.92)'
+    },
+  };
+
+  const player = {
+    x: 0,
+    y: 0,
+    r: 14,
+    vx: 0,
+    vy: 0,
+    speed: 300,
+    invuln: 0,
+  };
+
+  function resetPlayer(){
+    player.x = world.leftWalkX + world.sidewalkW/2;
+    player.y = H()*0.62;
+    player.vx = 0;
+    player.vy = 0;
+    player.invuln = 0;
+  }
+
+  function resetRun({practice=false}={}){
+    state.practice = practice;
+    state.mode = 'play';
+    state.t = 0;
+    state.shake = 0;
+    state.score = 0;
+    state.streak = 0;
+    state.delivered = 0;
+    state.lives = state.livesMax;
+    state.timeLeft = practice ? 30 : state.timeMax;
+    state.request = null;
+    state.carrying = false;
+    state.tipOrbs = [];
+    state.cars = [];
+    state.particles = [];
+    state.lastDeliverAt = -999;
+    state.lastRequestAt = -999;
+
+    resetPlayer();
+    spawnTraffic();
+    makeRequest(true);
+
+    toast('New neighborhood shift: deliver the vibes.', 1600);
+  }
+
+  function toast(text, ms=1400){
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    const until = performance.now() + ms;
+    const tick = () => {
+      if (performance.now() > until) toastEl.classList.remove('show');
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  function announce(text, color='rgba(255,255,255,.92)', ms=1100){
+    state.announcer.text = text;
+    state.announcer.color = color;
+    state.announcer.showUntil = state.t + ms/1000;
+  }
+
+  // --- Requests & tips ---
+  function makeRequest(force=false){
+    if (!force && state.request) return;
+    const idx = Math.floor(rand(world.houses.length));
+    const house = world.houses[idx];
+    const wants = [
+      'coffee', 'hair gel', 'textbooks', 'dumbbells', 'snacks', 'flowers', 'a selfie ring light', 'fresh drip'
+    ];
+    const item = wants[Math.floor(rand(wants.length))];
+    state.request = { houseId: house.id, houseLabel: house.label, item };
+    state.carrying = false;
+    state.lastRequestAt = state.t;
+    announce(`Request: deliver ${item} to ${house.label}!`, 'rgba(124,199,255,.95)', 1300);
+  }
+
+  function spawnTipOrb(){
+    // Place near crossings or mid-road, rewarding risky/smart play.
+    const c = world.crossings[Math.floor(rand(world.crossings.length))];
+    const x = clamp(c.x + rand(-12, c.w+12), world.leftWalkX + world.sidewalkW + 18, world.rightWalkX - 18);
+    const y = rand(world.roadTop + 12, world.roadBottom - 12);
+    state.tipOrbs.push({ x, y, r: 9, ttl: rand(5.5, 8.0), bob: rand(0, Math.PI*2) });
+  }
+
+  // --- Traffic ---
+  function spawnTraffic(){
+    state.cars.length = 0;
+    const colors = ['#ff4d6d', '#ffd166', '#7cc7ff', '#b0ffb6', '#c7a7ff'];
+    for (let lane=0; lane<world.lanes; lane++){
+      const y = world.roadTop + lane*world.laneH + world.laneH/2;
+      const dir = lane % 2 === 0 ? 1 : -1;
+      const count = 4;
+      for (let i=0; i<count; i++){
+        const speed = rand(140, 240) * (state.practice ? 0.75 : 1);
+        const len = rand(46, 66);
+        const w = len;
+        const h = 26;
+        const x = dir === 1 ? rand(-W(), W()) : rand(0, W()*2);
+        state.cars.push({ lane, x, y, w, h, dir, speed, color: colors[(lane*2+i)%colors.length], honk: rand(0,1) });
+      }
+    }
+  }
+
+  function isInCrosswalk(x){
+    return world.crossings.some(c => x >= c.x && x <= c.x + c.w);
+  }
+
+  // --- Particles ---
+  function burst(x,y, color, n=16){
+    for (let i=0;i<n;i++){
+      const a = rand(0, Math.PI*2);
+      const s = rand(60, 240);
+      state.particles.push({
+        x, y,
+        vx: Math.cos(a)*s,
+        vy: Math.sin(a)*s,
+        r: rand(2,4),
+        ttl: rand(0.35, 0.9),
+        color,
+      });
+    }
+  }
+
+  // --- Collision helpers ---
+  function circleRectCollide(cx, cy, cr, rx, ry, rw, rh){
+    const qx = clamp(cx, rx, rx+rw);
+    const qy = clamp(cy, ry, ry+rh);
+    const dx = cx - qx;
+    const dy = cy - qy;
+    return (dx*dx + dy*dy) <= cr*cr;
+  }
+
+  // --- Flow controls ---
+  function showOverlay(){ overlay.style.display = 'flex'; }
+  function hideOverlay(){ overlay.style.display = 'none'; }
+
+  startBtn.addEventListener('click', () => { hideOverlay(); resetRun({practice:false}); });
+  howBtn.addEventListener('click', () => { hideOverlay(); resetRun({practice:true}); toast('Practice: traffic is calmer. Learn the routes!', 1600); });
+
+  function endGame(win){
+    state.mode = win ? 'win' : 'lose';
+    showOverlay();
+
+    const card = overlay.querySelector('.card');
+    card.querySelector('h1').textContent = win ? 'You did it!' : 'Shift over.';
+    card.querySelector('.subtitle').textContent = win
+      ? 'Neighborhood legend status: confirmed.'
+      : 'No worries—try a cleaner route (crosswalks help).';
+
+    const panels = card.querySelectorAll('.panel');
+    panels[0].querySelector('h2').textContent = 'Results';
+    panels[0].querySelector('ul').innerHTML = `
+      <li><b>Score:</b> ${Math.floor(state.score)}</li>
+      <li><b>Deliveries:</b> ${state.delivered}/${state.deliveriesNeeded}</li>
+      <li><b>Best streak:</b> ${bestStreak}</li>
+    `;
+    panels[1].querySelector('h2').textContent = 'Tips';
+    panels[1].querySelector('ul').innerHTML = `
+      <li>Use crosswalks for safer crossings and bonus points.</li>
+      <li>Grab sparkles for extra seconds when you’re behind.</li>
+      <li>Speed is good. Panic is not.</li>
+    `;
+
+    startBtn.textContent = 'Play again';
+    howBtn.textContent = 'Practice again';
+  }
+
+  // Track best streak per page load.
+  let bestStreak = 0;
+
+  // --- Update loop ---
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(0.033, (now-last)/1000);
+    last = now;
+
+    state.dt = dt;
+    if (state.mode === 'play'){
+      update(dt);
+    }
+    draw();
+    pressed.clear();
+    requestAnimationFrame(frame);
+  }
+
+  function update(dt){
+    state.t += dt;
+
+    if (pressed.has('p')){
+      state.mode = 'pause';
+      toast('Paused — press P to resume', 1200);
+      return;
+    }
+
+    if (pressed.has('r')){
+      resetRun({practice: state.practice});
+      return;
+    }
+
+    // Timer
+    state.timeLeft -= dt;
+    if (!state.practice && state.timeLeft <= 0){
+      state.timeLeft = 0;
+      endGame(false);
+      return;
+    }
+
+    // Occasionally spawn tips (sparkles)
+    if (!state.practice){
+      const behind = (state.delivered < Math.floor((state.timeMax - state.timeLeft)/12));
+      const chance = behind ? 0.011 : 0.007;
+      if (Math.random() < chance) spawnTipOrb();
+    } else {
+      if (Math.random() < 0.004) spawnTipOrb();
+    }
+
+    // Player movement
+    const ax = (keys.has('ArrowLeft') || keys.has('a') ? -1 : 0) + (keys.has('ArrowRight') || keys.has('d') ? 1 : 0);
+    const ay = (keys.has('ArrowUp') || keys.has('w') ? -1 : 0) + (keys.has('ArrowDown') || keys.has('s') ? 1 : 0);
+    let mag = Math.hypot(ax, ay);
+    let vx = 0, vy = 0;
+    if (mag > 0){
+      vx = ax/mag; vy = ay/mag;
+    }
+
+    const onRoad = (player.y > world.roadTop-12 && player.y < world.roadBottom+12);
+    const crossBoost = onRoad && isInCrosswalk(player.x) ? 1.05 : 1.0;
+    const carryingPenalty = state.carrying ? 0.93 : 1.0;
+    const speed = player.speed * crossBoost * carryingPenalty;
+
+    player.x += vx * speed * dt;
+    player.y += vy * speed * dt;
+
+    // Keep in bounds
+    player.x = clamp(player.x, world.margin + player.r, W()-world.margin - player.r);
+    player.y = clamp(player.y, 18 + player.r, H()-18 - player.r);
+
+    // Interactions
+    if (pressed.has('Space')){
+      // Board pickup
+      if (circleRectCollide(player.x, player.y, player.r+6, world.board.x, world.board.y, world.board.w, world.board.h)){
+        if (state.request && !state.carrying){
+          state.carrying = true;
+          announce(`Picked up: ${state.request.item}`, 'rgba(61,255,155,.95)', 1000);
+          burst(world.board.x + world.board.w/2, world.board.y + world.board.h/2, 'rgba(61,255,155,.9)', 18);
+        } else if (state.carrying){
+          toast('You already have something to deliver!', 1100);
+        }
+      }
+
+      // House delivery
+      if (state.request && state.carrying){
+        for (const h of world.houses){
+          if (h.id !== state.request.houseId) continue;
+          if (circleRectCollide(player.x, player.y, player.r+6, h.x, h.y, h.w, h.h)){
+            completeDelivery(h);
+          }
+        }
+      }
+    }
+
+    // Tip orbs pickup
+    for (let i=state.tipOrbs.length-1; i>=0; i--){
+      const o = state.tipOrbs[i];
+      o.ttl -= dt;
+      o.bob += dt * 3.2;
+      if (o.ttl <= 0){
+        state.tipOrbs.splice(i,1);
+        continue;
+      }
+      const dx = player.x - o.x;
+      const dy = player.y - o.y;
+      if ((dx*dx + dy*dy) <= Math.pow(player.r + o.r + 3, 2)){
+        state.tipOrbs.splice(i,1);
+        const add = state.practice ? 2 : 3;
+        state.timeLeft = clamp(state.timeLeft + add, 0, state.practice ? 30 : state.timeMax + 6);
+        state.score += 40;
+        announce(`Tip found! +${add}s`, 'rgba(255,209,102,.95)', 900);
+        burst(o.x, o.y, 'rgba(255,209,102,.92)', 22);
+      }
+    }
+
+    // Traffic movement + collision
+    player.invuln = Math.max(0, player.invuln - dt);
+    for (const car of state.cars){
+      car.x += car.dir * car.speed * dt;
+
+      // Wrap
+      if (car.dir === 1 && car.x > W()+120) car.x = -120 - rand(0, 120);
+      if (car.dir === -1 && car.x < -120) car.x = W()+120 + rand(0, 120);
+
+      // Crosswalk slowdown zone (makes crosswalk safer, not invincible)
+      if (isInCrosswalk(car.x + car.w/2)){
+        car.speed = lerp(car.speed, (state.practice ? 120 : 160), 0.03);
+      } else {
+        const base = (state.practice ? 160 : 210) + (car.lane*14);
+        car.speed = lerp(car.speed, base, 0.02);
+      }
+
+      // Collision
+      if (player.invuln <= 0 && circleRectCollide(player.x, player.y, player.r, car.x, car.y - car.h/2, car.w, car.h)){
+        takeHit(car);
+      }
+    }
+
+    // Particles
+    for (let i=state.particles.length-1; i>=0; i--){
+      const p = state.particles[i];
+      p.ttl -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= Math.pow(0.03, dt);
+      p.vy *= Math.pow(0.03, dt);
+      if (p.ttl <= 0) state.particles.splice(i,1);
+    }
+
+    // Win condition
+    if (!state.practice && state.delivered >= state.deliveriesNeeded){
+      endGame(true);
+      return;
+    }
+
+    // Practice ends when time is up (but doesn't count as lose)
+    if (state.practice && state.timeLeft <= 0){
+      state.timeLeft = 0;
+      toast('Practice complete. Ready for a real shift?', 1600);
+      endGame(true);
+      return;
+    }
+
+    // Passive scoring (staying active)
+    state.score += dt * (state.carrying ? 1.6 : 0.9) * (isInCrosswalk(player.x) ? 1.05 : 1);
+
+    // Encourage interaction if idle
+    if (state.request && !state.carrying && (state.t - state.lastRequestAt) > 9.5){
+      if (Math.random() < 0.005) toast('Grab the request at the board (Space).', 1200);
+    }
+  }
+
+  function takeHit(car){
+    state.lives -= 1;
+    state.streak = 0;
+    player.invuln = 1.0;
+    state.shake = 0.35;
+    const px = player.x;
+    const py = player.y;
+    burst(px, py, 'rgba(255,77,109,.95)', 26);
+    announce('Traffic says: no.', 'rgba(255,77,109,.95)', 900);
+
+    // Small penalty
+    state.score = Math.max(0, state.score - 55);
+    if (!state.practice) state.timeLeft = Math.max(0, state.timeLeft - 3);
+
+    // Knockback
+    const k = car.dir;
+    player.x += k * 18;
+    player.y += (car.lane % 2 === 0 ? -10 : 10);
+    player.x = clamp(player.x, world.margin + player.r, W()-world.margin - player.r);
+    player.y = clamp(player.y, 18 + player.r, H()-18 - player.r);
+
+    if (!state.practice && state.lives <= 0){
+      state.lives = 0;
+      endGame(false);
+    }
+  }
+
+  function completeDelivery(house){
+    state.delivered += 1;
+    state.carrying = false;
+
+    // Streak logic (deliveries within window)
+    const windowSec = 11.0;
+    if ((state.t - state.lastDeliverAt) <= windowSec) state.streak += 1;
+    else state.streak = 1;
+    bestStreak = Math.max(bestStreak, state.streak);
+    state.lastDeliverAt = state.t;
+
+    const base = 130;
+    const streakBonus = Math.min(7, state.streak) * 18;
+    const crossBonus = isInCrosswalk(player.x) ? 18 : 0;
+    const timeBonus = Math.floor(clamp(state.timeLeft, 0, 60) / 6) * 3;
+
+    const gained = base + streakBonus + crossBonus + timeBonus;
+    state.score += gained;
+
+    burst(house.x + house.w/2, house.y + house.h/2, 'rgba(61,255,155,.92)', 24);
+    announce(`Delivered to ${house.label}! +${gained}`, 'rgba(61,255,155,.95)', 1100);
+
+    if (!state.practice){
+      // Tiny time reward to keep flow
+      state.timeLeft = clamp(state.timeLeft + 1.5, 0, state.timeMax + 6);
+    }
+
+    // New request
+    state.request = null;
+    makeRequest(true);
+
+    // Occasionally spawn a celebration tip
+    if (Math.random() < 0.35) spawnTipOrb();
+  }
+
+  // --- Pause handler ---
+  function pauseUpdate(dt){
+    // just listen for resume/restart
+    if (pressed.has('p')){
+      state.mode = 'play';
+      toast('Back to it.', 900);
+    }
+    if (pressed.has('r')) resetRun({practice: state.practice});
+  }
+
+  // --- Drawing ---
+  function draw(){
+    // In pause mode we still draw, but freeze updates.
+    if (state.mode === 'pause') pauseUpdate(state.dt);
+
+    const shake = state.shake;
+    state.shake = Math.max(0, state.shake - state.dt*1.6);
+
+    const sx = (Math.random()-0.5) * 8 * shake;
+    const sy = (Math.random()-0.5) * 8 * shake;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    // Background
+    ctx.fillStyle = '#070a14';
+    ctx.fillRect(0,0,W(),H());
+
+    // Subtle gradient sky
+    const g = ctx.createLinearGradient(0,0,0,H());
+    g.addColorStop(0, '#0f1835');
+    g.addColorStop(0.55, '#0b1020');
+    g.addColorStop(1, '#070a14');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W(),H());
+
+    // Decorative blobs
+    drawGlowBlob(W()*0.22, H()*0.18, 200, 'rgba(124,199,255,.18)');
+    drawGlowBlob(W()*0.78, H()*0.28, 220, 'rgba(255,209,102,.14)');
+    drawGlowBlob(W()*0.62, H()*0.74, 260, 'rgba(199,167,255,.12)');
+
+    // Sidewalks
+    drawSidewalk(world.leftWalkX, 0, world.sidewalkW, H(), false);
+    drawSidewalk(world.rightWalkX, 0, world.sidewalkW, H(), true);
+
+    // Road
+    drawRoad();
+
+    // Crosswalk stripes
+    for (const c of world.crossings) drawCrosswalk(c);
+
+    // Board
+    drawBoard();
+
+    // Houses
+    for (const h of world.houses) drawHouse(h);
+
+    // Tip orbs
+    for (const o of state.tipOrbs) drawTip(o);
+
+    // Cars
+    for (const car of state.cars) drawCar(car);
+
+    // Player
+    drawPlayer();
+
+    // Particles
+    for (const p of state.particles) drawParticle(p);
+
+    // HUD
+    drawHUD();
+
+    // Pause overlay
+    if (state.mode === 'pause'){
+      ctx.fillStyle = 'rgba(0,0,0,.35)';
+      ctx.fillRect(0,0,W(),H());
+      drawCenteredText('PAUSED', W()/2, H()/2 - 14, 34, 'rgba(255,255,255,.92)');
+      drawCenteredText('Press P to resume • R to restart', W()/2, H()/2 + 18, 14, 'rgba(255,255,255,.75)');
+    }
+
+    ctx.restore();
+  }
+
+  function drawGlowBlob(x,y,r,color){
+    const gr = ctx.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0, color);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gr;
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawSidewalk(x,y,w,h, right){
+    ctx.fillStyle = right ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.055)';
+    ctx.fillRect(x,y,w,h);
+
+    // bricks
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = 'rgba(255,255,255,.10)';
+    ctx.lineWidth = 1;
+    const brickH = 16;
+    for (let yy=0; yy<=h; yy+=brickH){
+      ctx.beginPath();
+      ctx.moveTo(x, yy+0.5);
+      ctx.lineTo(x+w, yy+0.5);
+      ctx.stroke();
+    }
+    for (let i=0;i<10;i++){
+      const yy = (i*64 + (right?26:12))%h;
+      ctx.beginPath();
+      ctx.moveTo(x + (right? 10: w-10), yy);
+      ctx.lineTo(x + (right? w-10: 10), yy+18);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // curb line
+    ctx.fillStyle = 'rgba(255,255,255,.10)';
+    ctx.fillRect(right ? x-2 : x+w, 0, 2, h);
+  }
+
+  function drawRoad(){
+    const x = world.leftWalkX + world.sidewalkW;
+    const w = world.rightWalkX - (world.leftWalkX + world.sidewalkW);
+    const y = world.roadTop;
+    const h = world.roadBottom - world.roadTop;
+
+    // asphalt
+    const rg = ctx.createLinearGradient(0,y,0,y+h);
+    rg.addColorStop(0, 'rgba(255,255,255,.06)');
+    rg.addColorStop(1, 'rgba(255,255,255,.02)');
+    ctx.fillStyle = '#0a0d18';
+    ctx.fillRect(x,y,w,h);
+    ctx.fillStyle = rg;
+    ctx.fillRect(x,y,w,h);
+
+    // lane lines
+    ctx.save();
+    ctx.lineWidth = 2;
+    for (let i=1;i<world.lanes;i++){
+      const yy = y + i*world.laneH;
+      ctx.strokeStyle = 'rgba(255,255,255,.12)';
+      ctx.setLineDash([14, 10]);
+      ctx.beginPath();
+      ctx.moveTo(x, yy);
+      ctx.lineTo(x+w, yy);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // edges
+    ctx.fillStyle = 'rgba(255,255,255,.08)';
+    ctx.fillRect(x,y,w,2);
+    ctx.fillRect(x,y+h-2,w,2);
+  }
+
+  function drawCrosswalk(c){
+    const x = c.x, y=c.y, w=c.w, h=c.h;
+    // highlight zone
+    ctx.fillStyle = 'rgba(124,199,255,.06)';
+    ctx.fillRect(x,y,w,h);
+
+    // stripes
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    for (let yy=y+8; yy<y+h-8; yy+=18){
+      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      ctx.fillRect(x+10, yy, w-20, 6);
+    }
+    ctx.restore();
+
+    // label
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = 'rgba(124,199,255,.85)';
+    ctx.font = `700 12px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText('CROSSWALK', x+10, y+14);
+    ctx.restore();
+  }
+
+  function drawBoard(){
+    const b = world.board;
+    // post
+    roundRect(b.x, b.y, b.w, b.h, 12, 'rgba(0,0,0,.22)', 'rgba(255,255,255,.12)');
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,.82)';
+    ctx.font = `800 13px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText('REQUESTS', b.x+10, b.y+20);
+    ctx.fillStyle = 'rgba(255,255,255,.68)';
+    ctx.font = `600 12px ${getComputedStyle(document.body).fontFamily}`;
+
+    if (state.request){
+      const lines = state.carrying
+        ? [`Carrying: ${state.request.item}`, `Deliver → ${state.request.houseLabel}`]
+        : [`Need: ${state.request.item}`, `To: ${state.request.houseLabel}`];
+      ctx.fillText(lines[0], b.x+10, b.y+48);
+      ctx.fillText(lines[1], b.x+10, b.y+66);
+      ctx.fillStyle = 'rgba(255,255,255,.55)';
+      ctx.font = `600 11px ${getComputedStyle(document.body).fontFamily}`;
+      ctx.fillText('Press Space', b.x+10, b.y+b.h-12);
+    } else {
+      ctx.fillText('Refreshing...', b.x+10, b.y+50);
+    }
+    ctx.restore();
+  }
+
+  function drawHouse(h){
+    roundRect(h.x, h.y, h.w, h.h, 14, 'rgba(0,0,0,.18)', 'rgba(255,255,255,.12)');
+
+    // door glow if target
+    const target = state.request && state.request.houseId === h.id;
+    if (target){
+      drawGlowBlob(h.x + h.w*0.7, h.y + h.h*0.5, 52, 'rgba(61,255,155,.17)');
+    }
+
+    // facade band
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = h.tint;
+    ctx.fillRect(h.x+10, h.y+10, h.w-20, 10);
+    ctx.restore();
+
+    // label
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,.88)';
+    ctx.font = `800 14px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText(h.label, h.x+12, h.y+38);
+
+    ctx.fillStyle = 'rgba(255,255,255,.65)';
+    ctx.font = `600 12px ${getComputedStyle(document.body).fontFamily}`;
+
+    if (target){
+      ctx.fillText(state.carrying ? 'Press Space to deliver' : 'Deliver here', h.x+12, h.y+58);
+    } else {
+      ctx.fillText('Nice place.', h.x+12, h.y+58);
+    }
+    ctx.restore();
+
+    // mailbox
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,.10)';
+    ctx.fillRect(h.x+h.w-22, h.y+h.h-18, 10, 12);
+    ctx.restore();
+  }
+
+  function drawTip(o){
+    const pulse = 0.6 + 0.4*Math.sin(o.bob);
+    drawGlowBlob(o.x, o.y, 28, `rgba(255,209,102,${0.10 + 0.10*pulse})`);
+
+    ctx.save();
+    ctx.translate(o.x, o.y);
+    ctx.rotate(o.bob*0.45);
+    ctx.fillStyle = 'rgba(255,209,102,.88)';
+    ctx.beginPath();
+    for (let i=0;i<6;i++){
+      const a = i*Math.PI/3;
+      const rr = i%2===0 ? 10 : 4.5;
+      ctx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCar(car){
+    const x = car.x;
+    const y = car.y;
+
+    ctx.save();
+    ctx.translate(x + car.w/2, y);
+
+    // Body
+    const rx = -car.w/2;
+    const ry = -car.h/2;
+    const r = 8;
+
+    ctx.fillStyle = 'rgba(0,0,0,.22)';
+    ctx.fillRect(rx+4, ry+4, car.w, car.h);
+
+    ctx.fillStyle = car.color;
+    roundedPath(rx, ry, car.w, car.h, r);
+    ctx.fill();
+
+    // Windows
+    ctx.fillStyle = 'rgba(10,14,26,.55)';
+    roundedPath(rx+10, ry+6, car.w-20, car.h-12, 6);
+    ctx.fill();
+
+    // Headlights
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    const front = car.dir === 1 ? (rx+car.w-6) : (rx+6);
+    ctx.fillRect(front-3, ry+6, 4, 5);
+    ctx.fillRect(front-3, ry+car.h-11, 4, 5);
+
+    // Subtle motion streak
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = 'rgba(255,255,255,.55)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([12, 10]);
+    ctx.beginPath();
+    ctx.moveTo(-car.dir*car.w*0.75, 0);
+    ctx.lineTo(-car.dir*car.w*1.55, 0);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawPlayer(){
+    const inv = player.invuln;
+    const blink = inv>0 ? (Math.sin(state.t*20)*0.5+0.5) : 1;
+
+    // Shadow
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = 'rgba(0,0,0,.65)';
+    ctx.beginPath();
+    ctx.ellipse(player.x, player.y + 12, 15, 7, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // Aura when carrying
+    if (state.carrying){
+      drawGlowBlob(player.x, player.y, 44, 'rgba(61,255,155,.12)');
+    }
+
+    ctx.save();
+    ctx.globalAlpha = 0.85 * (0.35 + 0.65*blink);
+    ctx.fillStyle = state.carrying ? 'rgba(61,255,155,.95)' : 'rgba(124,199,255,.95)';
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
+    ctx.fill();
+
+    // Face dot
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = 'rgba(10,14,26,.7)';
+    ctx.beginPath();
+    ctx.arc(player.x + 4, player.y - 3, 2.2, 0, Math.PI*2);
+    ctx.fill();
+
+    // Carrying item icon
+    if (state.carrying && state.request){
+      ctx.globalAlpha = 0.95;
+      ctx.fillStyle = 'rgba(10,14,26,.65)';
+      ctx.beginPath();
+      ctx.roundRect(player.x - 9, player.y - 26, 18, 12, 4);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      ctx.font = `800 10px ${getComputedStyle(document.body).fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.fillText('📦', player.x, player.y - 16);
+      ctx.textAlign = 'start';
+    }
+
+    ctx.restore();
+  }
+
+  function drawParticle(p){
+    const a = clamp(p.ttl/0.9, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHUD(){
+    const pad = 14;
+    const boxW = 330;
+    const boxH = 92;
+
+    // left hud panel
+    roundRect(pad, pad, boxW, boxH, 14, 'rgba(0,0,0,.26)', 'rgba(255,255,255,.12)');
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,.86)';
+    ctx.font = `800 14px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText('Neighborhood Shift', pad+12, pad+26);
+
+    // Score
+    ctx.fillStyle = 'rgba(255,255,255,.72)';
+    ctx.font = `700 12px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText('Score', pad+12, pad+48);
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.font = `800 18px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText(String(Math.floor(state.score)), pad+70, pad+50);
+
+    // Deliveries
+    ctx.fillStyle = 'rgba(255,255,255,.72)';
+    ctx.font = `700 12px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText('Deliveries', pad+12, pad+72);
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.font = `800 16px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText(`${state.delivered}/${state.deliveriesNeeded}`, pad+92, pad+72);
+
+    // Streak
+    ctx.fillStyle = 'rgba(255,255,255,.72)';
+    ctx.font = `700 12px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText('Streak', pad+206, pad+48);
+    ctx.fillStyle = state.streak >= 3 ? 'rgba(255,209,102,.95)' : 'rgba(255,255,255,.92)';
+    ctx.font = `900 18px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText(String(state.streak), pad+256, pad+50);
+
+    // Lives
+    ctx.fillStyle = 'rgba(255,255,255,.72)';
+    ctx.font = `700 12px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText('Lives', pad+206, pad+72);
+    for (let i=0;i<state.livesMax;i++){
+      const x = pad+254 + i*18;
+      const y = pad+66;
+      ctx.globalAlpha = i < state.lives ? 1 : 0.25;
+      ctx.fillStyle = i < state.lives ? 'rgba(255,77,109,.95)' : 'rgba(255,77,109,.6)';
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Timer bar (top-right)
+    const tbW = 270;
+    const tbH = 14;
+    const tx = W() - pad - tbW;
+    const ty = pad;
+    roundRect(tx, ty, tbW, 34, 14, 'rgba(0,0,0,.22)', 'rgba(255,255,255,.12)');
+
+    const frac = (state.practice ? (state.timeLeft/30) : (state.timeLeft/state.timeMax));
+    const fill = clamp(frac, 0, 1);
+    const col = fill > 0.35 ? 'rgba(61,255,155,.92)' : (fill > 0.18 ? 'rgba(255,209,102,.92)' : 'rgba(255,77,109,.92)');
+
+    ctx.fillStyle = 'rgba(255,255,255,.70)';
+    ctx.font = `800 12px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText('Time', tx+12, ty+18);
+
+    ctx.fillStyle = 'rgba(255,255,255,.10)';
+    ctx.fillRect(tx+12, ty+22, tbW-24, tbH);
+    ctx.fillStyle = col;
+    ctx.fillRect(tx+12, ty+22, (tbW-24)*fill, tbH);
+
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.font = `900 12px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.ceil(state.timeLeft)}s`, tx+tbW-12, ty+18);
+    ctx.textAlign = 'start';
+
+    // Objective hint
+    if (state.request){
+      const hintW = 420;
+      const hx = (W() - hintW)/2;
+      const hy = pad;
+      roundRect(hx, hy, hintW, 40, 14, 'rgba(0,0,0,.18)', 'rgba(255,255,255,.10)');
+      ctx.fillStyle = 'rgba(255,255,255,.82)';
+      ctx.font = `800 12px ${getComputedStyle(document.body).fontFamily}`;
+      const action = state.carrying ? 'Deliver' : 'Pick up';
+      const where = state.carrying ? `→ ${state.request.houseLabel}` : 'at the board';
+      ctx.fillText(`${action}: ${state.request.item} ${where}`, hx+14, hy+25);
+    }
+
+    // Announcer
+    if (state.announcer.text && state.t < state.announcer.showUntil){
+      const t = 1 - clamp((state.announcer.showUntil - state.t)/1.1, 0, 1);
+      const a = easeOutCubic(1 - t);
+      ctx.save();
+      ctx.globalAlpha = 0.92 * a;
+      ctx.fillStyle = 'rgba(0,0,0,.30)';
+      const aw = 520;
+      const ax = (W()-aw)/2;
+      const ay = H() - 86;
+      roundRect(ax, ay, aw, 44, 14, 'rgba(0,0,0,.30)', 'rgba(255,255,255,.10)');
+      ctx.fillStyle = state.announcer.color;
+      ctx.font = `900 16px ${getComputedStyle(document.body).fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(state.announcer.text, W()/2, ay+28);
+      ctx.textAlign = 'start';
+      ctx.restore();
+    }
+
+    ctx.restore();
+
+    // Title mode draws overlay via DOM, no need here.
+  }
+
+  function drawCenteredText(text, x, y, size, color){
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.font = `900 ${size}px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(text, x, y);
+    ctx.textAlign = 'start';
+    ctx.restore();
+  }
+
+  function roundRect(x,y,w,h,r, fill, stroke){
+    ctx.save();
+    ctx.beginPath();
+    roundedPath(x,y,w,h,r);
+    if (fill){ ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+    ctx.restore();
+  }
+
+  function roundedPath(x,y,w,h,r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+  }
+
+  // --- Main loop start ---
+  // Initial overlay (title)
+  state.mode = 'title';
+  showOverlay();
+
+  // Allow restart from keyboard
+  window.addEventListener('keydown', (e) => {
+    if (normalizeKey(e.key) === 'r'){
+      if (state.mode === 'title'){
+        hideOverlay();
+        resetRun({practice:false});
+      }
+    }
+    if (normalizeKey(e.key) === 'p'){
+      if (state.mode === 'pause'){
+        // handled in pauseUpdate
+      }
+    }
+  });
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
