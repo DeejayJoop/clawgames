@@ -147,6 +147,7 @@
       overflow:hidden;
       position:relative;
       min-height: 540px;
+      height: min(640px, 86vh);
     }
 
     canvas{
@@ -162,6 +163,7 @@
       box-shadow: var(--shadow);
       padding:14px;
       min-height: 540px;
+      height: min(640px, 86vh);
       display:flex;
       flex-direction:column;
       gap:12px;
@@ -253,7 +255,9 @@
     .chip.bad{border-color: rgba(255,107,139,.35); background: rgba(255,107,139,.12)}
 
     .log{
-      flex:1;
+      flex: 0 0 180px;
+      max-height: 200px;
+      min-height: 160px;
       padding:12px;
       border-radius: 16px;
       background: rgba(0,0,0,.18);
@@ -479,9 +483,9 @@
 
       <section class="controls" aria-label="Controls">
         <div class="promptBox">
-          <div class="promptTitle">Style brief</div>
-          <div class="sub" id="briefText" style="margin-top:6px">Press Start to get your first brief.</div>
-          <div class="req" id="reqChips" aria-label="Required tags"></div>
+          <div class="promptTitle">Goal outfit</div>
+          <div class="sub" style="margin-top:6px">Match the colors & vibe shown (no text hints).</div>
+          <canvas id="goalCanvas" width="360" height="280" style="width:100%;height:auto;display:block;margin-top:10px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12)"></canvas>
         </div>
 
         <div class="row" data-slot="hair">
@@ -686,8 +690,7 @@
     time: document.getElementById('time'),
     timeBar: document.getElementById('timeBar'),
 
-    briefText: document.getElementById('briefText'),
-    reqChips: document.getElementById('reqChips'),
+    goalCanvas: document.getElementById('goalCanvas'),
 
     submitBtn: document.getElementById('submitBtn'),
     shuffleBtn: document.getElementById('shuffleBtn'),
@@ -721,6 +724,7 @@
     t: 0,
     tMax: 26.0,
     brief: null,
+    goalSel: { hair:0, top:0, bottom:0, shoes:0, accessory:0 },
     // selection indices per slot
     sel: {
       hair: 0,
@@ -785,21 +789,14 @@
   }
 
   function renderReqChips(){
-    els.reqChips.innerHTML = '';
-    if(!STATE.brief){ return; }
-    const have = new Set(outfitTags());
-    for(const tag of STATE.brief.tags){
-      const span = document.createElement('span');
-      span.className = 'chip ' + (have.has(tag) ? 'good' : 'bad');
-      span.textContent = tag;
-      els.reqChips.appendChild(span);
-    }
+    // Intentionally disabled: the goal is shown as a visual target outfit (not text chips).
+    return;
   }
 
-  function setBrief(b){
-    STATE.brief = b;
-    els.briefText.innerHTML = `<b>${b.name}</b> — ${b.text}`;
-    renderReqChips();
+  function setBrief(brief){
+    STATE.brief = brief;
+    pickGoalForBrief(brief);
+    drawGoalPreview();
   }
 
   function shuffleOutfit(){
@@ -807,7 +804,6 @@
       STATE.sel[s] = rand(ITEMS[s].length);
     }
     refreshSlotDescs();
-    renderReqChips();
     pop("shuffle");
   }
 
@@ -816,7 +812,6 @@
     const i = STATE.sel[slot];
     STATE.sel[slot] = (i + dir + n) % n;
     refreshSlotDescs();
-    renderReqChips();
     pop(slot);
     AudioSys.tone(dir>0 ? 520 : 460, 0.045, 'triangle', 0.04);
   }
@@ -936,7 +931,7 @@
     if(Math.random() < 0.35) shuffleOutfit();
 
     addLog(`<hr style="border:none;border-top:1px solid rgba(255,255,255,.12);margin:10px 0">`);
-    addLog(`<b>Round ${STATE.round}/${STATE.roundsTotal}.</b> Brief: <b>${b.name}</b> — required: <b>${b.tags.join(', ')}</b>.`);
+    addLog(`<b>Round ${STATE.round}/${STATE.roundsTotal}.</b> New target loaded: <b>${b.name}</b>.`);
 
     AudioSys.tone(740, 0.05, 'triangle', 0.05);
     refreshHud();
@@ -1003,7 +998,66 @@
     nextRound();
   }
 
+  
+
   // -------------------------
+  // Goal outfit (visual target)
+  // -------------------------
+  function pickGoalForBrief(brief){
+    // Pick items that match the brief tags best (ties random).
+    for (const slot of slots){
+      const items = ITEMS[slot];
+      let best = -1;
+      let bestIdxs = [];
+      for (let i=0;i<items.length;i++){
+        const it = items[i];
+        const overlap = it.tags.filter(t => brief.tags.includes(t)).length;
+        if (overlap > best){
+          best = overlap;
+          bestIdxs = [i];
+        } else if (overlap === best){
+          bestIdxs.push(i);
+        }
+      }
+      STATE.goalSel[slot] = bestIdxs[Math.floor(Math.random()*bestIdxs.length)];
+    }
+  }
+
+  function drawGoalPreview(){
+    const gc = els.goalCanvas;
+    if (!gc) return;
+    const g = gc.getContext('2d');
+    const Wg = gc.width, Hg = gc.height;
+    g.clearRect(0,0,Wg,Hg);
+
+    const bg = g.createRadialGradient(Wg*0.5,Hg*0.35, 10, Wg*0.5,Hg*0.6, Math.max(Wg,Hg)*0.75);
+    bg.addColorStop(0,'rgba(125,182,255,0.18)');
+    bg.addColorStop(0.55,'rgba(124,255,178,0.10)');
+    bg.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle = bg;
+    g.fillRect(0,0,Wg,Hg);
+
+    // Reuse stage mannequin drawing by translating a virtual 840x780 stage into this small canvas.
+    g.save();
+    g.translate(-170, -120);
+    drawMannequin(g, 840, 780);
+    drawItemLayer(g, 'hair', ITEMS.hair[STATE.goalSel.hair]);
+    drawItemLayer(g, 'top', ITEMS.top[STATE.goalSel.top]);
+    drawItemLayer(g, 'bottom', ITEMS.bottom[STATE.goalSel.bottom]);
+    drawItemLayer(g, 'shoes', ITEMS.shoes[STATE.goalSel.shoes]);
+    drawItemLayer(g, 'accessory', ITEMS.accessory[STATE.goalSel.accessory]);
+    g.restore();
+
+    g.save();
+    g.strokeStyle = 'rgba(255,255,255,0.14)';
+    g.lineWidth = 2;
+    g.strokeRect(10, 10, Wg-20, Hg-20);
+    g.fillStyle = 'rgba(234,241,255,0.72)';
+    g.font = '700 12px ui-sans-serif, system-ui';
+    g.fillText('TARGET', 14, 24);
+    g.restore();
+  }
+// -------------------------
   // Canvas rendering
   // -------------------------
   function roundRect(g, x,y,w,h,r){
@@ -1189,6 +1243,24 @@
       g.stroke();
     }
 
+    // hands (small stylized shapes at the end of arms)
+    {
+      const hand = (x,y)=>{
+        const hg = g.createRadialGradient(x-4,y-6, 4, x,y, 18);
+        hg.addColorStop(0,'rgba(255,255,255,0.18)');
+        hg.addColorStop(1,'rgba(255,255,255,0.06)');
+        g.fillStyle = hg;
+        g.strokeStyle = outline;
+        g.lineWidth = 2;
+        g.beginPath();
+        g.ellipse(x, y, 16, 12, 0.2, 0, Math.PI*2);
+        g.fill();
+        g.stroke();
+      };
+      hand(cx-120, topY+392);
+      hand(cx+120, topY+392);
+    }
+
     // legs (tapered, more human than rectangles)
     {
       const hipY = topY + 380;
@@ -1219,6 +1291,13 @@
       roundRect(g, cx-68, hipY+292, 46, 10, 6);
       roundRect(g, cx+22, hipY+292, 46, 10, 6);
       g.fill();
+
+      // feet
+      g.fillStyle = 'rgba(0,0,0,0.20)';
+      g.strokeStyle = outline;
+      g.lineWidth = 2;
+      g.beginPath(); g.ellipse(cx-46, hipY+318, 38, 14, 0, 0, Math.PI*2); g.fill(); g.stroke();
+      g.beginPath(); g.ellipse(cx+46, hipY+318, 38, 14, 0, 0, Math.PI*2); g.fill(); g.stroke();
     }
 
     g.restore();
@@ -1650,8 +1729,11 @@
     STATE.score = 0;
     STATE.brief = null;
     STATE.t = STATE.tMax;
-    els.briefText.textContent = 'Press Start to get your first brief.';
-    els.reqChips.innerHTML = '';
+    // Clear goal preview
+    if(els.goalCanvas){
+      const g = els.goalCanvas.getContext('2d');
+      g.clearRect(0,0,els.goalCanvas.width, els.goalCanvas.height);
+    }
     setLog('');
     refreshSlotDescs();
     refreshHud();
