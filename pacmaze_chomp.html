@@ -234,6 +234,15 @@
             <b>Controls</b><br/>
             Move: <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><br/>
             Pause: <kbd>P</kbd> • Restart: <kbd>R</kbd><br/>
+
+            <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="color:var(--muted);font-weight:800">Game speed</span>
+              <select id="speedSel" style="flex:1;min-width:160px;padding:10px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.28);color:var(--text);font-weight:800">
+                <option value="0.6">Chill</option>
+                <option value="0.85" selected>Normal</option>
+                <option value="1.1">Spicy</option>
+              </select>
+            </div>
             
             <div class="touch" aria-label="Touch controls">
               <button class="secondary" data-pad="up">▲</button>
@@ -282,6 +291,7 @@
   const howBtn = document.getElementById('howBtn');
   const restartBtn = document.getElementById('restartBtn');
   const pauseBtn = document.getElementById('pauseBtn');
+  const speedSel = document.getElementById('speedSel');
 
   // 21x21 tilemap. '#' wall, '.' pellet, 'o' power pellet, ' ' empty, 'G' ghost spawn, 'P' player spawn
   // Designed to be readable and playable, not an exact clone.
@@ -374,13 +384,15 @@
       lost: false,
       powerMs: 0,
       tickMs: 0,
+      speedMul: 0.85, // global game speed multiplier (player + ghosts)
       // Player uses sub-tile position for smooth movement
       player: {
         x: px + 0.5,
         y: py + 0.5,
         dir: 'left',
         want: 'left',
-        speed: 7.5, // tiles/sec
+        baseSpeed: 6.0, // tiles/sec (reduced; multiplied by speedMul)
+        speed: 6.0,
         mouth: 0,
         movedOnce: false,
       },
@@ -394,8 +406,8 @@
       x: x + 0.5,
       y: y + 0.5,
       dir: DIR_LIST[Math.floor(Math.random()*DIR_LIST.length)],
-      speed: 6.2,
-      baseSpeed: 6.2,
+      speed: 5.2,
+      baseSpeed: 5.2,
       color: colors[Math.floor(Math.random()*colors.length)],
       scared: false,
       eaten: false,
@@ -535,9 +547,13 @@
 
   function resetAll(){
     state = newState();
+    // Load speed from UI
+    if (speedSel){
+      const v = parseFloat(speedSel.value);
+      if (Number.isFinite(v)) state.speedMul = v;
+    }
     syncHud();
     setOverlay(true, 'Pac-Maze Chomp', 'Use arrow keys or WASD to move. Eat all pellets to win.', true);
-    // Try to focus the canvas for immediate keyboard control.
     try{ canvas.focus({preventScroll:true}); }catch(_){ /* ignore */ }
   }
 
@@ -595,62 +611,53 @@
       state.powerMs = Math.max(0, state.powerMs - dt*1000);
     }
 
-    // player movement with buffered turns
+    // player movement (grid-snapped): always ride the center line of corridors.
     const p = state.player;
+    p.speed = p.baseSpeed * state.speedMul;
     p.mouth += dt * 10;
 
-    // Optional: don't auto-run until first input (fixes "it moves left by itself" feel).
+    // Optional: don't auto-run until first input.
     if (!p.movedOnce){
-      // Still allow eating if spawned on pellet (but no movement yet).
       eatAtPlayer();
     } else {
-      // More forgiving turning:
-      // If the player is close to the centerline perpendicular to the desired direction,
-      // snap that coordinate and attempt the turn.
-      if (p.want && p.want !== p.dir){
-        const want = DIRS[p.want];
-        const cx = nearestCenter(p.x);
-        const cy = nearestCenter(p.y);
-        const tol = 0.20;
+      const cx = nearestCenter(p.x);
+      const cy = nearestCenter(p.y);
 
-        let tx = p.x, ty = p.y;
-        if (want.x !== 0){
-          // turning to horizontal: align Y
-          if (Math.abs(p.y - cy) < tol){ ty = cy; }
-        } else {
-          // turning to vertical: align X
-          if (Math.abs(p.x - cx) < tol){ tx = cx; }
-        }
+      // Snap to the corridor centerline perpendicular to travel.
+      if (p.dir === 'left' || p.dir === 'right') p.y = cy;
+      if (p.dir === 'up' || p.dir === 'down') p.x = cx;
 
-        const oldx = p.x, oldy = p.y;
-        p.x = tx; p.y = ty;
-        // try tiny move in desired direction to test
-        if (!stepEntity(p, p.want, 0.00001)){
-          p.x = oldx; p.y = oldy;
-        } else {
-          // ensure we don't accidentally drift on the probe step
-          p.x = oldx; p.y = oldy;
-          // commit direction change
+      // Only allow turns at intersections (near tile centers).
+      if (atJunction(p) && p.want && p.want !== p.dir){
+        // Commit to exact center before turning.
+        p.x = cx; p.y = cy;
+        // Probe the next tile in desired direction.
+        const d = DIRS[p.want];
+        const nx = p.x + d.x * 0.55;
+        const ny = p.y + d.y * 0.55;
+        if (canMoveTo(nx, ny)){
           p.dir = p.want;
         }
       }
 
-      // continue forward
-      stepEntity(p, p.dir, dt);
+      // Move forward. If blocked, stop on center.
+      const moved = stepEntity(p, p.dir, dt);
+      if (!moved){
+        p.x = nearestCenter(p.x);
+        p.y = nearestCenter(p.y);
+      }
 
       // eat
       const before = state.pellets;
       eatAtPlayer();
-      if (state.pellets !== before){
-        audioBlip('chomp');
-      }
+      if (state.pellets !== before) audioBlip('chomp');
     }
 
     // ghosts
     for (const g of state.ghosts){
       const wasScared = g.scared;
       g.scared = state.powerMs > 0;
-      g.speed = g.baseSpeed * (g.scared ? 0.85 : 1.0);
+      g.speed = g.baseSpeed * state.speedMul * (g.scared ? 0.85 : 1.0);
       if (!wasScared && g.scared) audioBlip('power');
 
       g.dir = chooseGhostDir(g);
@@ -662,11 +669,9 @@
       const d2 = dx*dx + dy*dy;
       if (d2 < 0.20*0.20){
         if (g.scared){
-          // chomp ghost
           state.score += 200;
           $score.textContent = state.score;
           audioBlip('ghost');
-          // send ghost home
           g.x = g.homeX; g.y = g.homeY;
           g.dir = DIR_LIST[Math.floor(Math.random()*DIR_LIST.length)];
         } else {
@@ -933,6 +938,12 @@
   });
   restartBtn.addEventListener('click', () => resetAll());
   pauseBtn.addEventListener('click', () => pauseToggle());
+  if (speedSel){
+    speedSel.addEventListener('change', () => {
+      const v = parseFloat(speedSel.value);
+      if (state && Number.isFinite(v)) state.speedMul = v;
+    });
+  }
 
   // --- Simple sound effects (WebAudio) ---
   // Note: audio only starts after a user gesture (Start click / touch).
