@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pac-Maze Chomp</title>
+  <meta name="description" content="A single-file Pac-Man-inspired maze chomp game." />
+  <style>
+    :root{
+      --bg:#07080c;
+      --panel:rgba(255,255,255,0.06);
+      --panel2:rgba(255,255,255,0.10);
+      --border:rgba(255,255,255,0.12);
+      --text:#e8ecff;
+      --muted:#9aa3b2;
+      --yellow:#ffd66b;
+      --blue:#60a5fa;
+      --pink:#f472b6;
+      --green:#22c55e;
+      --red:#fb7185;
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:
+        radial-gradient(900px 520px at 15% -10%, rgba(96,165,250,.22), transparent 65%),
+        radial-gradient(900px 520px at 85% -5%, rgba(244,114,182,.16), transparent 60%),
+        radial-gradient(800px 520px at 45% 0%, rgba(34,197,94,.12), transparent 60%),
+        linear-gradient(180deg, #07080c 0%, #050610 60%, #07080c 100%);
+    }
+    a{color:inherit}
+    .wrap{max-width:1050px;margin:0 auto;padding:20px 16px 52px}
+
+    .top{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .back{
+      display:inline-flex;align-items:center;gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      text-decoration:none;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+      box-shadow: var(--shadow);
+      font-weight:800;
+    }
+    .back:hover{border-color:rgba(96,165,250,.55)}
+
+    .panel{
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    header{
+      padding:16px 16px 14px;
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+    h1{margin:0;font-size:20px;letter-spacing:.5px;text-transform:uppercase}
+    .sub{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.35}
+
+    .hud{
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+      margin-top:2px;
+    }
+    .pill{
+      padding:9px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.25);
+      font-size:12px;
+      color:var(--muted);
+      display:inline-flex;gap:8px;align-items:center;
+    }
+    .pill b{color:var(--text);font-weight:900}
+    .dot{width:8px;height:8px;border-radius:99px;background:var(--yellow);display:inline-block}
+    .dot.power{background:var(--pink)}
+    .dot.ghost{background:var(--red)}
+
+    .main{
+      display:grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap:14px;
+      padding:14px;
+    }
+    @media (max-width: 900px){
+      .main{grid-template-columns:1fr}
+    }
+
+    .stage{
+      border-radius:16px;
+      background:rgba(0,0,0,0.28);
+      border:1px solid rgba(255,255,255,0.10);
+      padding:10px;
+      position:relative;
+      min-height: 420px;
+    }
+    canvas{width:100%;height:auto;display:block;image-rendering: pixelated}
+
+    .side{
+      border-radius:16px;
+      background:rgba(0,0,0,0.22);
+      border:1px solid rgba(255,255,255,0.10);
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .btnrow{display:flex;gap:10px;flex-wrap:wrap}
+    button{
+      flex:1;
+      min-width: 160px;
+      cursor:pointer;
+      padding:11px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:linear-gradient(135deg, rgba(34,197,94,.22), rgba(96,165,250,.18));
+      color:var(--text);
+      font-weight:900;
+    }
+    button.secondary{
+      background:rgba(255,255,255,0.04);
+      color:var(--muted);
+    }
+    button:hover{border-color:rgba(34,197,94,.45)}
+
+    .help{
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.03);
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+    .help kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 8px;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.25);
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .overlay{
+      position:absolute;inset:10px;
+      border-radius:14px;
+      display:flex;align-items:center;justify-content:center;
+      pointer-events:none;
+    }
+    .modal{
+      pointer-events:auto;
+      width:min(560px, calc(100% - 12px));
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.14);
+      background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+      box-shadow: 0 20px 70px rgba(0,0,0,0.75);
+      padding:14px;
+    }
+    .modal h2{margin:0 0 6px;font-size:18px;letter-spacing:.4px}
+    .modal p{margin:8px 0;color:var(--muted);line-height:1.45}
+    .modal .fine{font-size:12px}
+
+    .touch{
+      display:none;
+      gap:10px;
+      justify-content:center;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+    .touch button{min-width:auto;flex:0 0 auto}
+    @media (hover: none) and (pointer: coarse){
+      .touch{display:flex}
+    }
+
+    footer{padding:0 14px 14px;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="./index.html">← Back to Claw Games</a>
+      <div class="pill" title="Inspired by a classic maze chomp arcade game.">
+        <span class="dot"></span>
+        <span>Inspired by <b>Pac-Man</b> (no assets used)</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <header>
+        <div>
+          <h1>Pac-Maze Chomp</h1>
+          <div class="sub">Eat all pellets. Grab power pellets to chomp ghosts for a moment. Don’t get caught.</div>
+        </div>
+        <div class="hud">
+          <div class="pill"><span class="dot"></span> Score <b id="score">0</b></div>
+          <div class="pill"><span class="dot ghost"></span> Lives <b id="lives">3</b></div>
+          <div class="pill"><span class="dot power"></span> Pellets <b id="left">0</b></div>
+        </div>
+      </header>
+
+      <div class="main">
+        <div class="stage">
+          <canvas id="c" width="672" height="672" aria-label="Game canvas"></canvas>
+          <div class="overlay" id="overlay" hidden>
+            <div class="modal">
+              <h2 id="ovTitle">Pac-Maze Chomp</h2>
+              <p id="ovText">Use arrow keys or WASD to move. Eat all pellets to win.</p>
+              <div class="btnrow">
+                <button id="startBtn">Start</button>
+                <button class="secondary" id="howBtn">How to play</button>
+              </div>
+              <p class="fine">Tip: You can hold a direction; you’ll turn automatically at corners.</p>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side">
+          <div class="help">
+            <b>Controls</b><br/>
+            Move: <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><br/>
+            Pause: <kbd>P</kbd> • Restart: <kbd>R</kbd><br/>
+            
+            <div class="touch" aria-label="Touch controls">
+              <button class="secondary" data-pad="up">▲</button>
+              <button class="secondary" data-pad="left">◀</button>
+              <button class="secondary" data-pad="down">▼</button>
+              <button class="secondary" data-pad="right">▶</button>
+            </div>
+          </div>
+
+          <div class="help">
+            <b>Rules</b><br/>
+            <span class="dot"></span> Pellet: +10 points<br/>
+            <span class="dot power"></span> Power pellet: +50, ghosts become vulnerable<br/>
+            <span class="dot ghost"></span> Ghost: costs a life if it catches you<br/>
+            
+            <hr style="border:0;border-top:1px solid rgba(255,255,255,0.10);margin:10px 0"/>
+            <b>Win</b>: clear all pellets.<br/>
+            <b>Lose</b>: run out of lives.
+          </div>
+
+          <div class="btnrow">
+            <button id="restartBtn" class="secondary">Restart</button>
+            <button id="pauseBtn" class="secondary">Pause</button>
+          </div>
+        </aside>
+      </div>
+
+      <footer>
+        Single-file HTML. No external assets. Built for Claw Games.
+      </footer>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const $score = document.getElementById('score');
+  const $lives = document.getElementById('lives');
+  const $left  = document.getElementById('left');
+  const $overlay = document.getElementById('overlay');
+  const $ovTitle = document.getElementById('ovTitle');
+  const $ovText  = document.getElementById('ovText');
+  const startBtn = document.getElementById('startBtn');
+  const howBtn = document.getElementById('howBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+
+  // 21x21 tilemap. '#' wall, '.' pellet, 'o' power pellet, ' ' empty, 'G' ghost spawn, 'P' player spawn
+  // Designed to be readable and playable, not an exact clone.
+  const RAW = [
+    "#####################",
+    "#o....#.......#....o#",
+    "#.###.#.#####.#.###.#",
+    "#.....#...#...#.....#",
+    "#.###.###.#.###.###.#",
+    "#...#..... .....#...#",
+    "###.#.###   ###.#.###",
+    "#...#.#   G   #.#...#",
+    "#.###.# ### ###.#.###",
+    "#.....  #     #  ...#",
+    "#.###.# # ### # #.###",
+    "#...#.#   P   #.#...#",
+    "###.#.###   ###.#.###",
+    "#...#..... .....#...#",
+    "#.###.###.#.###.###.#",
+    "#.....#...#...#.....#",
+    "#.###.#.#####.#.###.#",
+    "#o....#.......#....o#",
+    "#####################",
+  ];
+
+  // Normalize rows to 21 length (some lines above include spaces).
+  const W = 21;
+  const H = 19;
+
+  function normalize(raw){
+    const out = [];
+    for (let y=0; y<raw.length; y++){
+      let s = raw[y];
+      if (s.length < W) s = s + ' '.repeat(W - s.length);
+      if (s.length > W) s = s.slice(0,W);
+      out.push(s);
+    }
+    return out;
+  }
+
+  const MAP0 = normalize(RAW);
+
+  const TILE = Math.floor(canvas.width / W);
+  const CENTER = (t) => t * TILE + TILE/2;
+
+  const DIRS = {
+    left:  {x:-1,y:0, key:'ArrowLeft'},
+    right: {x: 1,y:0, key:'ArrowRight'},
+    up:    {x:0,y:-1, key:'ArrowUp'},
+    down:  {x:0,y: 1, key:'ArrowDown'},
+  };
+  const DIR_LIST = ['left','up','right','down'];
+
+  const rand = (a,b) => a + Math.random()*(b-a);
+  const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
+
+  let state;
+
+  function newState(){
+    // Copy map to mutable grid
+    const grid = MAP0.map(r => r.split(''));
+
+    let px=1, py=1;
+    const ghosts = [];
+    let pellets = 0;
+
+    for (let y=0; y<H; y++){
+      for (let x=0; x<W; x++){
+        const c = grid[y][x];
+        if (c === 'P') { px=x; py=y; grid[y][x]=' '; }
+        if (c === 'G') { ghosts.push(makeGhost(x,y)); grid[y][x]=' '; }
+        if (c === '.') pellets++;
+        if (c === 'o') pellets++;
+      }
+    }
+
+    // Ensure at least 3 ghosts
+    while (ghosts.length < 3){
+      ghosts.push(makeGhost(10,7));
+    }
+
+    return {
+      grid,
+      pellets,
+      score: 0,
+      lives: 3,
+      running: false,
+      paused: false,
+      won: false,
+      lost: false,
+      powerMs: 0,
+      tickMs: 0,
+      // Player uses sub-tile position for smooth movement
+      player: {
+        x: px + 0.5,
+        y: py + 0.5,
+        dir: 'left',
+        want: 'left',
+        speed: 7.5, // tiles/sec
+        mouth: 0,
+      },
+      ghosts,
+    };
+  }
+
+  function makeGhost(x,y){
+    const colors = ['#fb7185','#60a5fa','#f472b6','#22c55e'];
+    return {
+      x: x + 0.5,
+      y: y + 0.5,
+      dir: DIR_LIST[Math.floor(Math.random()*DIR_LIST.length)],
+      speed: 6.2,
+      baseSpeed: 6.2,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      scared: false,
+      eaten: false,
+      homeX: x + 0.5,
+      homeY: y + 0.5,
+      wiggle: rand(0,Math.PI*2),
+    };
+  }
+
+  function tileAt(x,y){
+    const xi = Math.floor(x);
+    const yi = Math.floor(y);
+    if (xi < 0 || yi < 0 || xi >= W || yi >= H) return '#';
+    return state.grid[yi][xi];
+  }
+
+  function isWallAt(x,y){
+    return tileAt(x,y) === '#';
+  }
+
+  function canMoveTo(x,y){
+    // Circle-ish collision: sample 4 points around center
+    const r = 0.35;
+    return !(
+      isWallAt(x-r,y-r) || isWallAt(x+r,y-r) ||
+      isWallAt(x-r,y+r) || isWallAt(x+r,y+r)
+    );
+  }
+
+  function nearestCenter(v){
+    return Math.round(v - 0.5) + 0.5;
+  }
+
+  function atJunction(ent){
+    // consider "center" if close
+    const cx = nearestCenter(ent.x);
+    const cy = nearestCenter(ent.y);
+    return (Math.abs(ent.x - cx) < 0.08 && Math.abs(ent.y - cy) < 0.08);
+  }
+
+  function stepEntity(ent, dir, dt){
+    const d = DIRS[dir];
+    const nx = ent.x + d.x * ent.speed * dt;
+    const ny = ent.y + d.y * ent.speed * dt;
+    if (canMoveTo(nx, ny)){
+      ent.x = nx;
+      ent.y = ny;
+      ent.dir = dir;
+      return true;
+    }
+    return false;
+  }
+
+  function eatAtPlayer(){
+    const xi = Math.floor(state.player.x);
+    const yi = Math.floor(state.player.y);
+    const t = state.grid[yi][xi];
+    if (t === '.' || t === 'o'){
+      state.grid[yi][xi] = ' ';
+      state.pellets--;
+      if (t === '.') state.score += 10;
+      if (t === 'o'){
+        state.score += 50;
+        state.powerMs = 7000;
+      }
+      $score.textContent = state.score;
+      $left.textContent = state.pellets;
+      if (state.pellets <= 0){
+        win();
+      }
+    }
+  }
+
+  function setOverlay(show, title, text, showStart=true){
+    $overlay.hidden = !show;
+    $ovTitle.textContent = title;
+    $ovText.textContent = text;
+    startBtn.textContent = (state && (state.won || state.lost)) ? 'Play again' : 'Start';
+    startBtn.style.display = showStart ? '' : 'none';
+  }
+
+  function startGame(){
+    state.running = true;
+    state.paused = false;
+    setOverlay(false,'','');
+    pauseBtn.textContent = 'Pause';
+  }
+
+  function pauseToggle(){
+    if (!state.running) return;
+    state.paused = !state.paused;
+    pauseBtn.textContent = state.paused ? 'Resume' : 'Pause';
+    if (state.paused){
+      setOverlay(true, 'Paused', 'Press P to resume.', false);
+    } else {
+      setOverlay(false,'','');
+    }
+  }
+
+  function loseLife(){
+    state.lives--;
+    $lives.textContent = state.lives;
+    if (state.lives <= 0){
+      state.lost = true;
+      state.running = false;
+      setOverlay(true, 'Game over', `Final score: ${state.score}.`, true);
+      return;
+    }
+    // reset positions, brief freeze
+    const s2 = newState();
+    // keep score/lives
+    s2.score = state.score;
+    s2.lives = state.lives;
+    s2.running = true;
+    s2.paused = false;
+    state = s2;
+    syncHud();
+  }
+
+  function win(){
+    state.won = true;
+    state.running = false;
+    setOverlay(true, 'You win!', `Score: ${state.score}. Clean maze.`, true);
+  }
+
+  function syncHud(){
+    $score.textContent = state.score;
+    $lives.textContent = state.lives;
+    $left.textContent = state.pellets;
+  }
+
+  function resetAll(){
+    state = newState();
+    syncHud();
+    setOverlay(true, 'Pac-Maze Chomp', 'Use arrow keys or WASD to move. Eat all pellets to win.', true);
+  }
+
+  function chooseGhostDir(g){
+    // at junction, pick dir. Basic chase/evade with randomness.
+    if (!atJunction(g)) return g.dir;
+
+    const options = [];
+    for (const dir of DIR_LIST){
+      const d = DIRS[dir];
+      // don't reverse too often
+      const rev = (g.dir==='left'&&dir==='right')||(g.dir==='right'&&dir==='left')||(g.dir==='up'&&dir==='down')||(g.dir==='down'&&dir==='up');
+      if (rev && Math.random() < 0.8) continue;
+
+      const nx = g.x + d.x * 0.55;
+      const ny = g.y + d.y * 0.55;
+      if (canMoveTo(nx, ny)) options.push(dir);
+    }
+    if (options.length === 0) return g.dir;
+
+    const px = state.player.x, py = state.player.y;
+
+    // When scared, increase distance; otherwise decrease distance.
+    const wantFar = g.scared;
+
+    let best = options[0];
+    let bestScore = wantFar ? -Infinity : Infinity;
+
+    for (const dir of options){
+      const d = DIRS[dir];
+      const tx = g.x + d.x * 1.0;
+      const ty = g.y + d.y * 1.0;
+      const dist = (tx-px)*(tx-px) + (ty-py)*(ty-py);
+      const jitter = rand(-0.4, 0.4);
+      const s = dist + jitter;
+      if (wantFar){
+        if (s > bestScore){ bestScore = s; best = dir; }
+      } else {
+        if (s < bestScore){ bestScore = s; best = dir; }
+      }
+    }
+
+    // Some randomness keeps them from being too perfect
+    if (Math.random() < 0.14) best = options[Math.floor(Math.random()*options.length)];
+    return best;
+  }
+
+  function update(dt){
+    if (!state.running || state.paused) return;
+
+    state.tickMs += dt*1000;
+
+    // power timer
+    if (state.powerMs > 0){
+      state.powerMs = Math.max(0, state.powerMs - dt*1000);
+    }
+
+    // player movement with buffered turns
+    const p = state.player;
+    p.mouth += dt * 10;
+
+    // try turn if at/near center
+    if (atJunction(p) && p.want !== p.dir){
+      const old = {x:p.x,y:p.y};
+      // snap to center for cleaner turning
+      p.x = nearestCenter(p.x);
+      p.y = nearestCenter(p.y);
+      if (!stepEntity(p, p.want, 0.00001)){
+        // can't turn; undo snap a little
+        p.x = old.x;
+        p.y = old.y;
+      }
+    }
+
+    // continue forward
+    stepEntity(p, p.dir, dt);
+
+    // eat
+    eatAtPlayer();
+
+    // ghosts
+    for (const g of state.ghosts){
+      g.scared = state.powerMs > 0;
+      g.speed = g.baseSpeed * (g.scared ? 0.85 : 1.0);
+
+      g.dir = chooseGhostDir(g);
+      stepEntity(g, g.dir, dt);
+
+      // collision
+      const dx = g.x - p.x;
+      const dy = g.y - p.y;
+      const d2 = dx*dx + dy*dy;
+      if (d2 < 0.20*0.20){
+        if (g.scared){
+          // chomp ghost
+          state.score += 200;
+          $score.textContent = state.score;
+          // send ghost home
+          g.x = g.homeX; g.y = g.homeY;
+          g.dir = DIR_LIST[Math.floor(Math.random()*DIR_LIST.length)];
+        } else {
+          loseLife();
+          return;
+        }
+      }
+    }
+  }
+
+  function draw(){
+    // background
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#050610';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // subtle grid glow
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.strokeStyle = 'rgba(96,165,250,0.35)';
+    ctx.lineWidth = 1;
+    for (let x=0;x<=W;x++){
+      ctx.beginPath();
+      ctx.moveTo(x*TILE+0.5,0);
+      ctx.lineTo(x*TILE+0.5,H*TILE);
+      ctx.stroke();
+    }
+    for (let y=0;y<=H;y++){
+      ctx.beginPath();
+      ctx.moveTo(0,y*TILE+0.5);
+      ctx.lineTo(W*TILE,y*TILE+0.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // walls
+    for (let y=0; y<H; y++){
+      for (let x=0; x<W; x++){
+        if (state.grid[y][x] === '#'){
+          const gx = x*TILE;
+          const gy = y*TILE;
+
+          // wall block with soft edges
+          const grad = ctx.createLinearGradient(gx,gy,gx+TILE,gy+TILE);
+          grad.addColorStop(0,'rgba(96,165,250,0.65)');
+          grad.addColorStop(1,'rgba(34,197,94,0.18)');
+          ctx.fillStyle = 'rgba(0,0,0,0.30)';
+          ctx.fillRect(gx,gy,TILE,TILE);
+          ctx.fillStyle = grad;
+          ctx.globalAlpha = 0.9;
+          ctx.fillRect(gx+2,gy+2,TILE-4,TILE-4);
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+    // pellets
+    for (let y=0; y<H; y++){
+      for (let x=0; x<W; x++){
+        const t = state.grid[y][x];
+        if (t === '.' || t === 'o'){
+          const cx = CENTER(x);
+          const cy = CENTER(y);
+          const r = (t === 'o') ? (TILE*0.18) : (TILE*0.08);
+          ctx.beginPath();
+          ctx.fillStyle = (t === 'o') ? '#f472b6' : '#ffd66b';
+          // pulse power pellets
+          const pulse = (t === 'o') ? (0.75 + 0.25*Math.sin(state.tickMs/160)) : 1;
+          ctx.globalAlpha = 0.95 * pulse;
+          ctx.arc(cx, cy, r, 0, Math.PI*2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+    // ghosts
+    for (const g of state.ghosts){
+      drawGhost(g);
+    }
+
+    // player
+    drawPlayer(state.player);
+
+    // borders
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1,1,W*TILE-2,H*TILE-2);
+    ctx.restore();
+
+    // overlay text if not running
+    if (!state.running){
+      // (Overlay is handled in DOM.)
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  function drawPlayer(p){
+    const cx = p.x * TILE;
+    const cy = p.y * TILE;
+    const r = TILE*0.36;
+
+    // mouth
+    const open = 0.20 + 0.25*(0.5+0.5*Math.sin(p.mouth));
+    let ang = 0;
+    if (p.dir==='right') ang = 0;
+    if (p.dir==='down') ang = Math.PI/2;
+    if (p.dir==='left') ang = Math.PI;
+    if (p.dir==='up') ang = -Math.PI/2;
+
+    ctx.save();
+    ctx.translate(cx,cy);
+
+    // glow
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#ffd66b';
+    ctx.beginPath();
+    ctx.arc(0,0,r*1.25,0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = '#ffd66b';
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0,r, ang+open, ang+(Math.PI*2-open));
+    ctx.closePath();
+    ctx.fill();
+
+    // eye
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    const ex = Math.cos(ang) * r*0.18 - Math.sin(ang)*r*0.22;
+    const ey = Math.sin(ang) * r*0.18 + Math.cos(ang)*r*0.22;
+    ctx.beginPath();
+    ctx.arc(ex, ey, r*0.09, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawGhost(g){
+    const cx = g.x * TILE;
+    const cy = g.y * TILE;
+    const r = TILE*0.36;
+
+    const scared = g.scared;
+    const base = scared ? '#7dd3fc' : g.color;
+
+    ctx.save();
+    ctx.translate(cx,cy);
+
+    // ghost body
+    const t = state.tickMs/180 + g.wiggle;
+    const bob = Math.sin(t) * (TILE*0.035);
+    ctx.translate(0, bob);
+
+    // glow
+    ctx.globalAlpha = scared ? 0.30 : 0.22;
+    ctx.fillStyle = base;
+    ctx.beginPath();
+    ctx.arc(0,0,r*1.25,0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = base;
+    ctx.beginPath();
+    // top dome
+    ctx.arc(0, -r*0.05, r, Math.PI, 0);
+    // sides down
+    ctx.lineTo(r, r*0.85);
+    // wavy bottom
+    const bumps = 4;
+    for (let i=0; i<=bumps; i++){
+      const x = r - (2*r)*(i/bumps);
+      const y = r*0.85 + (i%2===0 ? r*0.18 : 0);
+      ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // eyes
+    const eyeOffset = TILE*0.12;
+    const eyeY = -TILE*0.06;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.beginPath();
+    ctx.ellipse(-eyeOffset, eyeY, r*0.22, r*0.26, 0, 0, Math.PI*2);
+    ctx.ellipse( eyeOffset, eyeY, r*0.22, r*0.26, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // pupils
+    let lookX=0, lookY=0;
+    if (!scared){
+      const d = DIRS[g.dir];
+      lookX = d.x * r*0.10;
+      lookY = d.y * r*0.10;
+    }
+    ctx.fillStyle = scared ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.70)';
+    ctx.beginPath();
+    ctx.arc(-eyeOffset + lookX, eyeY + lookY, r*0.09, 0, Math.PI*2);
+    ctx.arc( eyeOffset + lookX, eyeY + lookY, r*0.09, 0, Math.PI*2);
+    ctx.fill();
+
+    // scared mouth
+    if (scared && state.powerMs < 2000){
+      // blink when about to end
+      ctx.globalAlpha = 0.45 + 0.55*(0.5+0.5*Math.sin(state.tickMs/90));
+    }
+    if (scared){
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, r*0.18, r*0.18, 0, Math.PI);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+  }
+
+  // Input
+  const keyToDir = {
+    ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down',
+    a:'left', d:'right', w:'up', s:'down',
+  };
+
+  function setWanted(dir){
+    if (!state) return;
+    state.player.want = dir;
+  }
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key;
+    const low = (typeof k === 'string') ? k.toLowerCase() : k;
+    if (keyToDir[k]){ e.preventDefault(); setWanted(keyToDir[k]); }
+    else if (keyToDir[low]){ e.preventDefault(); setWanted(keyToDir[low]); }
+    else if (low === 'p') pauseToggle();
+    else if (low === 'r') resetAll();
+    else if (low === ' '){
+      if ($overlay.hidden === false) startGame();
+    }
+  }, {passive:false});
+
+  // Touch pad buttons
+  document.querySelectorAll('[data-pad]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = btn.getAttribute('data-pad');
+      setWanted(d);
+      if (!$overlay.hidden) startGame();
+    });
+  });
+
+  // Buttons
+  startBtn.addEventListener('click', () => {
+    if (state.won || state.lost) resetAll();
+    startGame();
+  });
+  howBtn.addEventListener('click', () => {
+    setOverlay(true, 'How to play', 'Eat all pellets to win. Power pellets turn ghosts vulnerable; touch them to score +200. Press P to pause, R to restart.', true);
+  });
+  restartBtn.addEventListener('click', () => resetAll());
+  pauseBtn.addEventListener('click', () => pauseToggle());
+
+  // Main loop
+  let last = performance.now();
+  function loop(now){
+    const dt = clamp((now-last)/1000, 0, 0.04);
+    last = now;
+    if (state) update(dt);
+    requestAnimationFrame(loop);
+  }
+
+  // Init
+  resetAll();
+  requestAnimationFrame(loop);
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
