@@ -215,7 +215,7 @@
 
       <div class="main">
         <div class="stage">
-          <canvas id="c" width="672" height="672" aria-label="Game canvas"></canvas>
+          <canvas id="c" width="672" height="672" aria-label="Game canvas" tabindex="0"></canvas>
           <div class="overlay" id="overlay" hidden>
             <div class="modal">
               <h2 id="ovTitle">Pac-Maze Chomp</h2>
@@ -382,6 +382,7 @@
         want: 'left',
         speed: 7.5, // tiles/sec
         mouth: 0,
+        movedOnce: false,
       },
       ghosts,
     };
@@ -481,6 +482,11 @@
     state.paused = false;
     setOverlay(false,'','');
     pauseBtn.textContent = 'Pause';
+    // Ensure keyboard focus lands on the page/canvas after clicking Start.
+    try{ canvas.focus({preventScroll:true}); }catch(_){ /* ignore */ }
+    try{ window.focus(); }catch(_){ /* ignore */ }
+    audioEnsure();
+    audioBlip('start');
   }
 
   function pauseToggle(){
@@ -517,6 +523,7 @@
   function win(){
     state.won = true;
     state.running = false;
+    audioBlip('win');
     setOverlay(true, 'You win!', `Score: ${state.score}. Clean maze.`, true);
   }
 
@@ -530,6 +537,8 @@
     state = newState();
     syncHud();
     setOverlay(true, 'Pac-Maze Chomp', 'Use arrow keys or WASD to move. Eat all pellets to win.', true);
+    // Try to focus the canvas for immediate keyboard control.
+    try{ canvas.focus({preventScroll:true}); }catch(_){ /* ignore */ }
   }
 
   function chooseGhostDir(g){
@@ -590,29 +599,59 @@
     const p = state.player;
     p.mouth += dt * 10;
 
-    // try turn if at/near center
-    if (atJunction(p) && p.want !== p.dir){
-      const old = {x:p.x,y:p.y};
-      // snap to center for cleaner turning
-      p.x = nearestCenter(p.x);
-      p.y = nearestCenter(p.y);
-      if (!stepEntity(p, p.want, 0.00001)){
-        // can't turn; undo snap a little
-        p.x = old.x;
-        p.y = old.y;
+    // Optional: don't auto-run until first input (fixes "it moves left by itself" feel).
+    if (!p.movedOnce){
+      // Still allow eating if spawned on pellet (but no movement yet).
+      eatAtPlayer();
+    } else {
+      // More forgiving turning:
+      // If the player is close to the centerline perpendicular to the desired direction,
+      // snap that coordinate and attempt the turn.
+      if (p.want && p.want !== p.dir){
+        const want = DIRS[p.want];
+        const cx = nearestCenter(p.x);
+        const cy = nearestCenter(p.y);
+        const tol = 0.20;
+
+        let tx = p.x, ty = p.y;
+        if (want.x !== 0){
+          // turning to horizontal: align Y
+          if (Math.abs(p.y - cy) < tol){ ty = cy; }
+        } else {
+          // turning to vertical: align X
+          if (Math.abs(p.x - cx) < tol){ tx = cx; }
+        }
+
+        const oldx = p.x, oldy = p.y;
+        p.x = tx; p.y = ty;
+        // try tiny move in desired direction to test
+        if (!stepEntity(p, p.want, 0.00001)){
+          p.x = oldx; p.y = oldy;
+        } else {
+          // ensure we don't accidentally drift on the probe step
+          p.x = oldx; p.y = oldy;
+          // commit direction change
+          p.dir = p.want;
+        }
+      }
+
+      // continue forward
+      stepEntity(p, p.dir, dt);
+
+      // eat
+      const before = state.pellets;
+      eatAtPlayer();
+      if (state.pellets !== before){
+        audioBlip('chomp');
       }
     }
 
-    // continue forward
-    stepEntity(p, p.dir, dt);
-
-    // eat
-    eatAtPlayer();
-
     // ghosts
     for (const g of state.ghosts){
+      const wasScared = g.scared;
       g.scared = state.powerMs > 0;
       g.speed = g.baseSpeed * (g.scared ? 0.85 : 1.0);
+      if (!wasScared && g.scared) audioBlip('power');
 
       g.dir = chooseGhostDir(g);
       stepEntity(g, g.dir, dt);
@@ -626,10 +665,12 @@
           // chomp ghost
           state.score += 200;
           $score.textContent = state.score;
+          audioBlip('ghost');
           // send ghost home
           g.x = g.homeX; g.y = g.homeY;
           g.dir = DIR_LIST[Math.floor(Math.random()*DIR_LIST.length)];
         } else {
+          audioBlip('death');
           loseLife();
           return;
         }
@@ -858,6 +899,7 @@
   function setWanted(dir){
     if (!state) return;
     state.player.want = dir;
+    state.player.movedOnce = true;
   }
 
   window.addEventListener('keydown', (e) => {
@@ -891,6 +933,81 @@
   });
   restartBtn.addEventListener('click', () => resetAll());
   pauseBtn.addEventListener('click', () => pauseToggle());
+
+  // --- Simple sound effects (WebAudio) ---
+  // Note: audio only starts after a user gesture (Start click / touch).
+  let audio = { ctx:null, master:null, enabled:true };
+
+  function audioEnsure(){
+    if (!audio.enabled) return;
+    if (audio.ctx) return;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) { audio.enabled = false; return; }
+    audio.ctx = new Ctx();
+    audio.master = audio.ctx.createGain();
+    audio.master.gain.value = 0.12;
+    audio.master.connect(audio.ctx.destination);
+  }
+
+  function tone(freq, durMs, type='sine', gain=1, slideTo=null){
+    if (!audio.enabled) return;
+    audioEnsure();
+    if (!audio.ctx || !audio.master) return;
+    const t0 = audio.ctx.currentTime;
+    const o = audio.ctx.createOscillator();
+    const g = audio.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    if (slideTo != null) o.frequency.exponentialRampToValueAtTime(Math.max(10, slideTo), t0 + durMs/1000);
+
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.35*gain, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + durMs/1000);
+
+    o.connect(g);
+    g.connect(audio.master);
+    o.start(t0);
+    o.stop(t0 + durMs/1000 + 0.02);
+  }
+
+  function noisePop(durMs, gain=1){
+    if (!audio.enabled) return;
+    audioEnsure();
+    if (!audio.ctx || !audio.master) return;
+
+    const sr = audio.ctx.sampleRate;
+    const len = Math.floor(sr * (durMs/1000));
+    const buf = audio.ctx.createBuffer(1, len, sr);
+    const data = buf.getChannelData(0);
+    for (let i=0;i<len;i++){
+      // decaying noise
+      const env = Math.pow(1 - i/len, 2.2);
+      data[i] = (Math.random()*2-1) * env;
+    }
+    const src = audio.ctx.createBufferSource();
+    src.buffer = buf;
+    const g = audio.ctx.createGain();
+    g.gain.value = 0.18*gain;
+    src.connect(g);
+    g.connect(audio.master);
+    src.start();
+  }
+
+  function audioBlip(kind){
+    if (!audio.enabled) return;
+    // Guard: if ctx is suspended, try resume (after gesture).
+    if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume().catch(()=>{});
+
+    switch(kind){
+      case 'start': tone(520, 90, 'triangle', 1, 760); break;
+      case 'chomp': tone(240 + Math.random()*80, 35, 'square', 0.9, 180); break;
+      case 'power': tone(220, 110, 'sawtooth', 0.8, 440); break;
+      case 'ghost': tone(780, 80, 'triangle', 1, 420); break;
+      case 'death': noisePop(120, 1); tone(180, 180, 'sine', 0.7, 60); break;
+      case 'win': tone(440, 120, 'triangle', 0.9, 660); setTimeout(()=>tone(660, 140, 'triangle', 0.9, 880), 120); break;
+      default: break;
+    }
+  }
 
   // Main loop
   let last = performance.now();
