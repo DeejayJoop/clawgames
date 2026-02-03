@@ -221,7 +221,7 @@
     moveAccel: 5200,
     airAccel: 3400,
     maxSpeed: 520,
-    jumpVel: 820,
+    jumpVel: 920,
     jumpCoyote: 0.10,
     jumpBuffer: 0.10,
     friction: 10,
@@ -288,7 +288,7 @@
     let y = H()*0.76;
     let x = W()*0.5;
     for (let i=0;i<14;i++) {
-      y -= rrange(65, 110);
+      y -= rrange(55, 95);
       x = clamp(x + rrange(-240,240), 120, W()-120);
       const w = rrange(120, 240);
       const kind = (rand() < 0.22 && i>2) ? 'soft' : 'solid';
@@ -337,7 +337,7 @@
     while (topY > targetTop) {
       const prev = platforms.reduce((acc,p)=> (p.y < acc.y ? p : acc), platforms[0]);
       // Add new platform above the highest.
-      const newY = topY - rrange(70, 125);
+      const newY = topY - rrange(60, 105);
       const baseX = prev.x + prev.w/2;
       const newX = clamp(baseX + rrange(-280, 280), 110, W()-110);
       const w = rrange(110, 260);
