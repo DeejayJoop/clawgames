@@ -1,0 +1,964 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Supercar Sqrt Sprint — Math Garage (Remix)</title>
+  <style>
+    :root{
+      --bg0:#05060f;
+      --bg1:#070a1e;
+      --panel: rgba(12,18,38,.72);
+      --panel2: rgba(10,14,28,.55);
+      --stroke: rgba(255,255,255,.12);
+      --stroke2: rgba(255,255,255,.18);
+      --txt:#f4f7ff;
+      --muted:#b9c6ff;
+      --cyan:#61f5ff;
+      --pink:#ff4fd8;
+      --gold:#ffd76e;
+      --good:#6cffb9;
+      --bad:#ff4f6e;
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --r:18px;
+    }
+    html,body{height:100%;margin:0;background:radial-gradient(1100px 700px at 50% 20%, #23106a 0%, #0a0e24 45%, var(--bg0) 100%);color:var(--txt);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
+    a{color:var(--cyan)}
+
+    header{
+      padding:12px 16px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(to bottom, rgba(255,255,255,.08), rgba(255,255,255,0));
+      display:flex;align-items:center;justify-content:space-between;gap:12px
+    }
+    .brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .brand h1{margin:0;font-size:14px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .brand .sub{color:var(--muted);font-size:12px}
+
+    .topRight{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .pill{border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.26);backdrop-filter: blur(8px);
+      border-radius:999px;padding:6px 10px;color:var(--muted);font-size:12px;display:flex;align-items:center;gap:8px}
+    .pill b{color:var(--txt);font-variant-numeric: tabular-nums}
+
+    main{height:calc(100% - 62px);display:grid;place-items:center;padding:14px}
+    .wrap{width:min(1100px,96vw);height:min(690px,86vh);position:relative;border-radius:22px;
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.12);box-shadow:var(--shadow);overflow:hidden}
+
+    .grid{position:absolute;inset:0;display:grid;grid-template-columns: 1.05fr .95fr;gap:14px;padding:14px}
+    @media (max-width: 980px){
+      .wrap{height:auto;min-height:86vh}
+      main{overflow:auto}
+      .grid{position:relative;grid-template-columns:1fr}
+    }
+
+    .stage{border-radius:var(--r);background:var(--panel);border:1px solid var(--stroke);
+      box-shadow:0 18px 55px rgba(0,0,0,.35);position:relative;overflow:hidden;min-height:540px}
+    canvas{width:100%;height:100%;display:block}
+
+    .hud{position:absolute;left:12px;right:12px;top:12px;display:flex;gap:10px;justify-content:space-between;pointer-events:none}
+    .mini{pointer-events:none;display:flex;gap:10px;flex-wrap:wrap}
+
+    .meter{height:10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);overflow:hidden}
+    .meter > div{height:100%;width:0%;background:linear-gradient(90deg, rgba(97,245,255,.75), rgba(255,79,216,.75));transition:width .12s linear}
+
+    .controls{border-radius:var(--r);background:var(--panel);border:1px solid var(--stroke);
+      min-height:540px;display:flex;flex-direction:column;gap:12px;padding:14px}
+
+    .card{border-radius:16px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);padding:12px}
+
+    .qTitle{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+    .qTitle .name{font-weight:950;letter-spacing:.4px}
+    .qTitle .tag{font-size:12px;color:var(--muted)}
+
+    .qExpr{margin-top:10px;font-size:26px;font-weight:900;letter-spacing:.3px}
+    .qExpr .sm{font-size:16px;font-weight:700;color:var(--muted)}
+
+    .answerRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    input{flex:1;min-width:180px;border-radius:14px;padding:11px 12px;font-weight:800;
+      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:var(--txt);
+      outline:none}
+    input::placeholder{color:rgba(185,198,255,.65)}
+
+    button{appearance:none;border:0;cursor:pointer;border-radius:14px;padding:11px 12px;font-weight:950;
+      color:#0b0f12;background:linear-gradient(180deg, var(--gold), #ffbf2e);
+      box-shadow:0 10px 28px rgba(255,204,80,.18)}
+    button.secondary{background:rgba(255,255,255,.08);color:var(--txt);border:1px solid rgba(255,255,255,.14);box-shadow:none}
+    button:active{transform:translateY(1px)}
+
+    .msg{min-height:22px;margin-top:10px;color:var(--muted)}
+    .msg.good{color:var(--good)}
+    .msg.bad{color:var(--bad)}
+
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px;
+      padding:2px 6px; border-radius:6px; background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12); color:#eaf2ff}
+
+    .log{flex:0 0 170px;max-height:190px;overflow:auto;border-radius:16px;background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);padding:10px;font-size:13px;color:rgba(234,241,255,.85)}
+    .log b{color:var(--txt)}
+
+    .overlay{position:absolute;inset:0;display:grid;place-items:center;padding:18px;
+      background:radial-gradient(900px 520px at 50% 35%, rgba(12,18,30,.88) 0%, rgba(0,0,0,.74) 70%, rgba(0,0,0,.76) 100%);
+    }
+    .modal{width:min(760px,96vw);border-radius:22px;padding:16px 16px 14px;
+      background:rgba(10,18,24,.72);border:1px solid rgba(255,255,255,.14);box-shadow:0 18px 60px rgba(0,0,0,.50);
+      backdrop-filter: blur(10px);
+    }
+    .modal h2{margin:0 0 6px;font-size:22px}
+    .modal p{margin:8px 0;color:var(--muted);line-height:1.55}
+    .cols{display:grid;grid-template-columns: 1.1fr .9fr;gap:12px;margin-top:12px}
+    @media (max-width: 860px){.cols{grid-template-columns:1fr}}
+
+    .how ul{margin:8px 0 0;padding-left:18px;color:rgba(234,241,255,.85)}
+    .how li{margin:6px 0}
+
+    .badge{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 10px;
+      border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(234,241,255,.85);
+      font-size:12px}
+
+    .hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>Supercar Sqrt Sprint</h1>
+      <div class="sub">Square roots • simplifying • deductions • bright rewards. Back to <a href="./index.html">Claw Games</a>.</div>
+    </div>
+    <div class="topRight" aria-label="Status">
+      <div class="pill">Lap <b id="lap">0</b>/<b id="total">0</b></div>
+      <div class="pill">Score <b id="score">0</b></div>
+      <div class="pill">Sound <b id="snd">On</b></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="grid">
+        <section class="stage" aria-label="Race Stage">
+          <canvas id="c" width="900" height="620"></canvas>
+          <div class="hud" aria-hidden="true">
+            <div class="mini">
+              <div class="pill">Speed <b id="speed">0</b></div>
+              <div class="pill">Nitro <b id="nitro">0%</b></div>
+            </div>
+            <div style="min-width:200px;align-self:center">
+              <div class="meter" title="Track progress"><div id="prog"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="controls" aria-label="Math Controls">
+          <div class="card" id="qCard">
+            <div class="qTitle">
+              <div class="name" id="qName">—</div>
+              <div class="tag" id="qTag">—</div>
+            </div>
+            <div class="qExpr" id="qExpr">Press Start</div>
+            <div class="answerRow">
+              <input id="ans" autocomplete="off" inputmode="text" placeholder="Type your answer (e.g., 13*sqrt(5) or 4√2)" />
+              <button id="check">Check</button>
+              <button class="secondary" id="skip" title="Skip (small penalty)">Skip</button>
+            </div>
+            <div class="msg" id="msg"></div>
+            <div style="margin-top:10px;color:rgba(185,198,255,.80);font-size:12px">
+              Tip: you can type <span class="kbd">sqrt(2)</span> or <span class="kbd">√2</span>. Use <span class="kbd">*</span> for multiply.
+            </div>
+          </div>
+
+          <div class="log" id="log" aria-label="Run log"></div>
+
+          <div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+            <div style="color:rgba(185,198,255,.85)">
+              Controls: <span class="kbd">Enter</span> check • <span class="kbd">M</span> mute • <span class="kbd">R</span> restart
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="primary" id="start">Start</button>
+              <button class="secondary" id="practice">Practice</button>
+              <button class="secondary" id="muteBtn">Sound: On</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="overlay" id="overlay">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="title">
+          <h2 id="title">Welcome to the Math Garage</h2>
+          <p>
+            Your supercar only goes fast when you do the <b>square‑root</b> and <b>simplify</b> challenges.
+            Get it right = neon nitro + happy sound.
+          </p>
+          <div class="cols">
+            <div class="how">
+              <div class="badge">✅ Includes <b>ALL</b> exercises from your photos</div>
+              <ul>
+                <li><b>Compute</b> roots and mixed expressions</li>
+                <li><b>Simplify</b> radicals (herleid)</li>
+                <li>A <b>word problem</b> (area & rounding)</li>
+              </ul>
+              <p style="margin-top:10px">When in doubt, type the exact simplified form shown in class (e.g., <b>13√5</b>, <b>7√6</b>, <b>4√2</b>).</p>
+            </div>
+            <div class="how">
+              <div><b>Scoring</b></div>
+              <ul>
+                <li>Correct: +10 score, nitro boost</li>
+                <li>Wrong: -2 score, speed drop</li>
+                <li>Skip: -1 score</li>
+              </ul>
+              <p style="margin-top:10px">Sound can be muted with <span class="kbd">M</span>.</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+            <button id="play">Start</button>
+            <button class="secondary" id="close">Close</button>
+          </div>
+          <p style="margin-top:10px;color:rgba(185,198,255,.75);font-size:12px">Single-file HTML • no external assets.</p>
+        </div>
+      </div>
+
+      <div class="overlay hidden" id="over">
+        <div class="modal">
+          <h2 id="overH">Finished!</h2>
+          <p id="overP">—</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+            <button id="again">Race again</button>
+            <button class="secondary" id="menu">Menu</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+<script>
+(() => {
+  'use strict';
+
+  // -------------------------
+  // Audio (tiny synth)
+  // -------------------------
+  const AudioSys = (() => {
+    let ctx = null;
+    let enabled = true;
+
+    function ensure(){
+      if(!enabled) return;
+      if(!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
+    }
+
+    function tone(freq, dur=0.08, type='sine', vol=0.05, slide=null){
+      if(!enabled) return;
+      ensure();
+      if(!ctx) return;
+      const t0 = ctx.currentTime;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      if(slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.02);
+    }
+
+    function chord(kind='good'){
+      if(!enabled) return;
+      if(kind === 'good'){
+        tone(784, 0.09, 'triangle', 0.06, 988);
+        setTimeout(()=>tone(1175, 0.08, 'sine', 0.05), 40);
+        setTimeout(()=>tone(1568, 0.09, 'triangle', 0.04), 75);
+      } else if(kind === 'bad'){
+        tone(220, 0.11, 'sawtooth', 0.05, 160);
+        setTimeout(()=>tone(140, 0.13, 'sawtooth', 0.045), 60);
+      } else if(kind === 'start'){
+        tone(660, 0.08, 'triangle', 0.05);
+        setTimeout(()=>tone(880, 0.08, 'triangle', 0.05), 60);
+      }
+    }
+
+    function setEnabled(v){ enabled = !!v; if(!enabled && ctx) { /* keep ctx */ } }
+    function isEnabled(){ return enabled; }
+
+    return { tone, chord, setEnabled, isEnabled };
+  })();
+
+  // -------------------------
+  // DOM
+  // -------------------------
+  const els = {
+    c: document.getElementById('c'),
+    overlay: document.getElementById('overlay'),
+    over: document.getElementById('over'),
+
+    lap: document.getElementById('lap'),
+    total: document.getElementById('total'),
+    score: document.getElementById('score'),
+    snd: document.getElementById('snd'),
+
+    speed: document.getElementById('speed'),
+    nitro: document.getElementById('nitro'),
+    prog: document.getElementById('prog'),
+
+    qName: document.getElementById('qName'),
+    qTag: document.getElementById('qTag'),
+    qExpr: document.getElementById('qExpr'),
+    ans: document.getElementById('ans'),
+    check: document.getElementById('check'),
+    skip: document.getElementById('skip'),
+    msg: document.getElementById('msg'),
+    log: document.getElementById('log'),
+
+    start: document.getElementById('start'),
+    practice: document.getElementById('practice'),
+    muteBtn: document.getElementById('muteBtn'),
+
+    play: document.getElementById('play'),
+    close: document.getElementById('close'),
+    again: document.getElementById('again'),
+    menu: document.getElementById('menu'),
+
+    overH: document.getElementById('overH'),
+    overP: document.getElementById('overP')
+  };
+
+  const ctx2d = els.c.getContext('2d');
+  const W = els.c.width, H = els.c.height;
+
+  // -------------------------
+  // Question set (ALL from the provided photos)
+  // -------------------------
+  const QUESTIONS = [
+    {
+      id:'4.2-4',
+      name:'Grass field + footpath',
+      tag:'Word problem • round to 2 decimals',
+      expr:'A square grass field has area 250 m². Around it is a path of width 2.5 m. Find the area of the path (m²), round to 2 decimals.',
+      answer:'183.11',
+      accept:(v)=> Math.abs(v-183.11) < 0.02
+    },
+
+    // 4.2 — Bereken 5
+    {id:'4.2-5a',name:'Bereken 5a',tag:'Compute',expr:'√81 + √25', answerExpr:'14'},
+    {id:'4.2-5b',name:'Bereken 5b',tag:'Compute',expr:'√(2500 − 900)', answerExpr:'40'},
+    {id:'4.2-5c',name:'Bereken 5c',tag:'Compute',expr:'5√144 + 2√9', answerExpr:'66'},
+    {id:'4.2-5d',name:'Bereken 5d',tag:'Compute',expr:'√225 + √196', answerExpr:'29'},
+    {id:'4.2-5e',name:'Bereken 5e',tag:'Compute',expr:'√169 − 25', answerExpr:'-12'},
+    {id:'4.2-5f',name:'Bereken 5f',tag:'Compute',expr:'8√(9²)', answerExpr:'72'},
+
+    // 4.2 — Bereken 6
+    {id:'4.2-6a',name:'Bereken 6a',tag:'Compute',expr:'3√(25/36) + √(1/4)', answerExpr:'3'},
+    {id:'4.2-6b',name:'Bereken 6b',tag:'Compute',expr:'6√(10/1000) − √(1 24/25)', answerExpr:'-4/5'},
+
+    // 4.4 — Wortels herleiden (Herleid)
+    {id:'4.4-9a',name:'Herleid 9a',tag:'Simplify',expr:'(5√3)²', answerExpr:'75'},
+    {id:'4.4-9b',name:'Herleid 9b',tag:'Simplify',expr:'6(√2)²', answerExpr:'12'},
+    {id:'4.4-9c',name:'Herleid 9c',tag:'Simplify',expr:'−4(√6)²', answerExpr:'-24'},
+    {id:'4.4-9d',name:'Herleid 9d',tag:'Simplify',expr:'(−3√7)²', answerExpr:'63'},
+    {id:'4.4-9e',name:'Herleid 9e',tag:'Simplify',expr:'3(√3)² − (3√2)²', answerExpr:'-9'},
+    {id:'4.4-9f',name:'Herleid 9f',tag:'Simplify',expr:'−3√16 + (−2√5)²', answerExpr:'8'},
+
+    {id:'4.4-10a',name:'Herleid 10a',tag:'Simplify',expr:'5√2 − √2', answerExpr:'4*sqrt(2)', displayAnswer:'4√2'},
+    {id:'4.4-10b',name:'Herleid 10b',tag:'Simplify',expr:'3√5 · 2√3', answerExpr:'6*sqrt(15)', displayAnswer:'6√15'},
+    {id:'4.4-10c',name:'Herleid 10c',tag:'Simplify',expr:'3√8 · 5√2', answerExpr:'60'},
+    {id:'4.4-10d',name:'Herleid 10d',tag:'Simplify',expr:'−8√3 + 2√3', answerExpr:'-6*sqrt(3)', displayAnswer:'−6√3'},
+    {id:'4.4-10e',name:'Herleid 10e',tag:'Simplify',expr:'5√3 · 2√3', answerExpr:'30'},
+    {id:'4.4-10f',name:'Herleid 10f',tag:'Simplify',expr:'√5 + √5', answerExpr:'2*sqrt(5)', displayAnswer:'2√5'},
+
+    {id:'4.4-11a',name:'Herleid 11a',tag:'Simplify',expr:'√24', answerExpr:'2*sqrt(6)', displayAnswer:'2√6'},
+    {id:'4.4-11b',name:'Herleid 11b',tag:'Simplify',expr:'√32', answerExpr:'4*sqrt(2)', displayAnswer:'4√2'},
+    {id:'4.4-11c',name:'Herleid 11c',tag:'Simplify',expr:'3√500', answerExpr:'30*sqrt(5)', displayAnswer:'30√5'},
+
+    {id:'4.4-12a',name:'Herleid 12a',tag:'Simplify',expr:'√500 + √45', answerExpr:'13*sqrt(5)', displayAnswer:'13√5'},
+    {id:'4.4-12b',name:'Herleid 12b',tag:'Simplify',expr:'√108 − 2√27', answerExpr:'0'},
+    {id:'4.4-12c',name:'Herleid 12c',tag:'Simplify',expr:'3√24 + 2√54 − 5√6', answerExpr:'7*sqrt(6)', displayAnswer:'7√6'},
+
+    {id:'4.4-13a',name:'Herleid 13a',tag:'Simplify',expr:'(3 + √2)(3 − 2√2)', answerExpr:'5 - 3*sqrt(2)', displayAnswer:'5 − 3√2'},
+    {id:'4.4-13b',name:'Herleid 13b',tag:'Simplify',expr:'(3 − 2√2)²', answerExpr:'17 - 12*sqrt(2)', displayAnswer:'17 − 12√2'},
+    {id:'4.4-13c',name:'Herleid 13c',tag:'Simplify',expr:'(3 − 2√2)(3 + 2√2)', answerExpr:'1'}
+  ];
+
+  // -------------------------
+  // Math parsing (lightweight)
+  // -------------------------
+  function normalizeInput(s){
+    return String(s||'')
+      .trim()
+      .toLowerCase()
+      .replace(/,/g,'.')
+      .replace(/×/g,'*')
+      .replace(/·/g,'*')
+      .replace(/−/g,'-')
+      .replace(/\s+/g,'')
+      .replace(/\^/g,'**')
+      .replace(/√/g,'sqrt')
+      .replace(/\)\(/g,')*(')
+      ;
+  }
+
+  function toJsExpr(s){
+    // Support patterns: sqrt2 => sqrt(2); sqrt(2) stays.
+    // Also allow things like 4sqrt2 => 4*sqrt(2)
+    let x = normalizeInput(s);
+
+    // Insert * between number and sqrt
+    x = x.replace(/(\d)(sqrt)/g,'$1*sqrt');
+
+    // sqrt followed by number/decimal without parentheses
+    x = x.replace(/sqrt(\d+(?:\.\d+)?)/g,'sqrt($1)');
+
+    // mixed number like 124/25 should be fine.
+    // Replace sqrt with Math.sqrt
+    x = x.replace(/sqrt\(/g,'Math.sqrt(');
+
+    // Simple fraction like -4/5: OK.
+
+    // Safety: allow only digits, operators, parentheses, dot, Math.sqrt
+    if(!/^[0-9+\-*/().%]*Math\.sqrt\([0-9+\-*/().%]*\)[0-9+\-*/().%Math\.sqrt]*$/.test(x)){
+      // If regex too strict, do a softer check:
+      if(!/^[0-9+\-*/().%Math\.sqrt]*$/.test(x)) return null;
+    }
+
+    return x;
+  }
+
+  function evalExpr(s){
+    const js = toJsExpr(s);
+    if(!js) return NaN;
+    try{
+      // eslint-disable-next-line no-new-func
+      const f = new Function('return ('+js+');');
+      const v = Number(f());
+      return Number.isFinite(v) ? v : NaN;
+    }catch{
+      return NaN;
+    }
+  }
+
+  function nearlyEqual(a,b,eps=1e-6){
+    return Math.abs(a-b) <= eps*Math.max(1, Math.abs(a), Math.abs(b));
+  }
+
+  // -------------------------
+  // Game state
+  // -------------------------
+  const STATE = {
+    mode:'menu', // menu|play|over
+    practice:false,
+    score:0,
+    i:0,
+    order:[],
+    speed:0,
+    nitro:0,
+    shake:0,
+    sparks:[],
+    t:0,
+    last:performance.now(),
+  };
+
+  function setMode(m){
+    STATE.mode = m;
+    els.overlay.classList.toggle('hidden', m!=='menu');
+    els.over.classList.toggle('hidden', m!=='over');
+  }
+
+  function log(line){
+    const d = document.createElement('div');
+    d.innerHTML = line;
+    els.log.appendChild(d);
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  function clearMsg(){
+    els.msg.textContent = '';
+    els.msg.className = 'msg';
+  }
+
+  function setMsg(kind, text){
+    els.msg.textContent = text;
+    els.msg.className = 'msg ' + (kind||'');
+  }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function resetRun(practice=false){
+    STATE.practice = practice;
+    STATE.score = 0;
+    STATE.i = 0;
+    STATE.order = practice ? shuffle(QUESTIONS) : QUESTIONS.slice();
+    STATE.speed = 0;
+    STATE.nitro = 0;
+    STATE.shake = 0;
+    STATE.sparks.length = 0;
+    STATE.t = 0;
+
+    els.log.innerHTML = '';
+    log(`<b>Ready.</b> ${practice ? 'Practice mode (random order).' : 'Campaign mode (same order as worksheet).'} `);
+
+    renderQ();
+    refreshHUD();
+    clearMsg();
+  }
+
+  function finish(){
+    setMode('over');
+    const total = STATE.order.length;
+    els.overH.textContent = 'Race complete!';
+    els.overP.innerHTML = `Final score: <b>${STATE.score}</b> • Completed: <b>${total}</b> challenges.`;
+    AudioSys.chord('good');
+  }
+
+  function currentQ(){
+    return STATE.order[STATE.i] || null;
+  }
+
+  function formatExpr(s){
+    // pretty: keep √ symbol
+    return String(s)
+      .replace(/sqrt\(/gi,'√(')
+      .replace(/\*sqrt\(/gi,'√(')
+      .replace(/\*\*/g,'^');
+  }
+
+  function renderQ(){
+    const q = currentQ();
+    els.total.textContent = String(STATE.order.length);
+    els.lap.textContent = String(Math.min(STATE.i, STATE.order.length));
+
+    if(!q){
+      els.qName.textContent = '—';
+      els.qTag.textContent = '—';
+      els.qExpr.textContent = 'Done!';
+      return;
+    }
+    els.qName.textContent = q.name;
+    els.qTag.textContent = q.tag;
+
+    if(q.id === '4.2-4'){
+      els.qExpr.innerHTML = `<div style="font-size:18px;font-weight:800;color:rgba(234,241,255,.88)">${q.expr}</div><div class="sm" style="margin-top:10px">Answer format: number (e.g., 183.00)</div>`;
+    } else {
+      // render expression with a nice sqrt symbol
+      const pretty = q.expr
+        .replace(/\bsqrt\(/gi,'√(')
+        .replace(/\b\*?sqrt\(/gi,'√(')
+        .replace(/\b√\(/g,'√(');
+      els.qExpr.innerHTML = `<span>${pretty}</span>`;
+    }
+
+    els.ans.value = '';
+    els.ans.focus();
+    els.prog.style.width = `${(STATE.i/STATE.order.length*100).toFixed(2)}%`;
+  }
+
+  function refreshHUD(){
+    els.score.textContent = String(STATE.score);
+    els.speed.textContent = String(Math.round(STATE.speed));
+    els.nitro.textContent = `${Math.round(STATE.nitro)}%`;
+    els.snd.textContent = AudioSys.isEnabled() ? 'On' : 'Off';
+    els.muteBtn.textContent = `Sound: ${AudioSys.isEnabled() ? 'On' : 'Off'}`;
+    els.lap.textContent = String(STATE.i);
+    els.total.textContent = String(STATE.order.length);
+    els.prog.style.width = `${(STATE.i/STATE.order.length*100).toFixed(2)}%`;
+  }
+
+  function addSparks(x,y,col){
+    for(let i=0;i<18;i++){
+      STATE.sparks.push({
+        x, y,
+        vx:(Math.random()*2-1)*260,
+        vy:(Math.random()*2-1)*260,
+        r: 1.5+Math.random()*2.5,
+        life: 0.25+Math.random()*0.35,
+        col
+      });
+    }
+  }
+
+  function correct(){
+    STATE.score += 10;
+    STATE.nitro = Math.min(100, STATE.nitro + 18);
+    STATE.speed = Math.min(320, STATE.speed + 65 + STATE.nitro*0.12);
+    STATE.shake = Math.min(1, STATE.shake + 0.25);
+    addSparks(W*0.62, H*0.55, 'rgba(108,255,185,0.95)');
+    AudioSys.chord('good');
+    setMsg('good', 'Correct! Nitro boosted.');
+  }
+
+  function wrong(expected){
+    STATE.score -= 2;
+    STATE.speed = Math.max(0, STATE.speed - 42);
+    STATE.nitro = Math.max(0, STATE.nitro - 8);
+    STATE.shake = Math.min(1, STATE.shake + 0.18);
+    addSparks(W*0.62, H*0.55, 'rgba(255,79,110,0.95)');
+    AudioSys.chord('bad');
+    setMsg('bad', `Not quite. Try again!${expected ? ` (Hint: result is ${expected})` : ''}`);
+  }
+
+  function skip(){
+    STATE.score -= 1;
+    STATE.speed = Math.max(0, STATE.speed - 15);
+    STATE.nitro = Math.max(0, STATE.nitro - 4);
+    clearMsg();
+    log(`<span style="color:rgba(185,198,255,.8)">Skipped:</span> <b>${currentQ()?.name||''}</b>`);
+    next();
+  }
+
+  function next(){
+    STATE.i++;
+    refreshHUD();
+    if(STATE.i >= STATE.order.length){
+      finish();
+      return;
+    }
+    renderQ();
+  }
+
+  function checkAnswer(){
+    if(STATE.mode !== 'play') return;
+    const q = currentQ();
+    if(!q) return;
+
+    const raw = els.ans.value;
+    if(!raw.trim()) return;
+
+    // special accept function
+    if(typeof q.accept === 'function'){
+      const v = evalExpr(raw);
+      if(Number.isFinite(v) && q.accept(v)){
+        correct();
+        log(`<b>${q.name}:</b> ✅ ${raw}`);
+        next();
+      } else {
+        wrong('≈ 183.11');
+        log(`<b>${q.name}:</b> ❌ ${raw}`);
+      }
+      return;
+    }
+
+    const expectedExpr = q.answerExpr;
+    const vIn = evalExpr(raw);
+    const vEx = evalExpr(expectedExpr);
+
+    if(Number.isFinite(vIn) && Number.isFinite(vEx) && nearlyEqual(vIn, vEx, 1e-8)){
+      correct();
+      log(`<b>${q.name}:</b> ✅ ${raw}`);
+      next();
+    } else {
+      wrong(q.displayAnswer || expectedExpr);
+      log(`<b>${q.name}:</b> ❌ ${raw}`);
+    }
+
+    refreshHUD();
+  }
+
+  // -------------------------
+  // Drawing — neon supercar dashboard
+  // -------------------------
+  function drawBackdrop(){
+    ctx2d.clearRect(0,0,W,H);
+
+    // shake
+    const sh = (Math.random()*2-1) * STATE.shake * 10;
+    const shy = (Math.random()*2-1) * STATE.shake * 8;
+
+    ctx2d.save();
+    ctx2d.translate(sh, shy);
+
+    // sky gradient
+    const g = ctx2d.createLinearGradient(0,0,0,H);
+    g.addColorStop(0, 'rgba(20,30,70,1)');
+    g.addColorStop(0.55,'rgba(10,12,26,1)');
+    g.addColorStop(1, 'rgba(6,6,18,1)');
+    ctx2d.fillStyle = g;
+    ctx2d.fillRect(0,0,W,H);
+
+    // neon streaks
+    ctx2d.globalAlpha = 0.35;
+    for(let i=0;i<10;i++){
+      const y = (i*63 + (STATE.t*80)) % (H+180) - 90;
+      const lg = ctx2d.createLinearGradient(0,y, W,y+80);
+      lg.addColorStop(0,'rgba(97,245,255,0)');
+      lg.addColorStop(0.4,'rgba(97,245,255,0.55)');
+      lg.addColorStop(1,'rgba(255,79,216,0)');
+      ctx2d.fillStyle = lg;
+      ctx2d.fillRect(-80,y, W+160, 12);
+    }
+    ctx2d.globalAlpha = 1;
+
+    // road
+    const roadY = H*0.70;
+    ctx2d.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx2d.beginPath();
+    ctx2d.moveTo(0,H);
+    ctx2d.lineTo(W*0.18,roadY);
+    ctx2d.lineTo(W*0.82,roadY);
+    ctx2d.lineTo(W,H);
+    ctx2d.closePath();
+    ctx2d.fill();
+
+    // lane lines
+    ctx2d.save();
+    ctx2d.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx2d.lineWidth = 3;
+    ctx2d.setLineDash([24,24]);
+    ctx2d.lineDashOffset = -STATE.t*STATE.speed*0.6;
+    ctx2d.beginPath();
+    ctx2d.moveTo(W*0.5, H);
+    ctx2d.lineTo(W*0.5, roadY);
+    ctx2d.stroke();
+    ctx2d.restore();
+
+    // city blocks
+    ctx2d.globalAlpha = 0.35;
+    for(let x=0;x<W;x+=48){
+      const h = 90 + (Math.sin((x*0.03)+STATE.t*0.6)+1)*50;
+      ctx2d.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx2d.fillRect(x, roadY-140, 38, h);
+      ctx2d.fillStyle = 'rgba(97,245,255,0.08)';
+      ctx2d.fillRect(x+10, roadY-130, 6, h*0.6);
+      ctx2d.fillStyle = 'rgba(255,79,216,0.07)';
+      ctx2d.fillRect(x+22, roadY-120, 6, h*0.45);
+    }
+    ctx2d.globalAlpha = 1;
+
+    // supercar silhouette
+    drawCar(W*0.5, H*0.74, 1.0);
+
+    // sparks
+    for(let i=STATE.sparks.length-1;i>=0;i--){
+      const p = STATE.sparks[i];
+      ctx2d.globalAlpha = Math.max(0, Math.min(1, p.life/0.6));
+      ctx2d.fillStyle = p.col;
+      ctx2d.beginPath();
+      ctx2d.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx2d.fill();
+      p.x += p.vx*DT;
+      p.y += p.vy*DT;
+      p.vy += 380*DT;
+      p.life -= DT;
+      if(p.life<=0) STATE.sparks.splice(i,1);
+    }
+    ctx2d.globalAlpha = 1;
+
+    // speedometer glow
+    drawDial();
+
+    // vignette
+    const vg = ctx2d.createRadialGradient(W*0.5,H*0.55, Math.min(W,H)*0.22, W*0.5,H*0.55, Math.max(W,H)*0.78);
+    vg.addColorStop(0,'rgba(0,0,0,0)');
+    vg.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx2d.fillStyle = vg;
+    ctx2d.fillRect(0,0,W,H);
+
+    ctx2d.restore();
+
+    // decay shake
+    STATE.shake *= 0.92;
+  }
+
+  function drawCar(cx, cy, s){
+    const g = ctx2d;
+    g.save();
+    g.translate(cx, cy);
+    g.scale(s, s);
+
+    // glow
+    g.globalAlpha = 0.35;
+    const glow = g.createRadialGradient(0,0, 10, 0,0, 180);
+    glow.addColorStop(0,'rgba(255,79,216,0.35)');
+    glow.addColorStop(0.6,'rgba(97,245,255,0.18)');
+    glow.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle = glow;
+    g.beginPath(); g.ellipse(0, 30, 190, 90, 0, 0, Math.PI*2); g.fill();
+    g.globalAlpha = 1;
+
+    // body
+    g.fillStyle = 'rgba(255,255,255,0.10)';
+    g.strokeStyle = 'rgba(255,255,255,0.20)';
+    g.lineWidth = 2;
+    roundRect(g, -220, -40, 440, 130, 44);
+    g.fill(); g.stroke();
+
+    // cabin
+    g.fillStyle = 'rgba(97,245,255,0.10)';
+    g.strokeStyle = 'rgba(97,245,255,0.28)';
+    roundRect(g, -90, -84, 180, 70, 24);
+    g.fill(); g.stroke();
+
+    // neon stripe
+    g.strokeStyle = 'rgba(255,79,216,0.55)';
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(-190, 18);
+    g.quadraticCurveTo(0, -12, 190, 18);
+    g.stroke();
+
+    // wheels
+    wheel(-140, 78);
+    wheel(140, 78);
+
+    // headlights
+    g.fillStyle = 'rgba(255,215,110,0.65)';
+    g.beginPath(); g.ellipse(-185, 18, 22, 10, 0, 0, Math.PI*2); g.fill();
+    g.beginPath(); g.ellipse(185, 18, 22, 10, 0, 0, Math.PI*2); g.fill();
+
+    g.restore();
+
+    function wheel(x,y){
+      g.save();
+      g.translate(x,y);
+      g.fillStyle = 'rgba(0,0,0,0.65)';
+      g.beginPath(); g.arc(0,0, 34, 0, Math.PI*2); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,0.16)';
+      g.lineWidth = 2;
+      g.beginPath(); g.arc(0,0, 34, 0, Math.PI*2); g.stroke();
+      g.strokeStyle = 'rgba(97,245,255,0.35)';
+      g.setLineDash([8,10]);
+      g.lineDashOffset = -STATE.t*STATE.speed*0.02;
+      g.beginPath(); g.arc(0,0, 22, 0, Math.PI*2); g.stroke();
+      g.restore();
+    }
+  }
+
+  function drawDial(){
+    const g = ctx2d;
+    const x = W*0.17, y = H*0.18;
+    const r = 78;
+
+    // glow
+    const gg = g.createRadialGradient(x,y, 8, x,y, 120);
+    gg.addColorStop(0,'rgba(97,245,255,0.25)');
+    gg.addColorStop(0.6,'rgba(255,79,216,0.12)');
+    gg.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle = gg;
+    g.beginPath(); g.arc(x,y, 120, 0, Math.PI*2); g.fill();
+
+    // ring
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.strokeStyle = 'rgba(255,255,255,0.14)';
+    g.lineWidth = 2;
+    g.beginPath(); g.arc(x,y, r, 0, Math.PI*2); g.fill(); g.stroke();
+
+    // needle
+    const sp = Math.max(0, Math.min(1, STATE.speed/320));
+    const ang = (-0.75*Math.PI) + sp*(1.5*Math.PI);
+    g.save();
+    g.translate(x,y);
+    g.rotate(ang);
+    g.strokeStyle = 'rgba(255,215,110,0.85)';
+    g.lineWidth = 4;
+    g.beginPath(); g.moveTo(-6,0); g.lineTo(60,0); g.stroke();
+    g.restore();
+
+    // label
+    g.fillStyle = 'rgba(234,241,255,0.85)';
+    g.font = '700 12px ui-sans-serif, system-ui';
+    g.fillText('SPEED', x-22, y+r+18);
+  }
+
+  function roundRect(g,x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    g.beginPath();
+    g.moveTo(x+r,y);
+    g.arcTo(x+w,y, x+w,y+h, r);
+    g.arcTo(x+w,y+h, x,y+h, r);
+    g.arcTo(x,y+h, x,y, r);
+    g.arcTo(x,y, x+w,y, r);
+    g.closePath();
+  }
+
+  // -------------------------
+  // Loop
+  // -------------------------
+  let DT = 0;
+  function step(now){
+    DT = Math.min(0.033, (now - STATE.last)/1000);
+    STATE.last = now;
+
+    if(STATE.mode === 'play'){
+      STATE.t += DT;
+      // speed naturally decays a bit
+      STATE.speed = Math.max(0, STATE.speed - (30 + STATE.speed*0.08)*DT);
+      // nitro slowly decays
+      STATE.nitro = Math.max(0, STATE.nitro - 6*DT);
+    }
+
+    drawBackdrop();
+    refreshHUD();
+
+    requestAnimationFrame(step);
+  }
+
+  // -------------------------
+  // Controls
+  // -------------------------
+  function startRun(practice=false){
+    AudioSys.chord('start');
+    resetRun(practice);
+    setMode('play');
+  }
+
+  els.start.onclick = () => startRun(false);
+  els.practice.onclick = () => startRun(true);
+  els.play.onclick = () => startRun(false);
+  els.close.onclick = () => { els.overlay.classList.add('hidden'); };
+
+  els.check.onclick = checkAnswer;
+  els.skip.onclick = skip;
+
+  els.ans.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') checkAnswer();
+  });
+
+  addEventListener('keydown', (e)=>{
+    const k = e.key.toLowerCase();
+    if(k === 'm'){
+      AudioSys.setEnabled(!AudioSys.isEnabled());
+      refreshHUD();
+      if(AudioSys.isEnabled()) AudioSys.chord('start');
+    }
+    if(k === 'r'){
+      if(STATE.mode !== 'menu') startRun(STATE.practice);
+    }
+  });
+
+  els.muteBtn.onclick = ()=>{
+    AudioSys.setEnabled(!AudioSys.isEnabled());
+    refreshHUD();
+    if(AudioSys.isEnabled()) AudioSys.chord('start');
+  };
+
+  els.again.onclick = () => startRun(STATE.practice);
+  els.menu.onclick = () => { setMode('menu'); };
+
+  // init
+  setMode('menu');
+  resetRun(false);
+  refreshHUD();
+  requestAnimationFrame(step);
+
+  // -------------------------
+  // Fix word-problem answer value from geometry (computed here for transparency)
+  // -------------------------
+  // We set accept() threshold already; here is the precise target.
+  // Square side s = sqrt(250). Outer side = s + 2*2.5. Path area = outer^2 - 250.
+  const s = Math.sqrt(250);
+  const outer = s + 5;
+  const pathArea = outer*outer - 250;
+  // Update target in question if needed (kept at 183.00 rounded).
+  // console.log(pathArea);
+})();
+</script>
+</body>
+</html>
